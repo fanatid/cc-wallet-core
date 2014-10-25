@@ -9,7 +9,6 @@ var bitcoin = require('../cclib').bitcoin
 var verify = require('../verify')
 
 
-// Todo: validate incoming data as in getTx
 /**
  * @class Electrum
  * @extends Network
@@ -67,9 +66,10 @@ function Electrum(opts) {
   })
 
   self._request('blockchain.numblocks.subscribe').then(function(height) {
-    if (_.isNumber(height))
-      self.setCurrentHeight(height)
-  })
+    verify.number(height)
+    self.setCurrentHeight(height)
+
+  }).catch(function(error) { self.emit('error', error) })
 }
 
 inherits(Electrum, Network)
@@ -113,6 +113,13 @@ Electrum.prototype.getHeader = function(height, cb) {
   verify.function(cb)
 
   this._request('blockchain.block.get_header', [height]).then(function(response) {
+    verify.number(response.version)
+    verify.string(response.prev_block_hash)
+    verify.string(response.merkle_root)
+    verify.number(response.timestamp)
+    verify.number(response.bits)
+    verify.number(response.nonce)
+
     return {
       version: response.version,
       prevBlockHash: response.prev_block_hash,
@@ -132,8 +139,13 @@ Electrum.prototype.getChunk = function(index, cb) {
   verify.number(index)
   verify.function(cb)
 
-  this._request('blockchain.block.get_chunk', [index])
-    .done(function(chunkHex) { cb(null, chunkHex) }, function(error) { cb(error) })
+  this._request('blockchain.block.get_chunk', [index]).then(function(chunkHex) {
+    verify.length(chunkHex, 322560)
+    verify.hexString(chunkHex)
+
+    return chunkHex
+
+  }).done(function(chunkHex) { cb(null, chunkHex) }, function(error) { cb(error) })
 }
 
 /**
@@ -143,11 +155,18 @@ Electrum.prototype.getTx = function(txId, cb) {
   verify.txId(txId)
   verify.function(cb)
 
-  this._request('blockchain.transaction.get', [txId]).then(function(rawTx) {
+  var self = this
+
+  var tx = self.txCache.get(txId)
+  if (!_.isUndefined(tx))
+    return cb(null, tx)
+
+  self._request('blockchain.transaction.get', [txId]).then(function(rawTx) {
     var tx = bitcoin.Transaction.fromHex(rawTx)
     if (tx.getId() !== txId)
       throw new Error('Received tx is incorrect')
 
+    self.txCache.set(txId, tx)
     return tx
 
   }).done(function(tx) { cb(null, tx) }, function(error) { cb(error) })
@@ -162,6 +181,10 @@ Electrum.prototype.getMerkle = function(txId, height, cb) {
   verify.function(cb)
 
   this._request('blockchain.transaction.get_merkle', [txId, height]).then(function(response) {
+    verify.array(response.merkle)
+    response.merkle.forEach(verify.txId)
+    verify.number(response.pos)
+
     return { merkle: response.merkle, index: response.pos }
 
   }).done(function(data) { cb(null, data) }, function(error) { cb(error) })
@@ -174,8 +197,13 @@ Electrum.prototype.sendTx = function(tx, cb) {
   verify.Transaction(tx)
   verify.function(cb)
 
-  this._request('blockchain.transaction.broadcast', [tx.toHex()])
-    .done(function(txId) { cb(null, txId) }, function(error) { cb(error) })
+  this._request('blockchain.transaction.broadcast', [tx.toHex()]).then(function(txId) {
+    if (txId !== tx.getId())
+      throw new Error('Received txId is incorrect')
+
+    return txId
+
+  }).done(function(txId) { cb(null, txId) }, function(error) { cb(error) })
 }
 
 /**
@@ -186,7 +214,12 @@ Electrum.prototype.getHistory = function(address, cb) {
   verify.function(cb)
 
   this._request('blockchain.address.get_history', [address]).then(function(entries) {
+    verify.array(entries)
+
     return entries.map(function(entry) {
+      verify.txId(entry.tx_hash)
+      verify.number(entry.height)
+
       return { txId: entry.tx_hash, height: entry.height }
     })
 
@@ -216,7 +249,14 @@ Electrum.prototype.getUnspent = function(address, cb) {
   verify.function(cb)
 
   this._request('blockchain.address.listunspent', [address]).then(function(unspent) {
+    verify.array(unspent)
+
     return unspent.map(function(entry) {
+      verify.txId(entry.tx_hash)
+      verify.number(entry.tx_pos)
+      verify.number(entry.value)
+      verify.number(entry.height)
+
       return { txId: entry.tx_hash, outIndex: entry.tx_pos, value: entry.value, height: entry.height }
     })
 

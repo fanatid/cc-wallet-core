@@ -2,6 +2,7 @@ var events = require('events')
 var inherits = require('util').inherits
 
 var _ = require('lodash')
+var LRU = require('lru-cache')
 
 var verify = require('../verify')
 
@@ -31,8 +32,14 @@ var verify = require('../verify')
 /**
  * @class Network
  * @extends events.EventEmitter
+ * @param {Object} opts
+ * @param {number} [opts.txCacheSize=1000]
  */
-function Network() {
+function Network(opts) {
+  opts = _.extend({ txCacheSize: 1000 }, opts)
+  verify.object(opts)
+  verify.number(opts.txCacheSize)
+
   var self = this
 
   events.EventEmitter.call(self)
@@ -42,6 +49,8 @@ function Network() {
   self.on('disconnect', function() { self._isConnected = false })
 
   self.setCurrentHeight(0, false)
+
+  self.txCache = LRU({ max: opts.txCacheSize })
 }
 
 inherits(Network, events.EventEmitter)

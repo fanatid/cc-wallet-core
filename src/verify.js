@@ -6,6 +6,8 @@ var verify = cclib.verify
 var createInstanceCheck = verify.createInstanceCheck
 
 
+function isLength(thing, value) { return thing.length === length }
+
 var networks = Object.keys(bitcoin.networks).map(function(key) { return bitcoin.networks[key] })
 function isBitcoinNetwork(thing) {
   return networks.indexOf(thing) !== -1
@@ -28,6 +30,7 @@ function isRawCoin(thing) {
 
 var functions = {
   buffer: Buffer.isBuffer,
+  length: isLength,
 
   HDNode: createInstanceCheck(function() { return bitcoin.HDNode }),
   bitcoinNetwork: isBitcoinNetwork,
@@ -61,6 +64,7 @@ var functions = {
 
 var expected = {
   buffer: 'Buffer',
+  length: 'invalid length',
 
   HDNode: 'HDNode',
   bitcoinNetwork: 'Object from bitcoinjs-lib.networks',
