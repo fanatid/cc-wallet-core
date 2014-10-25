@@ -6,6 +6,7 @@ module.exports = {
   blockchain: require('./blockchain'),
   coin: require('./coin'),
   history: require('./history'),
+  network: require('./network'),
   tx: require('./tx'),
 
   verify: require('./verify'),
