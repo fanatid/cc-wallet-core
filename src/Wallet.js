@@ -7,6 +7,7 @@ var blockchain = require('./blockchain')
 var coin = require('./coin')
 var ConfigStorage = require('./ConfigStorage')
 var history = require('./history')
+var network = require('./network')
 var tx = require('./tx')
 
 var cclib = require('./cclib')
@@ -24,7 +25,7 @@ var verify = require('./verify')
  *
  * @param {Object} opts
  * @param {boolean} [opts.testnet=false]
- * @param {string} [opts.blockchain='BlockrIo'] Now available only BlockrIo
+ * @param {Object} [opts.networkOpts]
  */
 function Wallet(opts) {
   opts = _.extend({
@@ -35,11 +36,13 @@ function Wallet(opts) {
   verify.boolean(opts.testnet)
   verify.string(opts.blockchain)
 
-  this.network = opts.testnet ? bitcoin.networks.testnet : bitcoin.networks.bitcoin
+  this.bitcoinNetwork = opts.testnet ? bitcoin.networks.testnet : bitcoin.networks.bitcoin
 
   this.config = new ConfigStorage()
 
-  this.blockchain = new blockchain[opts.blockchain]({ testnet: opts.testnet })
+  this.network = new network.Electrum({ url: 'ws://devel.hz.udoidio.info:8784/' })
+  this.blockchain = new blockchain.VerifiedBlockchain(this)
+  //this.blockchain = new blockchain[opts.blockchain]({ testnet: opts.testnet })
 
   this.cdStorage = new cclib.ColorDefinitionStorage()
   this.cdManager = new cclib.ColorDefinitionManager(this.cdStorage)
@@ -48,7 +51,7 @@ function Wallet(opts) {
   this.cData = new cclib.ColorData(this.cDataStorage, this.blockchain)
 
   this.aStorage = new address.AddressStorage()
-  this.aManager = new address.AddressManager(this.aStorage, this.network)
+  this.aManager = new address.AddressManager(this.aStorage, this.getBitcoinNetwork())
 
   this.adStorage = new asset.AssetDefinitionStorage()
   this.adManager = new asset.AssetDefinitionManager(this.cdManager, this.adStorage)
@@ -68,6 +71,7 @@ function Wallet(opts) {
   this.txFetcher = new tx.TxFetcher(this.txDb, this.blockchain)
 }
 
+Wallet.prototype.getBitcoinNetwork = function() { return this.bitcoinNetwork }
 Wallet.prototype.getNetwork = function() { return this.network }
 Wallet.prototype.getBlockchain = function() { return this.blockchain }
 Wallet.prototype.getColorDefinitionManager = function() { return this.cdManager }

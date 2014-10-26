@@ -48,7 +48,7 @@ CoinManager.prototype.applyTx = function(tx, cb) {
 
     var promises = tx.outs.map(function(output, index) {
       var script = bitcoin.Script.fromBuffer(output.script.toBuffer())
-      var outputAddresses = bitcoin.getAddressesFromOutputScript(script, self.wallet.getNetwork())
+      var outputAddresses = bitcoin.getAddressesFromOutputScript(script, self.wallet.getBitcoinNetwork())
 
       return Q.all(outputAddresses.map(function(address) {
         if (addresses.indexOf(address) === -1)

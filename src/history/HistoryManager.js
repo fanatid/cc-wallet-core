@@ -105,7 +105,7 @@ HistoryManager.prototype.getEntries = function(cb) {
           if (!_.isUndefined(coins[tx.getId()+index]))
             return
 
-          var address = bitcoin.Address.fromOutputScript(output.script, self.wallet.getNetwork()).toBase58Check()
+          var address = bitcoin.Address.fromOutputScript(output.script, self.wallet.getBitcoinNetwork()).toBase58Check()
           var coin = new Coin(self.wallet.getCoinManager(), {
             txId: tx.getId(),
             outIndex: index,

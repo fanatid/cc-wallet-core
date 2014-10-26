@@ -48,7 +48,7 @@ function Network(opts) {
   self.on('connect', function() { self._isConnected = true })
   self.on('disconnect', function() { self._isConnected = false })
 
-  self.setCurrentHeight(0, false)
+  self.setCurrentHeight(-1, false)
 
   self.txCache = LRU({ max: opts.txCacheSize })
 }

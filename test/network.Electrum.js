@@ -10,7 +10,7 @@ describe('network.Electrum', function() {
   var network
 
   beforeEach(function(done) {
-    network = new Electrum({ url: 'ws://localhost:8784/' })
+    network = new Electrum({ url: 'ws://devel.hz.udoidio.info:8784/' })
     network.once('connect', done)
   })
 
@@ -88,7 +88,7 @@ describe('network.Electrum', function() {
     })
   })
 
-  it.only('sendTx', function(done) {
+  it('sendTx', function(done) {
     helpers.sendCoins(network, function() { done() })
   })
 
