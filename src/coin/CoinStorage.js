@@ -2,7 +2,7 @@ var inherits = require('util').inherits
 
 var _ = require('lodash')
 
-var bitcoin = require('../cclib').bitcoin
+var bitcoin = require('../bitcoin')
 var SyncStorage = require('../SyncStorage')
 var verify = require('../verify')
 

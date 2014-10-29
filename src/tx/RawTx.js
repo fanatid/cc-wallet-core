@@ -1,7 +1,7 @@
 var _ = require('lodash')
 var Q = require('q')
 
-var bitcoin = require('../cclib').bitcoin
+var bitcoin = require('../bitcoin')
 var verify = require('../verify')
 
 

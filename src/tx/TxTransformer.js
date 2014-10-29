@@ -1,11 +1,10 @@
 var _ = require('lodash')
 var Q = require('q')
 
-var cclib = require('../cclib')
-var bitcoin = cclib.bitcoin
+var bitcoin = require('../bitcoin')
 var AssetTx = require('./AssetTx')
 var OperationalTx = require('./OperationalTx')
-var ComposedTx = cclib.ComposedTx
+var ComposedTx = require('../cclib').ComposedTx
 var RawTx = require('./RawTx')
 var verify = require('../verify')
 

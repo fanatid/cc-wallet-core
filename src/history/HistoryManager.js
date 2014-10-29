@@ -2,7 +2,7 @@ var _ = require('lodash')
 var Q = require('q')
 
 var cclib = require('../cclib')
-var bitcoin = cclib.bitcoin
+var bitcoin = require('../bitcoin')
 var AssetValue = require('../asset').AssetValue
 var AssetTarget = require('../asset').AssetTarget
 var Coin = require('../coin').Coin

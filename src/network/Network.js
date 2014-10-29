@@ -1,16 +1,18 @@
 var events = require('events')
 var inherits = require('util').inherits
 
+var Q = require('q')
 var _ = require('lodash')
 var LRU = require('lru-cache')
 
+var bitcoin = require('../bitcoin')
 var verify = require('../verify')
 
 
 /**
  * @event Network#error
  * @type {Error} error
- *
+ */
 
 /**
  * @event Network#connect
@@ -48,7 +50,8 @@ function Network(opts) {
   self.on('connect', function() { self._isConnected = true })
   self.on('disconnect', function() { self._isConnected = false })
 
-  self.setCurrentHeight(-1, false)
+  self._currentHeight = -1
+  self._currentBlockHash = new Buffer(32).fill(0)
 
   self.txCache = LRU({ max: opts.txCacheSize })
 }
@@ -64,16 +67,20 @@ Network.prototype.isConnected = function() {
 
 /**
  * @param {number} newHeight
- * @param {boolean} [broadcast=true]
  */
-Network.prototype.setCurrentHeight = function(newHeight, broadcast) {
+Network.prototype.setCurrentHeight = function(newHeight) {
   verify.number(newHeight)
-  if (_.isUndefined(broadcast)) broadcast = true
-  verify.boolean(broadcast)
 
-  this._currentHeight = newHeight
-  if (broadcast === true)
-    this.emit('newHeight')
+  var self = this
+
+  // need synchronization?
+  Q.ninvoke(self, 'getHeader', newHeight).then(function(header) {
+    header = bitcoin.header2buffer(header)
+    self._currentBlockHash = bitcoin.headerHash(header)
+    self._currentHeight = newHeight
+    self.emit('newHeight')
+
+  }).catch(function(error) { self.emit('error', error) })
 }
 
 /**
@@ -81,6 +88,13 @@ Network.prototype.setCurrentHeight = function(newHeight, broadcast) {
  */
 Network.prototype.getCurrentHeight = function() {
   return this._currentHeight
+}
+
+/**
+ * @return {Buffer}
+ */
+Network.prototype.getCurrentBlockHash = function() {
+  return this._currentBlockHash
 }
 
 /**

@@ -8,7 +8,8 @@ describe('blockchain.HeaderStorage', function() {
   var header = new Buffer(80)
 
   beforeEach(function(done) {
-    storage = new HeaderStorage(function(error) {
+    storage = new HeaderStorage()
+    storage.open(function(error) {
       expect(error).to.be.null
       done()
     })
@@ -25,7 +26,7 @@ describe('blockchain.HeaderStorage', function() {
     storage.count(function(error, count) {
       expect(error).to.be.null
       expect(count).to.equal(0)
-      storage.put(0, header, function(error) {
+      storage.put([{height: 0, header: header}], function(error) {
         expect(error).to.be.null
         storage.count(function(error, count) {
           expect(error).to.be.null
@@ -37,14 +38,14 @@ describe('blockchain.HeaderStorage', function() {
   })
 
   it('put', function(done) {
-    storage.put(0, header, function(error) {
+    storage.put([{height: 0, header: header}], function(error) {
       expect(error).to.be.null
       done()
     })
   })
 
   it('get', function(done) {
-    storage.put(0, header, function(error) {
+    storage.put([{height: 0, header: header}], function(error) {
       expect(error).to.be.null
       storage.get(0, function(error, result) {
         expect(error).to.be.null
@@ -55,7 +56,7 @@ describe('blockchain.HeaderStorage', function() {
   })
 
   it('get not existing index', function(done) {
-    storage.put(0, header, function(error) {
+    storage.put([{height: 0, header: header}], function(error) {
       expect(error).to.be.null
       storage.get(1, function(error, result) {
         expect(error).to.not.be.null
@@ -66,9 +67,9 @@ describe('blockchain.HeaderStorage', function() {
   })
 
   it('del', function(done) {
-    storage.put(0, header, function(error) {
+    storage.put([{height: 0, header: header}], function(error) {
       expect(error).to.be.null
-      storage.del(0, function(error) {
+      storage.del([0], function(error) {
         expect(error).to.be.null
         done()
       })

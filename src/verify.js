@@ -8,6 +8,10 @@ var createInstanceCheck = verify.createInstanceCheck
 
 function isLength(thing, value) { return thing.length === value }
 
+function isBlockchainChunk(thing) {
+  return verify.hexString(thing) && thing.length > 0 && thing.length <= 322240 && thing.length % 160 === 0
+}
+
 var networks = Object.keys(bitcoin.networks).map(function(key) { return bitcoin.networks[key] })
 function isBitcoinNetwork(thing) {
   return networks.indexOf(thing) !== -1
@@ -31,6 +35,7 @@ function isRawCoin(thing) {
 var functions = {
   buffer: Buffer.isBuffer,
   length: isLength,
+  blockchainChunk: isBlockchainChunk,
 
   HDNode: createInstanceCheck(function() { return bitcoin.HDNode }),
   bitcoinNetwork: isBitcoinNetwork,
@@ -65,6 +70,7 @@ var functions = {
 var expected = {
   buffer: 'Buffer',
   length: 'other length',
+  blockchainChunk: 'blockchain chunk',
 
   HDNode: 'HDNode',
   bitcoinNetwork: 'Object from bitcoinjs-lib.networks',

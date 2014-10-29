@@ -1,7 +1,6 @@
 var memdown = require('memdown')
 var leveljs = require('level-js')
 var levelup = require('levelup')
-var _ = require('lodash')
 var Q = require('q')
 
 var verify = require('../verify')
@@ -10,52 +9,28 @@ var verify = require('../verify')
 var StorageName = 'ccWalletBlockchainHeaders'
 
 /**
- * @callback HeaderStorage~constructor
+ * @class HeaderStorage
+ */
+function HeaderStorage() {}
+
+/**
+ * @callback HeaderStorage~open
  * @param {?Error} error
  */
 
 /**
- * @class HeaderStorage
- * @param {HeaderStorage~constructor} readyCallback
+ * @param {HeaderStorage~open} cb
  */
-function HeaderStorage(readyCallback) {
-  verify.function(readyCallback)
+HeaderStorage.prototype.open = function(cb) {
+  verify.function(cb)
 
   var opts = {db: typeof window === 'undefined' ? memdown : leveljs}
   levelup(StorageName, opts, function(error, db) {
     if (error === null)
       this._db = db
 
-    readyCallback(error)
+    cb(error)
   }.bind(this))
-}
-
-/**
- * @callback HeaderStorage~clear
- * @param {?Error} error
- */
-
-/**
- * @param {HeaderStorage~clear} cb
- */
-HeaderStorage.prototype.clear = function(cb) {
-  verify.function(cb)
-
-  var deferred = Q.defer()
-
-  var ws = this._db.createWriteStream({ type: 'del' })
-  ws.on('error', deferred.reject)
-  ws.on('close', deferred.resolve)
-
-  this._db.createKeyStream()
-    .on('error', function(error) {
-      deferred.reject(error)
-      ws.end()
-    })
-    .on('data', function(key) { ws.write({key: key}) })
-    .on('end', function() { ws.end() })
-
-  deferred.promise.done(function() { cb(null) }, function(error) { cb(error) })
 }
 
 /**
@@ -84,19 +59,25 @@ HeaderStorage.prototype.count = function(cb) {
  */
 
 /**
- * @param {number} height
- * @param {Buffer} header
+ * @param {{height: number, header: Buffer}} data
  * @param {HeaderStorage~put} cb
  */
-HeaderStorage.prototype.put = function(height, header, cb) {
-  verify.number(height)
-  verify.buffer(header)
-  verify.length(header, 80)
+HeaderStorage.prototype.put = function(data, cb) {
+  verify.array(data)
+  data.forEach(function(d) {
+    verify.number(d.height)
+    verify.buffer(d.header)
+    verify.length(d.header, 80)
+  })
   verify.function(cb)
 
-  this._db.put(height, header, function(error) {
-    cb(_.isUndefined(error) ? null : error)
-  })
+  var ws = this._db.createWriteStream({ type: 'put' })
+  ws.on('error', cb)
+  ws.on('close', function() { cb(null) })
+
+  data.forEach(function(d) { ws.write({ key: d.height, value: d.header }) })
+
+  ws.end()
 }
 
 /**
@@ -131,15 +112,49 @@ HeaderStorage.prototype.get = function(height, cb) {
  */
 
 /**
- * @param {number} height
+ * @param {number[]} heights
  * @param {HeaderStorage~popHeader} cb
  */
-HeaderStorage.prototype.del = function(height, cb) {
+HeaderStorage.prototype.del = function(heights, cb) {
+  verify.array(heights)
+  heights.forEach(verify.number)
   verify.function(cb)
 
-  this._db.del(height, function(error) {
-    cb(_.isUndefined(error) ? null : error)
-  })
+  var ws = this._db.createWriteStream({ type: 'del' })
+  ws.on('error', cb)
+  ws.on('close', function() { cb(null) })
+
+  heights.forEach(function(height) { ws.write({ key: height }) })
+
+  ws.end()
+}
+
+/**
+ * @callback HeaderStorage~clear
+ * @param {?Error} error
+ */
+
+/**
+ * @param {HeaderStorage~clear} cb
+ */
+HeaderStorage.prototype.clear = function(cb) {
+  verify.function(cb)
+
+  var deferred = Q.defer()
+
+  var ws = this._db.createWriteStream({ type: 'del' })
+  ws.on('error', deferred.reject)
+  ws.on('close', deferred.resolve)
+
+  this._db.createKeyStream()
+    .on('error', function(error) {
+      deferred.reject(error)
+      ws.end()
+    })
+    .on('data', function(key) { ws.write({key: key}) })
+    .on('end', function() { ws.end() })
+
+  deferred.promise.done(function() { cb(null) }, function(error) { cb(error) })
 }
 
 

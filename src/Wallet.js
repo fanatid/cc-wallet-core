@@ -11,7 +11,7 @@ var network = require('./network')
 var tx = require('./tx')
 
 var cclib = require('./cclib')
-var bitcoin = cclib.bitcoin
+var bitcoin = require('./bitcoin')
 var verify = require('./verify')
 
 
@@ -43,7 +43,7 @@ function Wallet(opts) {
   this.network = new network.Electrum({ url: 'ws://devel.hz.udoidio.info:8784/' })
   this.blockchain = new blockchain.VerifiedBlockchain(this)
   //this.blockchain = new blockchain[opts.blockchain]({ testnet: opts.testnet })
-
+/*
   this.cdStorage = new cclib.ColorDefinitionStorage()
   this.cdManager = new cclib.ColorDefinitionManager(this.cdStorage)
 
@@ -69,6 +69,7 @@ function Wallet(opts) {
   this.txDb = new tx.NaiveTxDb(this, this.txStorage)
   this.blockchain.txDb = this.txDb // not good, but else sendCoins with addUnconfirmedTx not working
   this.txFetcher = new tx.TxFetcher(this.txDb, this.blockchain)
+*/
 }
 
 Wallet.prototype.getBitcoinNetwork = function() { return this.bitcoinNetwork }
@@ -641,13 +642,16 @@ Wallet.prototype.issueCoins = function(seedHex, moniker, pck, units, atoms, cb) 
  * Drop all data from storage's
  */
 Wallet.prototype.clearStorage = function() {
+  // Todo: clear verifiedblockchain
   this.config.clear()
+/*
   this.cdStorage.clear()
   this.cDataStorage.clear()
   this.aStorage.clear()
   this.adStorage.clear()
   this.coinStorage.clear()
   this.txStorage.clear()
+*/
 }
 
 
