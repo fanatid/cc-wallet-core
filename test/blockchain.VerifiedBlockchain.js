@@ -1,10 +1,10 @@
 var expect = require('chai').expect
-
+/*
 var Wallet = require('../src').Wallet
 var VerifiedBlockchain = require('../src').blockchain.VerifiedBlockchain
 
 
-describe.only('blockchain.VerifiedBlockchain', function() {
+describe('blockchain.VerifiedBlockchain', function() {
   var wallet
 
   beforeEach(function() {
@@ -31,3 +31,4 @@ describe.only('blockchain.VerifiedBlockchain', function() {
     console.log('wait..')
   })
 })
+*/

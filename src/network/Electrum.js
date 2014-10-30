@@ -95,17 +95,6 @@ Electrum.prototype._request = function(method, params) {
 }
 
 /**
- * {@link Network~subscribeAddress}
- */
-Electrum.prototype.subscribeAddress = function(address, cb) {
-  verify.string(address)
-  verify.function(cb)
-
-  this._request('blockchain.address.subscribe', [address])
-    .done(function() { cb(null) }, function(error) { cb(error) })
-}
-
-/**
  * {@link Network~getHeader}
  */
 Electrum.prototype.getHeader = function(height, cb) {
@@ -225,6 +214,17 @@ Electrum.prototype.getHistory = function(address, cb) {
     })
 
   }).done(function(entries) { cb(null, entries) }, function(error) { cb(error) })
+}
+
+/**
+ * {@link Network~subscribeAddress}
+ */
+Electrum.prototype.subscribeAddress = function(address, cb) {
+  verify.string(address)
+  verify.function(cb)
+
+  this._request('blockchain.address.subscribe', [address])
+    .done(function() { cb(null) }, function(error) { cb(error) })
 }
 
 /**

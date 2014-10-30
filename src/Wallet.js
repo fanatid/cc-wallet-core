@@ -25,12 +25,12 @@ var verify = require('./verify')
  *
  * @param {Object} opts
  * @param {boolean} [opts.testnet=false]
- * @param {Object} [opts.networkOpts]
+ * @param {string} [opts.blockchain=VerifiedBlockchain]
  */
 function Wallet(opts) {
   opts = _.extend({
     testnet: false,
-    blockchain: 'BlockrIo'
+    blockchain: 'VerifiedBlockchain'
   }, opts)
 
   verify.boolean(opts.testnet)
@@ -41,8 +41,7 @@ function Wallet(opts) {
   this.config = new ConfigStorage()
 
   this.network = new network.Electrum({ url: 'ws://devel.hz.udoidio.info:8784/' })
-  this.blockchain = new blockchain.VerifiedBlockchain(this)
-  //this.blockchain = new blockchain[opts.blockchain]({ testnet: opts.testnet })
+  this.blockchain = new blockchain[opts.blockchain](this)
 /*
   this.cdStorage = new cclib.ColorDefinitionStorage()
   this.cdManager = new cclib.ColorDefinitionManager(this.cdStorage)

@@ -1,3 +1,5 @@
+throw new Error('now must inherit Network instead BlockchainBase')
+
 var inherits = require('util').inherits
 
 var bitcoin = require('../bitcoin')

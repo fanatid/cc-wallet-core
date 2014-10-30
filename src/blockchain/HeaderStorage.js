@@ -75,7 +75,9 @@ HeaderStorage.prototype.put = function(data, cb) {
   ws.on('error', cb)
   ws.on('close', function() { cb(null) })
 
-  data.forEach(function(d) { ws.write({ key: d.height, value: d.header }) })
+  data.forEach(function(d) {
+    ws.write({ key: d.height.toString(), value: d.header.toString('hex') })
+  })
 
   ws.end()
 }
@@ -94,15 +96,11 @@ HeaderStorage.prototype.get = function(height, cb) {
   verify.number(height)
   verify.function(cb)
 
-  this._db.get(height, function(error, ab) {
+  this._db.get(height.toString(), function(error, data) {
     if (error)
       return cb(error)
 
-    var result = new Buffer(80)
-    for (var i = 0; i < 80; ++i)
-      result[i] = ab[i]
-
-    cb(null, result)
+    cb(null, new Buffer(data, 'hex'))
   })
 }
 
@@ -124,7 +122,9 @@ HeaderStorage.prototype.del = function(heights, cb) {
   ws.on('error', cb)
   ws.on('close', function() { cb(null) })
 
-  heights.forEach(function(height) { ws.write({ key: height }) })
+  heights.forEach(function(height) {
+    ws.write({ key: height.toString() })
+  })
 
   ws.end()
 }

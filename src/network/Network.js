@@ -72,16 +72,36 @@ Network.prototype.setCurrentHeight = function(newHeight) {
   verify.number(newHeight)
 
   var self = this
+  var fn = Network.prototype.setCurrentHeight
 
-  // need synchronization?
-  Q.ninvoke(self, 'getHeader', newHeight).then(function(header) {
+  var promise = Q()
+  if (fn.running === true) {
+    fn.queue.push(Q.defer())
+    promise = fn.queue[fn.queue.length-1].promise
+  }
+  fn.running = true
+
+  promise.then(function() {
+    return Q.ninvoke(self, 'getHeader', newHeight)
+
+  }).then(function(header) {
     header = bitcoin.header2buffer(header)
     self._currentBlockHash = bitcoin.headerHash(header)
     self._currentHeight = newHeight
     self.emit('newHeight')
 
-  }).catch(function(error) { self.emit('error', error) })
+  }).catch(function(error) {
+    self.emit('error', error)
+
+  }).finally(function() {
+    fn.running = false
+    if (fn.queue.length > 0)
+      fn.queue.pop().resolve()
+
+  })
 }
+Network.prototype.setCurrentHeight.running = false
+Network.prototype.setCurrentHeight.queue = []
 
 /**
  * @return {number}
@@ -96,17 +116,6 @@ Network.prototype.getCurrentHeight = function() {
 Network.prototype.getCurrentBlockHash = function() {
   return this._currentBlockHash
 }
-
-/**
- * @callback Network~subscribeAddress
- * @param {?Error} error
- */
-
-/**
- * @param {string} address
- * @param {Network~subscribeAddress} cb
- */
-Network.prototype.subscribeAddress = function() {}
 
 /**
  * @typedef {Object} HeaderObject
@@ -125,10 +134,13 @@ Network.prototype.subscribeAddress = function() {}
  */
 
 /**
+ * @abstract
  * @param {number} height
  * @param {Network~getHeader} cb
  */
-Network.prototype.getHeader = function() {}
+Network.prototype.getHeader = function() {
+  throw new Error('Network.getHeader not implemented')
+}
 
 /**
  * @callback Network~getChunk
@@ -137,10 +149,13 @@ Network.prototype.getHeader = function() {}
  */
 
 /**
+ * @abstract
  * @param {number} index
  * @param {Network~getChunk} cb
  */
-Network.prototype.getChunk = function() {}
+Network.prototype.getChunk = function() {
+  throw new Error('Network.getChunk not implemented')
+}
 
 /**
  * @callback Network~getTx
@@ -149,10 +164,13 @@ Network.prototype.getChunk = function() {}
  */
 
 /**
+ * @abstract
  * @param {string} txId
  * @param {Network~getTx} cb
  */
-Network.prototype.getTx = function() {}
+Network.prototype.getTx = function() {
+  throw new Error('Network.getTx not implemented')
+}
 
 /**
  * @typedef {Object} MerkleObject
@@ -167,11 +185,14 @@ Network.prototype.getTx = function() {}
  */
 
 /**
+ * @abstract
  * @param {string} txId
  * @param {number} height
  * @param {Network~getMerkle} cb
  */
-Network.prototype.getMerkle = function() {}
+Network.prototype.getMerkle = function() {
+  throw new Error('Network.getMerkle not implemented')
+}
 
 /**
  * @callback Network~sendTx
@@ -180,10 +201,13 @@ Network.prototype.getMerkle = function() {}
  */
 
 /**
+ * @abstract
  * @param {bitcoinjs-lib.Transaction} tx
  * @param {Network~sendTx} cb
  */
-Network.prototype.sendTx = function() {}
+Network.prototype.sendTx = function() {
+  throw new Error('Network.sendTx not implemented')
+}
 
 /**
  * @typedef {Object} HistoryObject
@@ -198,10 +222,27 @@ Network.prototype.sendTx = function() {}
  */
 
 /**
+ * @abstract
  * @param {string} address
  * @param {Network~getHistory} cb
  */
-Network.prototype.getHistory = function() {}
+Network.prototype.getHistory = function() {
+  throw new Error('Network.getHistory not implemented')
+}
+
+/**
+ * @callback Network~subscribeAddress
+ * @param {?Error} error
+ */
+
+/**
+ * @abstract
+ * @param {string} address
+ * @param {Network~subscribeAddress} cb
+ */
+Network.prototype.subscribeAddress = function() {
+  throw new Error('Network.subscribeAddress not implemented')
+}
 
 
 module.exports = Network

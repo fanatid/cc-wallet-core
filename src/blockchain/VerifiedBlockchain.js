@@ -175,7 +175,7 @@ VerifiedBlockchain.prototype._sync = function() {
         lastHeader = bitcoin.buffer2header(buffer)
 
       }).catch(function(error) {
-        if (error.name !== 'NotFoundError')
+        if (error.type !== 'NotFoundError')
           throw error
 
       }).then(function() {
@@ -281,7 +281,7 @@ VerifiedBlockchain.prototype._sync = function() {
 
     }).then(function() {
       return Q.ninvoke(self._headerStorage, 'get', chain[0].height - 1).catch(function(error) {
-        if (error.name !== 'NotFoundError')
+        if (error.type !== 'NotFoundError')
           throw error
 
         requestedHeight = chain[0].height - 1
