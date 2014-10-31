@@ -80,15 +80,15 @@ Blockchain.prototype.sendTx = function() {
 }
 
 /**
- * @typedef {Object} HistoryObject
+ * @typedef {Object} HistoryEntry
  * @property {string} txId
- * @property {number} height
+ * @property {number} height Zero for unconfirmed transactions
  */
 
 /**
  * @callback Blockchain~getHistory
  * @param {?Error} error
- * @param {HistoryObject[]} entries
+ * @param {HistoryEntry[]} entries
  */
 
 /**

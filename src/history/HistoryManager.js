@@ -46,9 +46,9 @@ HistoryManager.prototype.getEntries = function(cb) {
       .uniq()
       .map(function(txId) {
         var entry = {
-          tx: txDb.getTxById(txId),
-          blockHeight: txDb.getBlockHeightByTxId(txId),
-          timestamp: txDb.getTimestampByTxId(txId)
+          tx: txDb.getTx(txId),
+          blockHeight: txDb.getTxBlockHeight(txId),
+          timestamp: txDb.getTxTimestamp(txId)
         }
         if (entry.tx === null)
           throw new Error('txId ' + txId + ' not found in txDb')

@@ -9,23 +9,23 @@ var Blockchain = require('./Blockchain')
 /**
  * @class NaiveBlockchain
  * @extends Blockchain
- * @param {Wallet} wallet
+ * @param {Network} network
  */
-function NaiveBlockchain(wallet) {
-  verify.Wallet(wallet)
+function NaiveBlockchain(network) {
+  verify.Network(network)
 
   var self = this
   Blockchain.call(self)
 
-  self._wallet = wallet
+  self._network = network
   self._currentHeight = -1
 
-  self._wallet.getNetwork().on('newHeight', function() {
-    self._currentHeight = self._wallet.getNetwork().getCurrentHeight()
+  self._network.on('newHeight', function() {
+    self._currentHeight = self._network.getCurrentHeight()
     self.emit('newHeight')
   })
 
-  self._wallet.getNetwork().on('touchAddress', function(address) {
+  self._network.on('touchAddress', function(address) {
     self.emit('touchAddress', address)
   })
 }
@@ -43,10 +43,9 @@ NaiveBlockchain.prototype.getCurrentHeight = function() {
  * {@link Blockchain~getBlockTime}
  */
 NaiveBlockchain.prototype.getBlockTime = function(height, cb) {
-  verify.number(height)
   verify.function(cb)
 
-  Q.ninvoke(this._wallet.getNetwork(), 'getHeader', height)
+  Q.ninvoke(this._network, 'getHeader', height)
     .done(function(header) { cb(null, header.timestamp) }, function(error) { cb(error) })
 }
 
@@ -54,28 +53,28 @@ NaiveBlockchain.prototype.getBlockTime = function(height, cb) {
  * {@link Blockchain~getTx}
  */
 NaiveBlockchain.prototype.getTx = function(txId, cb) {
-  this._wallet.getNetwork().getTx(txId, cb)
+  this._network.getTx(txId, cb)
 }
 
 /**
  * {@link Blockchain~sendTx}
  */
 NaiveBlockchain.prototype.sendTx = function(tx, cb) {
-  this._wallet.getNetwork().sendTx(tx, cb)
+  this._network.sendTx(tx, cb)
 }
 
 /**
  * {@link Blockchain~getHistory}
  */
 NaiveBlockchain.prototype.getHistory = function(address, cb) {
-  this._wallet.getNetwork().getHistory(address, cb)
+  this._network.getHistory(address, cb)
 }
 
 /**
  * {@link Blockchain~subscribeAddress}
  */
 NaiveBlockchain.prototype.subscribeAddress = function(address, cb) {
-  this._wallet.getNetwork().subscribeAddress(address, cb)
+  this._network.subscribeAddress(address, cb)
 }
 
 

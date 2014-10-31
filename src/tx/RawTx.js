@@ -81,7 +81,7 @@ RawTx.prototype.sign = function(wallet, seedHex, cb) {
       var txId = Array.prototype.reverse.call(new Buffer(input.hash)).toString('hex')
 
       return Q.fcall(function() {
-        return wallet.getTxDb().getTxById(txId)
+        return wallet.getTxDb().getTx(txId)
 
       }).then(function(tx) {
         return tx !== null ? tx : Q.ninvoke(wallet.getBlockchain(), 'getTx', txId)

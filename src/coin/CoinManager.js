@@ -125,8 +125,11 @@ CoinManager.prototype.isCoinConfirmed = function(coin, cb) {
   verify.Coin(coin)
   verify.function(cb)
 
-  Q.ninvoke(this.wallet.getTxDb(), 'isTxConfirmed', coin.txId)
-  .done(function(isConfirmed) { cb(null, isConfirmed) }, function(error) { cb(error) })
+  var txdb = this.wallet.getTxDb()
+  Q.fcall(function() {
+    return txdb.isTxConfirmed(coin.txId)
+
+  }).done(function(isConfirmed) { cb(null, isConfirmed) }, function(error) { cb(error) })
 }
 
 /**

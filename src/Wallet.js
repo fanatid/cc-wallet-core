@@ -25,32 +25,39 @@ var verify = require('./verify')
  *
  * @param {Object} opts
  * @param {boolean} [opts.testnet=false]
+ * @param {string} [opts.network=Electrum]
  * @param {string} [opts.blockchain=VerifiedBlockchain]
  */
 function Wallet(opts) {
   opts = _.extend({
     testnet: false,
+    network: 'Electrum',
     blockchain: 'VerifiedBlockchain'
   }, opts)
 
   verify.boolean(opts.testnet)
+  verify.string(opts.network)
   verify.string(opts.blockchain)
+
+  if (opts.network === 'Electrum')
+    opts.networkOpts = _.extend({ url: 'ws://devel.hz.udoidio.info:8784/' }, opts.networkOpts)
+
 
   this.bitcoinNetwork = opts.testnet ? bitcoin.networks.testnet : bitcoin.networks.bitcoin
 
   this.config = new ConfigStorage()
 
-  this.network = new network.Electrum({ url: 'ws://devel.hz.udoidio.info:8784/' })
-  this.blockchain = new blockchain[opts.blockchain](this)
-/*
+  this.network = new network[opts.network](opts.networkOpts)
+  this.blockchain = new blockchain[opts.blockchain](this.network, { testnet: opts.testnet })
+
   this.cdStorage = new cclib.ColorDefinitionStorage()
   this.cdManager = new cclib.ColorDefinitionManager(this.cdStorage)
 
   this.cDataStorage = new cclib.ColorDataStorage()
-  this.cData = new cclib.ColorData(this.cDataStorage, this.blockchain)
+  this.cData = new cclib.ColorData(this.cDataStorage)
 
   this.aStorage = new address.AddressStorage()
-  this.aManager = new address.AddressManager(this.aStorage, this.getBitcoinNetwork())
+  this.aManager = new address.AddressManager(this.aStorage, this.bitcoinNetwork)
 
   this.adStorage = new asset.AssetDefinitionStorage()
   this.adManager = new asset.AssetDefinitionManager(this.cdManager, this.adStorage)
@@ -65,10 +72,8 @@ function Wallet(opts) {
   this.historyManager = new history.HistoryManager(this)
 
   this.txStorage = new tx.TxStorage()
-  this.txDb = new tx.NaiveTxDb(this, this.txStorage)
-  this.blockchain.txDb = this.txDb // not good, but else sendCoins with addUnconfirmedTx not working
+  this.txDb = new tx.TxDb(this.txStorage, this.blockchain)
   this.txFetcher = new tx.TxFetcher(this.txDb, this.blockchain)
-*/
 }
 
 Wallet.prototype.getBitcoinNetwork = function() { return this.bitcoinNetwork }
@@ -245,9 +250,9 @@ Wallet.prototype.checkAddress = function(assetdef, checkedAddress) {
 }
 
 /**
- * @return {string[]}
+ * @param {Wallet~errorCallback} cb
  */
-Wallet.prototype._getAllAddresses = function () {
+Wallet.prototype.subscribeAndSyncAllAddresses = function(cb) {
   this.isInitializedCheck()
 
   var addresses =_.chain(this.getAllAssetDefinitions())
@@ -256,25 +261,7 @@ Wallet.prototype._getAllAddresses = function () {
     .uniq()
     .value()
 
-  return addresses
-}
-
-/**
- * @param {Wallet~errorCallback} cb
- * @throws {Error} If wallet not initialized
- */
-Wallet.prototype.scanAllAddresses = function(cb) {
-  var addresses = this._getAllAddresses()
-  this.getTxFetcher().scanAddressesUnspent(addresses, cb)
-}
-
-/**
- * @param {Wallet~errorCallback} cb
- * @throws {Error} If wallet not initialized
- */
-Wallet.prototype.fullScanAllAddresses = function(cb) {
-  var addresses = this._getAllAddresses()
-  this.getTxFetcher().fullScanAddresses(addresses, cb)
+  this.getTxFetcher().subscribeAndSyncAllAddresses(addresses, cb)
 }
 
 /**
@@ -641,16 +628,13 @@ Wallet.prototype.issueCoins = function(seedHex, moniker, pck, units, atoms, cb) 
  * Drop all data from storage's
  */
 Wallet.prototype.clearStorage = function() {
-  // Todo: clear verifiedblockchain
   this.config.clear()
-/*
   this.cdStorage.clear()
   this.cDataStorage.clear()
   this.aStorage.clear()
   this.adStorage.clear()
   this.coinStorage.clear()
   this.txStorage.clear()
-*/
 }
 
 

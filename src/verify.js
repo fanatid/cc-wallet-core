@@ -52,7 +52,7 @@ var functions = {
   AssetTarget: createInstanceCheck(function() { return require('./asset').AssetTarget }),
   AssetValue: createInstanceCheck(function() { return require('./asset').AssetValue }),
 
-  BlockchainBase: createInstanceCheck(function() { return require('./blockchain').BlockchainBase }),
+  Blockchain: createInstanceCheck(function() { return require('./blockchain').Blockchain }),
 
   rawCoin: isRawCoin,
   Coin: createInstanceCheck(function() { return require('./coin').Coin }),
@@ -60,8 +60,11 @@ var functions = {
   CoinQuery: createInstanceCheck(function() { return require('./coin').CoinQuery }),
   CoinStorage: createInstanceCheck(function() { return require('./coin').CoinStorage }),
 
+  Network: createInstanceCheck(function() { return require('./network').Network }),
+
   AssetTx: createInstanceCheck(function() { return require('./tx').AssetTx }),
   BaseTxDb: createInstanceCheck(function() { return require('./tx').BaseTxDb }),
+  TxDb: createInstanceCheck(function() { return require('./tx').TxDb }),
   RawTx: createInstanceCheck(function() { return require('./tx').RawTx }),
   TxFetcher: createInstanceCheck(function() { return require('./tx').TxFetcher }),
   TxStorage: createInstanceCheck(function() { return require('./tx').TxStorage })
@@ -95,8 +98,11 @@ var expected = {
   CoinQuery: 'CoinQuery',
   CoinStorage: 'CoinStorage',
 
+  Network: 'Network',
+
   AssetTx: 'AssetTx',
   BaseTxDb: 'BaseTxDb',
+  TxDb: 'TxDb',
   RawTx: 'RawTx',
   TxFetcher: 'TxFetcher',
   TxStorage: 'TxStorage'

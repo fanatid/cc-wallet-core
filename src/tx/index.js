@@ -6,8 +6,7 @@ module.exports = {
   transformTx: require('./TxTransformer'),
 
   TxStorage: require('./TxStorage'),
-  BaseTxDb: require('./BaseTxDb'),
-  NaiveTxDb: require('./NaiveTxDb'),
+  TxDb: require('./TxDb'),
   TxFetcher: require('./TxFetcher'),
 
   toposort: require('./toposort')

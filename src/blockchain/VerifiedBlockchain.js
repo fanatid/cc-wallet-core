@@ -30,16 +30,20 @@ var VerifyError = createError('VerifyError')
 
 /**
  * @class VerifiedBlockchain
- * @param {Wallet} wallet
+ * @param {Network} network
+ * @param {Object} [opts]
+ * @param {boolean} [opts.testnet=false]
  */
-function VerifiedBlockchain(wallet) {
-  verify.Wallet(wallet)
+function VerifiedBlockchain(network, opts) {
+  verify.Network(network)
+  opts = _.extend({ testnet: false }, opts)
+  verify.boolean(opts.testnet)
 
   events.EventEmitter.call(this)
 
   var self = this
 
-  self._wallet = wallet
+  self._network = network
 
   self._currentHeight = -1
   self._currentBlockHash = new Buffer(32).fill(0)
@@ -80,7 +84,7 @@ function VerifiedBlockchain(wallet) {
       })
     }
 
-    self._wallet.getNetwork().on('newHeight', onNetworkNewHeight)
+    self._network.on('newHeight', onNetworkNewHeight)
     onNetworkNewHeight()
 
   }).catch(function(error) { self.emit('error', error) })
@@ -109,7 +113,7 @@ VerifiedBlockchain.prototype.getCurrentHeight = function() {
  * @return {number}
  */
 VerifiedBlockchain.prototype.getNetworkHeight = function() {
-  return this._wallet.getNetwork().getCurrentHeight()
+  return this._network.getCurrentHeight()
 }
 
 /**
@@ -123,7 +127,7 @@ VerifiedBlockchain.prototype.getCurrentBlockHash = function() {
  * @return {Buffer}
  */
 VerifiedBlockchain.prototype.getNetworkBlockHash = function() {
-  return this._wallet.getNetwork().getCurrentBlockHash()
+  return this._network.getCurrentBlockHash()
 }
 
 /**
@@ -140,7 +144,7 @@ VerifiedBlockchain.prototype._sync = function() {
   var maxBits = 0x1d00ffff
   var maxTarget = new Buffer('00000000FFFF0000000000000000000000000000000000000000000000000000', 'hex')
   var maxTargetBI = BigInteger.fromHex(maxTarget.toString('hex'))
-  var isTestnet = self._wallet.getBitcoinNetwork() === bitcoin.networks.testnet
+  var isTestnet = self._network.getBitcoinNetwork() === bitcoin.networks.testnet
   var requestedHeight = null, chain = []
   var networkIndex, index
 
@@ -274,7 +278,7 @@ VerifiedBlockchain.prototype._sync = function() {
       if (requestedHeight === null)
         return
 
-      return Q.ninvoke(self._wallet.getNetwork(), 'getHeader', requestedHeight).then(function(header) {
+      return Q.ninvoke(self._network, 'getHeader', requestedHeight).then(function(header) {
         chain.unshift({ height: requestedHeight, header: header })
         requestedHeight = null
       })
@@ -342,7 +346,7 @@ VerifiedBlockchain.prototype._sync = function() {
       return deferred.resolve()
 
     var chunk, prevHash, prevHeader
-    Q.ninvoke(self._wallet.getNetwork(), 'getChunk', index).then(function(chunkHex) {
+    Q.ninvoke(self._network, 'getChunk', index).then(function(chunkHex) {
       chunk = new Buffer(chunkHex, 'hex')
 
       // NotFoundError handler?
