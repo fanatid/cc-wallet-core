@@ -17,13 +17,13 @@ function isBitcoinNetwork(thing) {
   return networks.indexOf(thing) !== -1
 }
 
-function isHexSymbol(sym) { return '0123456789abcdef'.indexOf(sym) !== -1 }
+function isHexSymbol(sym) { return '0123456789abcdefABCDEF'.indexOf(sym) !== -1 }
 function isRawCoin(thing) {
   return (
     _.isObject(thing) &&
     _.isString(thing.txId) &&
     thing.txId.length === 64 &&
-    thing.txId.toLowerCase().split('').every(isHexSymbol) &&
+    thing.txId.split('').every(isHexSymbol) &&
     _.isNumber(thing.outIndex) &&
     _.isNumber(thing.value) &&
     _.isString(thing.script) &&

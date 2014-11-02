@@ -66,28 +66,25 @@ function Wallet(opts) {
       this.adManager.resolveAssetDefinition(sad)
     }.bind(this))
 
+  this.txStorage = new tx.TxStorage()
+  this.txDb = new tx.TxDb(this.txStorage, this.blockchain)
+  this.txFetcher = new tx.TxFetcher(this.txDb, this.blockchain)
+
   this.coinStorage = new coin.CoinStorage()
   this.coinManager = new coin.CoinManager(this, this.coinStorage)
 
   this.historyManager = new history.HistoryManager(this)
-
-  this.txStorage = new tx.TxStorage()
-  this.txDb = new tx.TxDb(this.txStorage, this.blockchain)
-  this.txFetcher = new tx.TxFetcher(this.txDb, this.blockchain)
 }
 
 Wallet.prototype.getBitcoinNetwork = function() { return this.bitcoinNetwork }
-Wallet.prototype.getNetwork = function() { return this.network }
 Wallet.prototype.getBlockchain = function() { return this.blockchain }
 Wallet.prototype.getColorDefinitionManager = function() { return this.cdManager }
 Wallet.prototype.getColorData = function() { return this.cData }
 Wallet.prototype.getAddressManager = function() { return this.aManager }
 Wallet.prototype.getAssetDefinitionManager = function() { return this.adManager }
+Wallet.prototype.getTxDb = function() { return this.txDb }
 Wallet.prototype.getCoinManager = function() { return this.coinManager }
 Wallet.prototype.getCoinQuery = function() { return new coin.CoinQuery(this) }
-Wallet.prototype.getHistoryManager = function() { return this.historyManager }
-Wallet.prototype.getTxDb = function() { return this.txDb }
-Wallet.prototype.getTxFetcher = function() { return this.txFetcher }
 
 /**
  * @return {boolean}
@@ -261,7 +258,7 @@ Wallet.prototype.subscribeAndSyncAllAddresses = function(cb) {
     .uniq()
     .value()
 
-  this.getTxFetcher().subscribeAndSyncAllAddresses(addresses, cb)
+  this.txFetcher.subscribeAndSyncAllAddresses(addresses, cb)
 }
 
 /**

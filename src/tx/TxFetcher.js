@@ -92,9 +92,7 @@ TxFetcher.prototype.subscribeAndSyncAllAddresses = function(addresses, cb) {
   verify.function(cb)
 
   var self = this
-  var promises = addresses.map(function(address) {
-    return Q.ninvoke(self, 'subscribeAddress', address)
-  })
+  var promises = addresses.map(Q.nbind(self.subscribeAddress, self))
 
   Q.all(promises).done(function() { cb(null) }, function(error) { cb(error) })
 }
