@@ -119,13 +119,13 @@ describe('network.Electrum', function() {
       expect(result).to.deep.equal([
         {
           txId: 'd56e75eedb9e9e49a8ae81c3d4781312c4d343bea811219d3eb4184ae6b34639',
-          index: 0,
+          outIndex: 0,
           value: 5025150000,
           height: 103546
         },
         {
           txId: '548be1cc68780cbe0ce7e4b46c06dbe38ecd509a3f448e5ca68cc294679c27b1',
-          index: 0,
+          outIndex: 0,
           value: 5025050000,
           height: 103548
         }

@@ -19,7 +19,7 @@
     "browser-request": "0.3.2",
     "bs58": "2.0.0",
     "buffer-equal": "0.0.1",
-    "coloredcoinjs-lib": "git://github.com/chromaway/coloredcoinjs-lib.git#v0.0.6",
+    "coloredcoinjs-lib": "git://github.com/chromaway/coloredcoinjs-lib.git#v0.0.10",
     "errno": "0.1.1",
     "level-js": "2.1.6",
     "levelup": "0.19.0",

@@ -27,7 +27,7 @@ var verify = require('../verify')
  * @param {CoinStorage} storage
  */
 function CoinManager(wallet, storage) {
-  verify._wallet(wallet)
+  verify.Wallet(wallet)
   verify.CoinStorage(storage)
 
   var self = this
@@ -67,16 +67,19 @@ function CoinManager(wallet, storage) {
         addresses: outputAddresses
       })
 
-      return Q.all(walletAddresses.map(function(address) {
-        var coin = self.record2Coin({
-          txId: txId,
-          outIndex: index,
-          value: output.value,
-          script: output.script.toHex(),
-          address: address
+      var coin = self.record2Coin({
+        txId: txId,
+        outIndex: index,
+        value: output.value,
+        script: output.script.toHex(),
+        address: walletAddresses[0]
+      })
+
+      return Q.ninvoke(coin, 'getMainColorValue').then(function() {
+        walletAddresses.forEach(function(address) {
+          self.emit('touchAddress', address)
         })
-        return Q.ninvoke(coin, 'getMainColorValue')
-      }))
+      })
     })
 
     Q.all(promises).catch(function(error) { self.emit('error', error) })
@@ -92,8 +95,11 @@ function CoinManager(wallet, storage) {
     })
 
     tx.outs.map(function(output, index) {
-      self._storage.removeCoin(txId, index)
+      var coinRecord = self._storage.removeCoin(txId, index)
       self._wallet.getColorData().removeColorValues(txId, index)
+      coinRecord.addresses.forEach(function(address) {
+        self.emit('touchAddress', address)
+      })
     })
   })
 }
@@ -125,7 +131,8 @@ CoinManager.prototype.record2Coin = function(record) {
 CoinManager.prototype.getCoinsForAddress = function(address) {
   verify.string(address)
 
-  var records = this._storage.getForAddress(address)
+  var records = this._storage.getCoinsForAddress(address)
+  records.forEach(function(record) { record.address = address })
   return records.map(this.record2Coin.bind(this))
 }
 
@@ -181,7 +188,7 @@ CoinManager.prototype.getCoinColorValue = function(coin, colorDefinition, cb) {
  * @param {Coin} coin
  * @param {CoinManager~getMainColorValue} cb
  */
-CoinManager.prototype.getMainCoinColorValue = function(coin, cb) {
+CoinManager.prototype.getCoinMainColorValue = function(coin, cb) {
   verify.Coin(coin)
   verify.function(cb)
 

@@ -21,13 +21,29 @@ var verify = require('../verify')
 function AddressStorage() {
   SyncStorage.apply(this, Array.prototype.slice.call(arguments))
 
-  this.dbKey = this.globalPrefix + 'pubKeys'
+  this.addressesDbKey = this.globalPrefix + 'pubKeys'
+  this.addressesRecords = this.store.get(this.addressesDbKey) || []
 
-  if (!_.isArray(this.store.get(this.dbKey)))
-    this.store.set(this.dbKey, [])
+  if (_.isUndefined(this.store.get(this.addressesDbKey + '_version')))
+    this.store.set(this.addressesDbKey + '_version', '1')
 }
 
 inherits(AddressStorage, SyncStorage)
+
+/**
+ * @return {AddressStorageRecord[]}
+ */
+AddressStorage.prototype._getRecords = function() {
+  return this.addressesRecords
+}
+
+/**
+ * @param {AddressStorageRecord[]}
+ */
+AddressStorage.prototype._saveRecords = function(records) {
+  this.addressesRecords = records
+  this.store.set(this.addressesDbKey, records)
+}
 
 /*
  * @param {Object} data
@@ -43,9 +59,8 @@ AddressStorage.prototype.add = function(data) {
   verify.number(data.index)
   verify.hexString(data.pubKey)
 
-  var pubKeys = this.getAll()
-
-  pubKeys.forEach(function(record) {
+  var records = this._getRecords()
+  records.forEach(function(record) {
     if (record.chain === data.chain && record.index === data.index)
       throw new Error('pubkey for given account, chain and index exists')
 
@@ -53,17 +68,15 @@ AddressStorage.prototype.add = function(data) {
       throw new Error('pubKey already exists')
   })
 
-  var record = {
+  records.push({
     account: 0,
     chain: data.chain,
     index: data.index,
     pubKey: data.pubKey
-  }
+  })
+  this._saveRecords(records)
 
-  pubKeys.push(record)
-  this.store.set(this.dbKey, pubKeys)
-
-  return record
+  return _.clone(_.last(records))
 }
 
 /**
@@ -71,21 +84,22 @@ AddressStorage.prototype.add = function(data) {
  * @return {AddressStorageRecord[]}
  */
 AddressStorage.prototype.getAll = function(chain) {
-  var pubKeys = this.store.get(this.dbKey) || []
+  var records = this._getRecords()
 
   if (!_.isUndefined(chain)) {
     verify.number(chain)
-    pubKeys = pubKeys.filter(function(record) { return record.chain === chain })
+    records = _.filter(records, { chain: chain })
   }
 
-  return pubKeys
+  return _.cloneDeep(records)
 }
 
 /**
  * Remove all records
  */
 AddressStorage.prototype.clear = function() {
-  this.store.remove(this.dbKey)
+  this.store.remove(this.addressesDbKey)
+  this.store.remove(this.addressesDbKey + '_version')
 }
 
 

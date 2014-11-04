@@ -85,7 +85,7 @@ TxDb.prototype.addUnconfirmedTx = function(tx, data, cb) {
   }
   data = _.extend({
     height: 0,
-    tx: tx.toHex(),
+    tx: tx,
     timestamp: getCurrentTimestamp()
   }, data)
 
@@ -122,9 +122,9 @@ TxDb.prototype.addTx = function(txId, data, cb) {
     self._addTxQueue[txId] = []
 
   var promise = Q()
-  if (!_.isUndefined(self._addTxSync(txId))) {
-    self._addTxSync[txId].push(Q.defer())
-    promise = self._addTxSync[txId][self._addTxSync[txId].length - 1].promise
+  if (!_.isUndefined(self._addTxSync[txId])) {
+    self._addTxQueue[txId].push(Q.defer())
+    promise = self._addTxQueue[txId][self._addTxQueue[txId].length - 1].promise
   }
   self._addTxSync[txId] = true
 
@@ -177,10 +177,17 @@ TxDb.prototype.addTx = function(txId, data, cb) {
   }).finally(function() {
     delete self._addTxSync[txId]
 
-    if (self._addTxSync[txId].length > 0)
-      self._addTxSync[txId].pop().resolve()
-    else
-      delete self._addTxSync[txId]
+    var deferred = Q.defer()
+
+    if (!_.isUndefined(self._addTxQueue[txId])) {
+      if (self._addTxQueue[txId].length > 0)
+        deferred = self._addTxQueue[txId].pop()
+      if (self._addTxQueue[txId].length === 0)
+        delete self._addTxQueue[txId]
+    }
+
+    deferred.resolve()
+
   }).done()
 }
 

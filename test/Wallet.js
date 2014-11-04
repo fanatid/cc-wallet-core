@@ -18,7 +18,8 @@ describe('Wallet', function() {
   }
 
   beforeEach(function() {
-    wallet = new Wallet({ testnet: true })
+    // now available only naive...
+    wallet = new Wallet({ testnet: true, blockchain: 'NaiveBlockchain' })
   })
 
   afterEach(function() {
@@ -147,7 +148,7 @@ describe('Wallet', function() {
     beforeEach(function(done) {
       wallet.initialize(seed)
       wallet.addAssetDefinition(seed, goldAsset)
-      wallet.fullScanAllAddresses(function(error) {
+      wallet.subscribeAndSyncAllAddresses(function(error) {
         if (error) throw error
         expect(error).to.be.null
         done()
@@ -167,6 +168,7 @@ describe('Wallet', function() {
       it(fixture.method + ' for ' + fixture.moniker, function(done) {
         var assetdef = wallet.getAssetDefinitionByMoniker(fixture.moniker)
         wallet[fixture.method](assetdef, function(error, balance) {
+          if (error) throw error
           expect(error).to.be.null
           expect(balance).to.equal(fixture.balance)
           done()
@@ -182,7 +184,7 @@ describe('Wallet', function() {
       var seed = '421fc385fdae762b346b80e0212f77bb'
       wallet.initialize(seed)
       wallet.addAssetDefinition(seed, goldAsset)
-      wallet.fullScanAllAddresses(function(error) {
+      wallet.subscribeAndSyncAllAddresses(function(error) {
         expect(error).to.be.null
 
         var bitcoin = wallet.getAssetDefinitionByMoniker('bitcoin')
@@ -213,7 +215,7 @@ describe('Wallet', function() {
       }
       var assetdef = wallet.addAssetDefinition(data)
 
-      wallet.fullScanAllAddresses(function(error) {
+      wallet.subscribeAndSyncAllAddresses(function(error) {
         expect(error).to.be.null
 
         var address = wallet.getSomeAddress(assetdef)
@@ -231,7 +233,7 @@ describe('Wallet', function() {
 
     it('history', function(done) {
       wallet.initialize(seed)
-      wallet.fullScanAllAddresses(function(error) {
+      wallet.subscribeAndSyncAllAddresses(function(error) {
         expect(error).to.be.null
         wallet.getHistory(function(error, entries) {
           expect(error).to.be.null
@@ -245,7 +247,7 @@ describe('Wallet', function() {
       var seed = '421fc385fdaed1121221222eddad0dae'
       wallet.initialize(seed)
       wallet.addAssetDefinition(seed, goldAsset)
-      wallet.fullScanAllAddresses(function(error) {
+      wallet.subscribeAndSyncAllAddresses(function(error) {
         expect(error).to.be.null
 
         wallet.createIssuanceTx('newEPOBC', 'epobc', 5, 10000, seed, function(error, tx) {

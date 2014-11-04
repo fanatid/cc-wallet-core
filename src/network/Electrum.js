@@ -103,8 +103,12 @@ Electrum.prototype.getHeader = function(height, cb) {
 
   this._request('blockchain.block.get_header', [height]).then(function(response) {
     verify.number(response.version)
-    verify.string(response.prev_block_hash)
-    verify.length(response.prev_block_hash, 64)
+    if (height === 0) {
+      verify.null(response.prev_block_hash)
+    } else {
+      verify.string(response.prev_block_hash)
+      verify.length(response.prev_block_hash, 64)
+    }
     verify.string(response.merkle_root)
     verify.length(response.merkle_root, 64)
     verify.number(response.timestamp)

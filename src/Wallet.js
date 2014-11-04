@@ -495,7 +495,7 @@ Wallet.prototype.sendTx = function(tx, cb) {
   Q.ninvoke(self.getBlockchain(), 'sendTx', tx).then(function() {
     var timezoneOffset = new Date().getTimezoneOffset() * 60
     var timestamp = Math.round(Date.now()/1000) + timezoneOffset
-    return Q.ninvoke(self.getTxDb(), 'addUnconfirmedTx', { tx: tx, timestamp: timestamp })
+    return Q.ninvoke(self.getTxDb(), 'addUnconfirmedTx', tx, { timestamp: timestamp })
 
   }).done(function() { cb(null) }, function(error) { cb(error) })
 }

@@ -22,13 +22,29 @@ var verify = require('../verify')
 function TxStorage() {
   SyncStorage.apply(this, Array.prototype.slice.call(arguments))
 
-  this.dbKey = this.globalPrefix + 'tx'
+  this.txDbKey = this.globalPrefix + 'tx'
+  this.txRecords = this.store.get(this.txDbKey) || {}
 
-  //if (!_.isObject(this.store.get(this.dbKey)))
-  //  this.store.set(this.dbKey, {})
+  if (_.isUndefined(this.store.get(this.txDbKey + '_version')))
+    this.store.set(this.txDbKey + '_version', '1')
 }
 
 inherits(TxStorage, SyncStorage)
+
+/**
+ * @return {TxStorageRecord[]}
+ */
+TxStorage.prototype._getRecords = function() {
+  return this.txRecords
+}
+
+/**
+ * @param {TxStorageRecord[]}
+ */
+TxStorage.prototype._saveRecords = function(records) {
+  this.txRecords = records
+  this.store.set(this.txDbKey, records)
+}
 
 /**
  * @param {string} txId
@@ -48,22 +64,20 @@ TxStorage.prototype.addTx = function(txId, rawTx, opts) {
   verify.number(opts.blockHeight)
   verify.number(opts.timestamp)
 
-  var records = this.getAll()
+  var records = this._getRecords()
   if (!_.isUndefined(records[txId]))
     throw new Error('Same tx already exists')
 
-  var newObj = {
+  records[txId] = {
     txId: txId,
     rawTx: rawTx,
     status: opts.status,
     blockHeight: opts.blockHeight,
     timestamp: opts.timestamp
   }
+  this._saveRecords(records)
 
-  records[txId] = newObj
-  this.store.set(this.dbKey, records)
-
-  return newObj
+  return _.clone(records[txId])
 }
 
 /**
@@ -82,7 +96,7 @@ TxStorage.prototype.updateTx = function(txId, opts) {
   if (opts.blockHeight) verify.number(opts.blockHeight)
   if (opts.timestamp) verify.number(opts.timestamp)
 
-  var records = this.getAll()
+  var records = this._getRecords()
   var record = records[txId]
   if (_.isUndefined(record))
     throw new Error('txId not exists')
@@ -98,8 +112,9 @@ TxStorage.prototype.updateTx = function(txId, opts) {
     blockHeight: opts.blockHeight,
     timestamp: opts.timestamp
   })
+  this._saveRecords(records)
 
-  this.store.set(this.dbKey, records)
+  return _.clone(records[txId])
 }
 
 /**
@@ -109,32 +124,24 @@ TxStorage.prototype.updateTx = function(txId, opts) {
 TxStorage.prototype.getTx = function(txId) {
   verify.txId(txId)
 
-  var record = this.getAll()[txId] || null
-  return record
-}
-
-/**
- * @return {TxStorageRecord[]}
- */
-TxStorage.prototype.getAll = function() {
-  var records = this.store.get(this.dbKey) || {}
-  return records
+  var record = this._getRecords()[txId]
+  return _.isUndefined(record) ? null : _.clone(record)
 }
 
 /**
  * @param {string} txId
- * @return {?Transaction}
+ * @return {?TxStorageRecord}
  */
 TxStorage.prototype.removeTx = function(txId) {
   verify.txId(txId)
 
-  var records = this.getAll()
+  var records = this._getRecords()
   var record = records[txId]
   if (_.isUndefined(record))
     return null
 
   delete records[txId]
-  this.store.set(this.dbKey, records)
+  this._saveRecords(records)
 
   return record
 }
@@ -142,7 +149,8 @@ TxStorage.prototype.removeTx = function(txId) {
 /**
  */
 TxStorage.prototype.clear = function() {
-  this.store.remove(this.dbKey)
+  this.store.remove(this.txDbKey)
+  this.store.remove(this.txDbKey + '_version')
 }
 
 

@@ -54,10 +54,10 @@ Coin.prototype.getColorValue = function(colorDefinition, cb) {
 }
 
 /**
- * {@link CoinManager.getMainCoinColorValue}
+ * {@link CoinManager.getCoinMainColorValue}
  */
 Coin.prototype.getMainColorValue = function (cb) {
-  this.coinManager.getMainCoinColorValue(this, cb)
+  this.coinManager.getCoinMainColorValue(this, cb)
 }
 
 /**

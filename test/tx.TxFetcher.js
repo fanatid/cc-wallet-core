@@ -17,18 +17,4 @@ describe('tx.TxFetcher', function() {
   afterEach(function() {
     wallet.clearStorage()
   })
-
-  it('scanAddressesUnspent', function(done) {
-    txFetcher.scanAddressesUnspent(addresses, function(error) {
-      expect(error).to.be.null
-      done()
-    })
-  })
-
-  it('fullScanAddresses', function(done) {
-    txFetcher.fullScanAddresses(addresses, function(error) {
-      expect(error).to.be.null
-      done()
-    })
-  })
 })

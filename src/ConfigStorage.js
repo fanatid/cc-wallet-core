@@ -11,24 +11,38 @@ var SyncStorage = require('./SyncStorage')
 function ConfigStorage() {
   SyncStorage.apply(this, Array.prototype.slice.call(arguments))
 
-  this.dbKey = this.globalPrefix + 'config'
+  this.configDbKey = this.globalPrefix + 'config'
+  this.configRecords = this.store.get(this.configDbKey) || {}
 
-  if (!_.isObject(this.store.get(this.dbKey)))
-    this.store.set(this.dbKey, {})
+  if (_.isUndefined(this.store.get(this.configDbKey + '_version')))
+    this.store.set(this.configDbKey + '_version', '1')
 }
 
 inherits(ConfigStorage, SyncStorage)
 
 /**
- * Set key
- *
+ * @return {*[]}
+ */
+ConfigStorage.prototype._getRecords = function() {
+  return this.configRecords
+}
+
+/**
+ * @param {*[]}
+ */
+ConfigStorage.prototype._saveRecords = function(records) {
+  this.store.set(this.configDbKey, records)
+  this.configRecords = records
+}
+
+/**
  * @param {string} key
  * @param {*} value
  */
 ConfigStorage.prototype.set = function(key, value) {
-  var config = this.store.get(this.dbKey) || {}
+  var config = this._getRecords()
   config[key] = value
-  this.store.set(this.dbKey, config)
+  this._saveRecords(config)
 }
 
 /**
@@ -37,15 +51,15 @@ ConfigStorage.prototype.set = function(key, value) {
  * @return {*}
  */
 ConfigStorage.prototype.get = function(key, defaultValue) {
-  var config = this.store.get(this.dbKey) || {}
-  var value = _.isUndefined(config[key]) ? defaultValue : config[key]
-  return value
+  var config = this._getRecords()
+  return _.isUndefined(config[key]) ? defaultValue : config[key]
 }
 
 /**
  */
 ConfigStorage.prototype.clear = function() {
-  this.store.remove(this.dbKey)
+  this.store.remove(this.configDbKey)
+  this.store.remove(this.configDbKey + '_version')
 }
 
 
