@@ -1,5 +1,7 @@
 var inherits = require('util').inherits
 
+var _ = require('lodash')
+var LRU = require('lru-cache')
 var Q = require('q')
 
 var verify = require('../verify')
@@ -10,15 +12,21 @@ var Blockchain = require('./Blockchain')
  * @class NaiveBlockchain
  * @extends Blockchain
  * @param {Network} network
+ * @param {Object} [opts]
+ * @param {number} [opts.txCacheSize=200]
  */
-function NaiveBlockchain(network) {
+function NaiveBlockchain(network, opts) {
   verify.Network(network)
+  opts = _.extend({ txCacheSize: 200 }, opts)
+  verify.number(opts.txCacheSize)
 
   var self = this
   Blockchain.call(self)
 
   self._network = network
   self._currentHeight = -1
+
+  this._txCache = LRU({ max: opts.txCacheSize })
 
   self._network.on('newHeight', function() {
     self._currentHeight = self._network.getCurrentHeight()
@@ -53,7 +61,18 @@ NaiveBlockchain.prototype.getBlockTime = function(height, cb) {
  * {@link Blockchain~getTx}
  */
 NaiveBlockchain.prototype.getTx = function(txId, cb) {
-  this._network.getTx(txId, cb)
+  verify.txId(txId)
+  verify.function(cb)
+
+  var self = this
+  if (!_.isUndefined(self._txCache.get(txId)))
+    return cb(null, self._txCache.get(txId))
+
+  Q.ninvoke(self._network, 'getTx', txId).then(function(tx) {
+    self._txCache.set(txId, tx)
+    return tx
+
+  }).done(function(tx) { cb(null, tx) }, function(error) { cb(error) })
 }
 
 /**

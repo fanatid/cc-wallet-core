@@ -95,9 +95,9 @@ function CoinManager(wallet, storage) {
     })
 
     tx.outs.map(function(output, index) {
-      var coinRecord = self._storage.removeCoin(txId, index)
       self._wallet.getColorData().removeColorValues(txId, index)
-      coinRecord.addresses.forEach(function(address) {
+      var coinRecord = self._storage.removeCoin(txId, index)
+      _.intersection(coinRecord.addresses, allAddresses).forEach(function(address) {
         self.emit('touchAddress', address)
       })
     })

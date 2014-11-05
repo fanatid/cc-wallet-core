@@ -3,7 +3,6 @@ var inherits = require('util').inherits
 
 var Q = require('q')
 var _ = require('lodash')
-var LRU = require('lru-cache')
 
 var bitcoin = require('../bitcoin')
 var verify = require('../verify')
@@ -34,14 +33,8 @@ var verify = require('../verify')
 /**
  * @class Network
  * @extends events.EventEmitter
- * @param {Object} opts
- * @param {number} [opts.txCacheSize=1000]
  */
-function Network(opts) {
-  opts = _.extend({ txCacheSize: 1000 }, opts)
-  verify.object(opts)
-  verify.number(opts.txCacheSize)
-
+function Network() {
   var self = this
 
   events.EventEmitter.call(self)
@@ -53,7 +46,8 @@ function Network(opts) {
   self._currentHeight = -1
   self._currentBlockHash = new Buffer(32).fill(0)
 
-  self.txCache = LRU({ max: opts.txCacheSize })
+  self._setCurrentHeightRunning = false
+  self._setCurrentHeightQueue = []
 }
 
 inherits(Network, events.EventEmitter)
@@ -68,18 +62,17 @@ Network.prototype.isConnected = function() {
 /**
  * @param {number} newHeight
  */
-Network.prototype.setCurrentHeight = function(newHeight) {
+Network.prototype._setCurrentHeight = function(newHeight) {
   verify.number(newHeight)
 
   var self = this
-  var fn = Network.prototype.setCurrentHeight
 
   var promise = Q()
-  if (fn.running === true) {
-    fn.queue.push(Q.defer())
-    promise = fn.queue[fn.queue.length-1].promise
+  if (self._setCurrentHeightRunning === true) {
+    self._setCurrentHeightQueue.push(Q.defer())
+    promise = _.last(self._setCurrentHeightQueue)
   }
-  fn.running = true
+  self._setCurrentHeightRunning = true
 
   promise.then(function() {
     return Q.ninvoke(self, 'getHeader', newHeight)
@@ -94,14 +87,11 @@ Network.prototype.setCurrentHeight = function(newHeight) {
     self.emit('error', error)
 
   }).finally(function() {
-    fn.running = false
-    if (fn.queue.length > 0)
-      fn.queue.pop().resolve()
-
+    self._setCurrentHeightRunning = false
+    if (self._setCurrentHeightQueue.length > 0)
+      self._setCurrentHeightQueue.pop().resolve()
   })
 }
-Network.prototype.setCurrentHeight.running = false
-Network.prototype.setCurrentHeight.queue = []
 
 /**
  * @return {number}

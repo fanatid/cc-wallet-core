@@ -4,6 +4,7 @@ var _ = require('lodash')
 
 var SyncStorage = require('./SyncStorage')
 
+
 /**
  * @class ConfigStorage
  * @extends SyncStorage
@@ -28,7 +29,7 @@ ConfigStorage.prototype._getRecords = function() {
 }
 
 /**
- * @param {*[]}
+ * @param {*[]} records
  */
 ConfigStorage.prototype._saveRecords = function(records) {
   this.store.set(this.configDbKey, records)

@@ -17,9 +17,18 @@ describe('Wallet', function() {
     unit: 10
   }
 
-  beforeEach(function() {
-    // now available only naive...
+  beforeEach(function(done) {
     wallet = new Wallet({ testnet: true, blockchain: 'NaiveBlockchain' })
+    done()
+    /*
+    wallet = new Wallet({ testnet: true, blockchain: 'VerifiedBlockchain' })
+    wallet.getBlockchain().on('newHeight', function() {
+      console.log('Blockchain newHeight:', wallet.getBlockchain().getCurrentHeight())
+    })
+    wallet.getBlockchain().on('error', function(error) {
+      throw error
+    })
+    */
   })
 
   afterEach(function() {

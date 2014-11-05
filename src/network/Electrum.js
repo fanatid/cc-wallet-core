@@ -45,7 +45,7 @@ function Electrum(opts) {
       var isMethod = response.method === 'blockchain.numblocks.subscribe'
       var isArgs = _.isNumber(response.result)
       if (isMethod && isArgs)
-        return self.setCurrentHeight(response.result)
+        return self._setCurrentHeight(response.result)
 
       isMethod = response.method === 'blockchain.address.subscribe'
       isArgs = _.isArray(response.result) && _.isString(response.result[0])
@@ -67,7 +67,7 @@ function Electrum(opts) {
 
   self._request('blockchain.numblocks.subscribe').then(function(height) {
     verify.number(height)
-    self.setCurrentHeight(height)
+    self._setCurrentHeight(height)
 
   }).catch(function(error) { self.emit('error', error) })
 }
@@ -149,18 +149,11 @@ Electrum.prototype.getTx = function(txId, cb) {
   verify.txId(txId)
   verify.function(cb)
 
-  var self = this
-
-  var tx = self.txCache.get(txId)
-  if (!_.isUndefined(tx))
-    return cb(null, tx)
-
-  self._request('blockchain.transaction.get', [txId]).then(function(rawTx) {
+  this._request('blockchain.transaction.get', [txId]).then(function(rawTx) {
     var tx = bitcoin.Transaction.fromHex(rawTx)
     if (tx.getId() !== txId)
       throw new Error('Received tx is incorrect')
 
-    self.txCache.set(txId, tx)
     return tx
 
   }).done(function(tx) { cb(null, tx) }, function(error) { cb(error) })
