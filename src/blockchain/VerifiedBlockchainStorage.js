@@ -17,7 +17,7 @@ var SyncStorage = require('../SyncStorage')
 function VerifiedBlockchainStorage() {
   SyncStorage.apply(this, Array.prototype.slice.call(arguments))
 
-  this.blockchainDbKey = this.globalPrefix + '_verifiedBlockchain'
+  this.blockchainDbKey = this.globalPrefix + 'verifiedBlockchain'
   this.blockchainData = this.store.get(this.blockchainDbKey)
   if (_.isUndefined(this.blockchainData))
     this.blockchainData = { lastHash: new Buffer(32).fill(0).toString('hex'), hashes: '', headers: '' }

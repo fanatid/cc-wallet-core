@@ -90,7 +90,7 @@ var expected = {
   AssetTarget: 'AssetTarget',
   AssetValue: 'AssetValue',
 
-  BlockchainBase: 'BlockchainBase',
+  Blockchain: 'Blockchain',
 
   rawCoin: 'raw Coin Object',
   Coin: 'Coin',

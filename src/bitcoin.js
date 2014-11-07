@@ -3,10 +3,18 @@ var verify = require('./verify')
 
 
 /**
+ * @param {Buffer} s
+ * @return {string}
+ */
+bitcoin.hashEncode = function(s) {
+  return Array.prototype.reverse.call(new Buffer(s)).toString('hex')
+}
+
+/**
  * @param {string} s
  * @return {Buffer}
  */
-function hashDecode(s) {
+bitcoin.hashDecode = function(s) {
   return Array.prototype.reverse.call(new Buffer(s, 'hex'))
 }
 
@@ -17,7 +25,7 @@ function hashDecode(s) {
  * @return {string}
  */
 function revHex(s) {
-  return hashDecode(s).toString('hex')
+  return bitcoin.hashDecode(s).toString('hex')
 }
 
 /**

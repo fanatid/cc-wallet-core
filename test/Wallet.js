@@ -20,15 +20,6 @@ describe('Wallet', function() {
   beforeEach(function(done) {
     wallet = new Wallet({ testnet: true, blockchain: 'NaiveBlockchain' })
     done()
-    /*
-    wallet = new Wallet({ testnet: true, blockchain: 'VerifiedBlockchain' })
-    wallet.getBlockchain().on('newHeight', function() {
-      console.log('Blockchain newHeight:', wallet.getBlockchain().getCurrentHeight())
-    })
-    wallet.getBlockchain().on('error', function(error) {
-      throw error
-    })
-    */
   })
 
   afterEach(function() {
@@ -216,7 +207,12 @@ describe('Wallet', function() {
 
     // Need new issued asset, this broken
     it.skip('sendCoins epobc', function(done) {
-      wallet = new Wallet({ masterKey: '421fc385fdae762b346b80e0212f77bd', testnet: true })
+      wallet = new Wallet({
+        masterKey: '421fc385fdae762b346b80e0212f77bd',
+        testnet: true,
+        blockchain: 'NaiveBlockchain'
+      })
+
       var data = {
         monikers: ['gold'],
         colorDescs: ['epobc:b77b5d214b2f9fd23b377cbbf443a9da445fd7c6c24ba1b92d3a3bfdf26aabf2:0:273921'],

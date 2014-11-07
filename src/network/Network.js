@@ -139,7 +139,6 @@ Network.prototype.getHeader = function() {
  */
 
 /**
- * @abstract
  * @param {number} index
  * @param {Network~getChunk} cb
  */
@@ -150,7 +149,7 @@ Network.prototype.getChunk = function() {
 /**
  * @callback Network~getTx
  * @param {?Error} error
- * @param {bitcoinjs-lib.Transaction} tx
+ * @param {Transaction} tx
  */
 
 /**
@@ -164,6 +163,7 @@ Network.prototype.getTx = function() {
 
 /**
  * @typedef {Object} MerkleObject
+ * @property {number} height
  * @property {string[]} merkle
  * @property {number} index
  */
@@ -175,9 +175,8 @@ Network.prototype.getTx = function() {
  */
 
 /**
- * @abstract
  * @param {string} txId
- * @param {number} height
+ * @param {number} [height]
  * @param {Network~getMerkle} cb
  */
 Network.prototype.getMerkle = function() {

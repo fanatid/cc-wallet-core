@@ -626,6 +626,7 @@ Wallet.prototype.issueCoins = function(seedHex, moniker, pck, units, atoms, cb) 
  */
 Wallet.prototype.clearStorage = function() {
   this.config.clear()
+  this.blockchain.clear()
   this.cdStorage.clear()
   this.cDataStorage.clear()
   this.aStorage.clear()

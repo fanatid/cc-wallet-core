@@ -163,16 +163,28 @@ Electrum.prototype.getTx = function(txId, cb) {
  * {@link Network~getMerkle}
  */
 Electrum.prototype.getMerkle = function(txId, height, cb) {
+  if (_.isFunction(height) && _.isUndefined(cb)) {
+    cb = height
+    height = undefined
+  }
+
   verify.txId(txId)
-  verify.number(height)
+  if (!_.isUndefined(height)) verify.number(height)
   verify.function(cb)
 
   this._request('blockchain.transaction.get_merkle', [txId, height]).then(function(response) {
+    verify.number(response.block_height)
     verify.array(response.merkle)
     response.merkle.forEach(verify.txId)
     verify.number(response.pos)
 
-    return { merkle: response.merkle, index: response.pos }
+    var result = {
+      height: response.block_height,
+      merkle: response.merkle,
+      index: response.pos
+    }
+
+    return result
 
   }).done(function(data) { cb(null, data) }, function(error) { cb(error) })
 }

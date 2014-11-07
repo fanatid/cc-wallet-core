@@ -1,5 +1,6 @@
 var expect = require('chai').expect
-/*
+
+var bitcoin = require('../src/bitcoin')
 var Wallet = require('../src').Wallet
 var VerifiedBlockchain = require('../src').blockchain.VerifiedBlockchain
 
@@ -15,20 +16,19 @@ describe('blockchain.VerifiedBlockchain', function() {
     wallet.clearStorage()
   })
 
-  it('test', function(done) {
-    this.timeout(600000)
-
-    console.log('start', Date.now()/1000)
+  it('wait verify tx', function(done) {
+    this.timeout(60000)
 
     wallet.getBlockchain().on('error', function(error) {
-      //throw error
-      console.error('blockchain error', error)
-    })
-    wallet.getBlockchain().on('newHeight', function() {
-      console.log('blockchain newHeight', wallet.getBlockchain().getCurrentHeight(), Date.now()/1000)
+      console.error(error.stack)
     })
 
-    console.log('wait..')
+    var txId = '30aa4a6efa4b692f1d879bfd15cd2da12d39b9413bf9e718251fb3e1d0136725'
+    wallet.getBlockchain().getTx(txId, function(error, result) {
+      expect(error).to.be.null
+      expect(result).to.be.instanceof(bitcoin.Transaction)
+      expect(result.getId()).to.equal(txId)
+      done()
+    })
   })
 })
-*/

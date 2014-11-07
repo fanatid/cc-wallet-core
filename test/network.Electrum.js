@@ -71,16 +71,17 @@ describe('network.Electrum', function() {
     var txId = '9854bf4761024a1075ebede93d968ce1ba98d240ba282fb1f0170e555d8fdbd8'
     var blockHeight = 279774
 
-    network.getMerkle(txId, blockHeight, function(error, result) {
+    network.getMerkle(txId, function(error, result) {
       expect(error).to.be.null
       expect(result).to.deep.equal({
+        height: blockHeight,
         merkle: [
           '289eb5dab9aad256a7f508377f8cec7df4c3eae07572a8d7273e303a81313e03',
-          'b8a668d25ff4c5cf7f5f7fcdf504b695b87768a217fd131645b8712cbef56ebc',
-          'c3fe05147e431270966a1f11e2ddab4b6d7ab3f848c651f455ead409bd8ed28f',
-          'bdc4c6d8dfd51012d14e8f05bdb4d41de125abe98716afa162ba3203ab662b76',
-          '3312f4e797842662e9312e1dc8dcb2ea67e71bacc75452bb3f334d106f59fb33',
-          'ee4fa69f14997438d21fc3227b0f52f7d5fd074db00f159f5ac880ddc0559446'
+          'fb27fb6ebf46eda58831ca296736d82eec0b51d194f6f6c94c6788ea400a0c8d',
+          'f43b287ff722b4ab4d14043f732c23071a86a2ae0ea72acb4277ef0a4e250d8f',
+          '2ea9db3d74a1d9a50cd87931ae455e7c037033ba734981c078b5f4dcd39c14c5',
+          'b4bd6a5685959e13446d3de03f1375ee3cf37fa9c1488d25c14fb6bbdedc51dc',
+          'f3ebd6145c5c8d2144e1641eb0bb4a9315cc83d7ebb2ab2199e47f344e37fc28'
         ],
         index: 4
       })

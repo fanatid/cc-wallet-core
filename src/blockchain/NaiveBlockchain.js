@@ -13,11 +13,11 @@ var Blockchain = require('./Blockchain')
  * @extends Blockchain
  * @param {Network} network
  * @param {Object} [opts]
- * @param {number} [opts.txCacheSize=200]
+ * @param {number} [opts.txCacheSize=250]
  */
 function NaiveBlockchain(network, opts) {
   verify.Network(network)
-  opts = _.extend({ txCacheSize: 200 }, opts)
+  opts = _.extend({ txCacheSize: 250 }, opts)
   verify.number(opts.txCacheSize)
 
   var self = this
