@@ -4,6 +4,8 @@ var Q = require('q')
 
 var bitcoin = require('../cclib').bitcoin
 var verify = require('../verify')
+var inherits = require('util').inherits
+var EventEmitter = require('events').EventEmitter;
 
 
 var RecheckInterval = 60 * 1000
@@ -24,6 +26,8 @@ function BaseTxDb(wallet, storage) {
 
   this.lastStatusCheck = LRU({ maxAge: RecheckInterval })
 }
+
+inherits(BaseTxDb, EventEmitter)
 
 BaseTxDb.TxStatusUnknown = 0
 BaseTxDb.TxStatusUnconfirmed = 1
@@ -86,7 +90,10 @@ BaseTxDb.prototype.addTx = function(data, cb) {
 
     })
 
-  }).done(function() { cb(null) }, function(error) { cb(error) })
+  }).done(
+    function() { self.emit('update'); cb(null) },
+    function(error) { self.emit('error'); cb(error) }
+  )
 }
 
 /**
@@ -156,10 +163,12 @@ BaseTxDb.prototype.maybeRecheckTxStatus = function(txId, status, cb) {
     return Q.ninvoke(self, 'identifyTxStatus', txId).then(function(status) {
       self.storage.setTxStatus(txId, status)
       return Q.ninvoke(self, 'updateTxInfo', txId, status)
-
     })
 
-  }).done(function() { cb(null) }, function(error) { cb(error) })
+  }).done(
+    function() { self.emit('update'); cb(null) },
+    function(error) { self.emit('error'); cb(error) }
+  )
 }
 
 /**
