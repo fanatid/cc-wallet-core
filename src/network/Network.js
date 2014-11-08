@@ -5,6 +5,7 @@ var Q = require('q')
 var _ = require('lodash')
 
 var bitcoin = require('../bitcoin')
+var errors = require('../errors')
 var verify = require('../verify')
 
 
@@ -61,6 +62,7 @@ Network.prototype.isConnected = function() {
 
 /**
  * @param {number} newHeight
+ * @return {Q.Promise}
  */
 Network.prototype._setCurrentHeight = function(newHeight) {
   verify.number(newHeight)
@@ -74,7 +76,7 @@ Network.prototype._setCurrentHeight = function(newHeight) {
   }
   self._setCurrentHeightRunning = true
 
-  promise.then(function() {
+  return promise.then(function() {
     return Q.ninvoke(self, 'getHeader', newHeight)
 
   }).then(function(header) {
@@ -129,7 +131,7 @@ Network.prototype.getCurrentBlockHash = function() {
  * @param {Network~getHeader} cb
  */
 Network.prototype.getHeader = function() {
-  throw new Error('Network.getHeader not implemented')
+  throw new errors.NotImplementedError('Network.getHeader')
 }
 
 /**
@@ -143,7 +145,7 @@ Network.prototype.getHeader = function() {
  * @param {Network~getChunk} cb
  */
 Network.prototype.getChunk = function() {
-  throw new Error('Network.getChunk not implemented')
+  throw new errors.NotImplementedError('Network.getChunk')
 }
 
 /**
@@ -158,7 +160,7 @@ Network.prototype.getChunk = function() {
  * @param {Network~getTx} cb
  */
 Network.prototype.getTx = function() {
-  throw new Error('Network.getTx not implemented')
+  throw new errors.NotImplementedError('Network.getTx')
 }
 
 /**
@@ -180,7 +182,7 @@ Network.prototype.getTx = function() {
  * @param {Network~getMerkle} cb
  */
 Network.prototype.getMerkle = function() {
-  throw new Error('Network.getMerkle not implemented')
+  throw new errors.NotImplementedError('Network.getMerkle')
 }
 
 /**
@@ -195,7 +197,7 @@ Network.prototype.getMerkle = function() {
  * @param {Network~sendTx} cb
  */
 Network.prototype.sendTx = function() {
-  throw new Error('Network.sendTx not implemented')
+  throw new errors.NotImplementedError('Network.sendTx')
 }
 
 /**
@@ -216,7 +218,29 @@ Network.prototype.sendTx = function() {
  * @param {Network~getHistory} cb
  */
 Network.prototype.getHistory = function() {
-  throw new Error('Network.getHistory not implemented')
+  throw new errors.NotImplementedError('Network.getHistory')
+}
+
+/**
+ * @typedef {Object} UnspentObject
+ * @property {string} txId
+ * @property {number} outIndex
+ * @property {number} value
+ * @property {number} height
+ */
+
+/**
+ * @callback Network~getUnspent
+ * @param {?Error} error
+ * @param {UnspentObject[]} entries
+ */
+
+/**
+ * @param {string} address
+ * @param {Network~getUnspent} cb
+ */
+Network.prototype.getUnspent = function() {
+  throw new errors.NotImplementedError('Network.getUnspent')
 }
 
 /**
@@ -230,7 +254,7 @@ Network.prototype.getHistory = function() {
  * @param {Network~subscribeAddress} cb
  */
 Network.prototype.subscribeAddress = function() {
-  throw new Error('Network.subscribeAddress not implemented')
+  throw new errors.NotImplementedError('Network.subscribeAddress')
 }
 
 

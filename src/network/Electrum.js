@@ -4,29 +4,34 @@ var _ = require('lodash')
 var Q = require('q')
 var socket = require('socket.io-client')
 
-var Network = require('./Network')
 var bitcoin = require('../bitcoin')
 var verify = require('../verify')
+var Network = require('./Network')
 
 
 /**
  * @class Electrum
  * @extends Network
  *
- * @param {Object} opts
- * @param {string} opts.url
+ * @param {Object} [opts]
+ * @param {boolean} [opts.testnet=false]
+ * @param {string} [opts.url]
  */
 function Electrum(opts) {
-  verify.object(opts)
+  opts = _.extend({ testnet: false }, opts)
+  opts = _.extend({
+    url: 'ws://devel.hz.udoidio.info:' + (opts.testnet ? '8784' : '8783')
+  }, opts)
+  verify.boolean(opts.testnet)
   verify.string(opts.url)
 
   var self = this
-
   Network.call(self)
 
   self._requestId = 0
   self._requests = {}
 
+  // Todo: resubscribe on reconnect?
   self._socket = socket(opts.url, { forceNew: true })
   self._socket.on('connect_error', function(error) { self.emit('error', error) })
   self._socket.on('connect', function() { self.emit('connect') })
@@ -226,33 +231,7 @@ Electrum.prototype.getHistory = function(address, cb) {
 }
 
 /**
- * {@link Network~subscribeAddress}
- */
-Electrum.prototype.subscribeAddress = function(address, cb) {
-  verify.string(address)
-  verify.function(cb)
-
-  this._request('blockchain.address.subscribe', [address])
-    .done(function() { cb(null) }, function(error) { cb(error) })
-}
-
-/**
- * @typedef {Object} UnspentObject
- * @property {string} txId
- * @property {number} outIndex
- * @property {number} value
- * @property {number} height
- */
-
-/**
- * @callback Electrum~getUnspent
- * @param {?Error} error
- * @param {UnspentObject[]} entries
- */
-
-/**
- * @param {string} address
- * @param {Electrum~getUnspent} cb
+ * {@link Network~getHistory}
  */
 Electrum.prototype.getUnspent = function(address, cb) {
   verify.string(address)
@@ -271,6 +250,17 @@ Electrum.prototype.getUnspent = function(address, cb) {
     })
 
   }).done(function(unspent) { cb(null, unspent) }, function(error) { cb(error) })
+}
+
+/**
+ * {@link Network~subscribeAddress}
+ */
+Electrum.prototype.subscribeAddress = function(address, cb) {
+  verify.string(address)
+  verify.function(cb)
+
+  this._request('blockchain.address.subscribe', [address])
+    .done(function() { cb(null) }, function(error) { cb(error) })
 }
 
 

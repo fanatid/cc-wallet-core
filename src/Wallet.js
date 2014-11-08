@@ -26,6 +26,7 @@ var verify = require('./verify')
  * @param {Object} opts
  * @param {boolean} [opts.testnet=false]
  * @param {string} [opts.network=Electrum]
+ * @param {Object} [opts.networkOpts]
  * @param {string} [opts.blockchain=VerifiedBlockchain]
  */
 function Wallet(opts) {
@@ -37,11 +38,9 @@ function Wallet(opts) {
 
   verify.boolean(opts.testnet)
   verify.string(opts.network)
+  opts.networkOpts = _.extend({ testnet: opts.testnet }, opts.networkOpts)
+  verify.boolean(opts.networkOpts.testnet)
   verify.string(opts.blockchain)
-
-  if (opts.network === 'Electrum')
-    opts.networkOpts = _.extend({ url: 'ws://devel.hz.udoidio.info:8784/' }, opts.networkOpts)
-
 
   this.bitcoinNetwork = opts.testnet ? bitcoin.networks.testnet : bitcoin.networks.bitcoin
 

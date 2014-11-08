@@ -1,6 +1,8 @@
 var events = require('events')
 var inherits = require('util').inherits
 
+var errors = require('../errors')
+
 
 /**
  * @event Blockchain#error
@@ -31,7 +33,7 @@ inherits(Blockchain, events.EventEmitter)
  * @return {number}
  */
 Blockchain.prototype.getCurrentHeight = function() {
-  throw new Error('Blockchain.getCurrentHeight not implemented')
+  throw new errors.NotImplementedError('Blockchain.getCurrentHeight')
 }
 
 /**
@@ -46,7 +48,7 @@ Blockchain.prototype.getCurrentHeight = function() {
  * @param {Blockchain~getBlockTime} cb
  */
 Blockchain.prototype.getBlockTime = function() {
-  throw new Error('Blockchain.getBlockTime not implemented')
+  throw new errors.NotImplementedError('Blockchain.getBlockTime')
 }
 
 /**
@@ -61,7 +63,7 @@ Blockchain.prototype.getBlockTime = function() {
  * @param {Blockchain~getTx} cb
  */
 Blockchain.prototype.getTx = function() {
-  throw new Error('Blockchain.getTx not implemented')
+  throw new errors.NotImplementedError('Blockchain.getTx')
 }
 
 /**
@@ -76,7 +78,7 @@ Blockchain.prototype.getTx = function() {
  * @param {Blockchain~sendTx} cb
  */
 Blockchain.prototype.sendTx = function() {
-  throw new Error('Blockchain.sendTx not implemented')
+  throw new errors.NotImplementedError('Blockchain.sendTx')
 }
 
 /**
@@ -97,7 +99,7 @@ Blockchain.prototype.sendTx = function() {
  * @param {Blockchain~getHistory} cb
  */
 Blockchain.prototype.getHistory = function() {
-  throw new Error('Blockchain.getHistory not implemented')
+  throw new errors.NotImplementedError('Blockchain.getHistory')
 }
 
 /**
@@ -111,7 +113,7 @@ Blockchain.prototype.getHistory = function() {
  * @param {Blockchain~subscribeAddress} cb
  */
 Blockchain.prototype.subscribeAddress = function() {
-  throw new Error('Blockchain.subscribeAddress not implemented')
+  throw new errors.NotImplementedError('Blockchain.subscribeAddress')
 }
 
 /**
