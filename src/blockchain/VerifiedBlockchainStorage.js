@@ -1,6 +1,7 @@
 var inherits = require('util').inherits
 
 var _ = require('lodash')
+var zfill = require('zfill')
 
 var verify = require('../verify')
 var SyncStorage = require('../SyncStorage')
@@ -20,7 +21,7 @@ function VerifiedBlockchainStorage() {
   this.blockchainDbKey = this.globalPrefix + 'verifiedBlockchain'
   this.blockchainData = this.store.get(this.blockchainDbKey)
   if (_.isUndefined(this.blockchainData))
-    this.blockchainData = { lastHash: new Buffer(32).fill(0).toString('hex'), hashes: '', headers: '' }
+    this.blockchainData = { lastHash: zfill('', 64), hashes: '', headers: '' }
 
   if (_.isUndefined(this.store.get(this.blockchainDbKey + '_version')))
     this.store.set(this.blockchainDbKey + '_version', '1')

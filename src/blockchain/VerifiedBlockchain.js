@@ -52,7 +52,7 @@ function VerifiedBlockchain(network, opts) {
   self._getVerifiedChunkRunning = {}
 
   self._currentHeight = -1
-  self._currentBlockHash = new Buffer(32).fill(0)
+  self._currentBlockHash = new Buffer(zfill('', 64), 'hex')
   self._storage = new VerifiedBlockchainStorage()
 
   var storageChunksCount = self._storage.getChunksCount()
@@ -560,7 +560,7 @@ VerifiedBlockchain.prototype._sync = function() {
       if (index > 0)
         return self._getVerifiedHeader(index*2016 - 1)
 
-      prevHash = new Buffer(32).fill(0)
+      prevHash = new Buffer(zfill('', 64), 'hex')
 
     }).then(function(buffer) {
       if (Buffer.isBuffer(buffer) && buffer.length === 80) {

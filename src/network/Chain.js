@@ -19,19 +19,19 @@ var Network = require('./Network')
  * @param {boolean} [opts.testnet=false]
  * @param {string} [opts.apiKeyId=DEMO-4a5e1e4]
  * @param {number} [opts.requestTimeout=10*1000]
- * @param {number} [opts.refreshTimeout=30*1000]
+ * @param {number} [opts.refreshInterval=30*1000]
  */
 function Chain(opts) {
   opts = _.extend({
     testnet: false,
     apiKeyId: 'DEMO-4a5e1e4',
     requestTimeout: 10*1000,
-    refreshTimeout: 30*1000
+    refreshInterval: 30*1000
   }, opts)
   verify.boolean(opts.testnet)
   verify.string(opts.apiKeyId)
   verify.number(opts.requestTimeout)
-  verify.number(opts.refreshTimeout)
+  verify.number(opts.refreshInterval)
 
   var self = this
   Network.call(self)
@@ -52,7 +52,7 @@ function Chain(opts) {
     }).catch(function(error) {
       self.emit('error', error)
 
-    }).finally(function() { Q.delay(opts.refreshTimeout).then(getNetworkHeight) })
+    }).finally(function() { Q.delay(opts.refreshInterval).then(getNetworkHeight) })
   }
   getNetworkHeight().then(function() {
     self.emit('connect')
@@ -88,7 +88,7 @@ function Chain(opts) {
     })).catch(function(error) {
       self.emit('error', error)
 
-    }).finally(function() { Q.delay(opts.refreshTimeout).then(testSubscribedAddresses)  })
+    }).finally(function() { Q.delay(opts.refreshInterval).then(testSubscribedAddresses)  })
   }
   testSubscribedAddresses()
 }

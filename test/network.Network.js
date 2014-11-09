@@ -1,6 +1,7 @@
 var events = require('events')
 
 var expect = require('chai').expect
+var zfill = require('zfill')
 
 var Network = require('../src').network.Network
 
@@ -27,6 +28,6 @@ describe('network.Network', function() {
 
   it('getCurrentBlockHash', function() {
     var result = network.getCurrentBlockHash().toString('hex')
-    expect(result).to.equal(new Buffer(32).fill(0).toString('hex'))
+    expect(result).to.equal(zfill('', 64))
   })
 })

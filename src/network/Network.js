@@ -3,6 +3,7 @@ var inherits = require('util').inherits
 
 var Q = require('q')
 var _ = require('lodash')
+var zfill = require('zfill')
 
 var bitcoin = require('../bitcoin')
 var errors = require('../errors')
@@ -45,7 +46,7 @@ function Network() {
   self.on('disconnect', function() { self._isConnected = false })
 
   self._currentHeight = -1
-  self._currentBlockHash = new Buffer(32).fill(0)
+  self._currentBlockHash = new Buffer(zfill('', 64), 'hex')
 
   self._setCurrentHeightRunning = false
   self._setCurrentHeightQueue = []
