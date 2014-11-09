@@ -68,27 +68,22 @@ BaseTxDb.prototype.addTx = function(data, cb) {
 
   var self = this
 
+  var txId = data.tx.getId()
+  var record = self.storage.getByTxId(txId)
+  if (record !== null)
+    return this.maybeRecheckTxStatus(record.txId, record.status, cb)
+
   Q.fcall(function() {
-    var txId = data.tx.getId()
-
-    var record = self.storage.getByTxId(txId)
-    if (record !== null)
-      return Q.ninvoke(self, 'maybeRecheckTxStatus', record.txId, record.status)
-
-    return Q.fcall(function() {
       if (_.isUndefined(data.status))
         return Q.ninvoke(self, 'identifyTxStatus', txId)
       return data.status
-
-    }).then(function(status) {
+  }).then(function(status) {
       self.storage.addTx(txId, data.tx.toHex(), status, data.timestamp)
       return Q.ninvoke(self, 'updateTxInfo', txId, status)
 
-    }).then(function() {
+  }).then(function() {
       self.lastStatusCheck.set(txId, true)
       return Q.ninvoke(self.wallet.getCoinManager(), 'applyTx', data.tx)
-
-    })
 
   }).done(
     function() { self.emit('update'); cb(null) },
@@ -149,6 +144,8 @@ BaseTxDb.prototype.maybeRecheckTxStatus = function(txId, status, cb) {
   verify.function(cb)
 
   var self = this
+  var needUpdate = false
+  var oldStatus = status
 
   Q.fcall(function() {
     if (status === BaseTxDb.TxStatusConfirmed &&
@@ -161,12 +158,15 @@ BaseTxDb.prototype.maybeRecheckTxStatus = function(txId, status, cb) {
     self.lastStatusCheck.set(txId, true)
 
     return Q.ninvoke(self, 'identifyTxStatus', txId).then(function(status) {
-      self.storage.setTxStatus(txId, status)
-      return Q.ninvoke(self, 'updateTxInfo', txId, status)
+      if (oldStatus !== status) {
+        needUpdate = true
+        self.storage.setTxStatus(txId, status)
+        return Q.ninvoke(self, 'updateTxInfo', txId, status)
+      }
     })
 
   }).done(
-    function() { self.emit('update'); cb(null) },
+    function() { if (needUpdate) self.emit('update'); cb(null) },
     function(error) { self.emit('error'); cb(error) }
   )
 }
