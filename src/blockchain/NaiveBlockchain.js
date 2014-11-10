@@ -13,11 +13,13 @@ var Blockchain = require('./Blockchain')
  * @extends Blockchain
  * @param {Network} network
  * @param {Object} [opts]
+ * @param {number} [opts.headerCacheSize=250]
  * @param {number} [opts.txCacheSize=250]
  */
 function NaiveBlockchain(network, opts) {
   verify.Network(network)
-  opts = _.extend({ txCacheSize: 250 }, opts)
+  opts = _.extend({ headerCacheSize: 250, txCacheSize: 250 }, opts)
+  verify.number(opts.headerCacheSize)
   verify.number(opts.txCacheSize)
 
   var self = this
@@ -26,6 +28,10 @@ function NaiveBlockchain(network, opts) {
   self._network = network
   self._currentHeight = -1
 
+  self._getHeaderRunning = {}
+  self._getTxRunning = {}
+
+  self._headerCache = LRU({ max: opts.headerCacheSize })
   this._txCache = LRU({ max: opts.txCacheSize })
 
   self._network.on('newHeight', function() {
@@ -53,8 +59,22 @@ NaiveBlockchain.prototype.getCurrentHeight = function() {
 NaiveBlockchain.prototype.getBlockTime = function(height, cb) {
   verify.function(cb)
 
-  Q.ninvoke(this._network, 'getHeader', height)
-    .done(function(header) { cb(null, header.timestamp) }, function(error) { cb(error) })
+  var self = this
+  if (!_.isUndefined(self._headerCache[height]))
+    return cb(null, self._headerCache[height])
+
+  if (_.isUndefined(self._getHeaderRunning[height])) {
+    var promise = Q.ninvoke(this._network, 'getHeader', height).then(function(header) {
+      self._headerCache.set(height, header.timestamp)
+      return header.timestamp
+
+    }).finally(function() { delete self._getHeaderRunning[height] })
+
+    self._getHeaderRunning[height] = promise
+  }
+
+  self._getHeaderRunning[height]
+    .done(function(result) { cb(null, result) }, function(error) { cb(error) })
 }
 
 /**
@@ -68,11 +88,18 @@ NaiveBlockchain.prototype.getTx = function(txId, cb) {
   if (!_.isUndefined(self._txCache.get(txId)))
     return cb(null, self._txCache.get(txId))
 
-  Q.ninvoke(self._network, 'getTx', txId).then(function(tx) {
-    self._txCache.set(txId, tx)
-    return tx
+  if (_.isUndefined(self._getTxRunning[txId])) {
+    var promise = Q.ninvoke(self._network, 'getTx', txId).then(function(tx) {
+      self._txCache.set(txId, tx)
+      return tx
 
-  }).done(function(tx) { cb(null, tx) }, function(error) { cb(error) })
+    }).finally(function() { delete self._getTxRunning[txId] })
+
+    self._getTxRunning[txId] = promise
+  }
+
+  self._getTxRunning[txId]
+    .done(function(tx) { cb(null, tx) }, function(error) { cb(error) })
 }
 
 /**
