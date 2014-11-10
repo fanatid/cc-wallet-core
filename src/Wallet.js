@@ -248,6 +248,15 @@ Wallet.prototype.checkAddress = function(assetdef, checkedAddress) {
 /**
  * @param {Wallet~errorCallback} cb
  */
+Wallet.prototype.subscribeAndSyncAddress = function(cb) {
+  this.isInitializedCheck()
+
+  this.txFetcher.subscribeAndSyncAddress(address, cb)
+}
+
+/**
+ * @param {Wallet~errorCallback} cb
+ */
 Wallet.prototype.subscribeAndSyncAllAddresses = function(cb) {
   this.isInitializedCheck()
 

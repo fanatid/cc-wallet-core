@@ -30,11 +30,11 @@ var VerifyTxError = createError('VerifyTxError')
  * @param {Object} [opts]
  * @param {boolean} [opts.testnet=false]
  * @param {number} [opts.txCacheSize=250]
- * @param {number} [opts.headerCacheSize=5000] ~391kB
+ * @param {number} [opts.headerCacheSize=6500] ~508kB
  */
 function VerifiedBlockchain(network, opts) {
   verify.Network(network)
-  opts = _.extend({ testnet: false, txCacheSize: 250, headerCacheSize: 5000 }, opts)
+  opts = _.extend({ testnet: false, txCacheSize: 250, headerCacheSize: 6500 }, opts)
   verify.boolean(opts.testnet)
   verify.number(opts.txCacheSize)
   verify.number(opts.headerCacheSize)
