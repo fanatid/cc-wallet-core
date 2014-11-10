@@ -1,7 +1,7 @@
 var _ = require('lodash')
 
 var cclib = require('../cclib')
-var bitcoin = cclib.bitcoin
+var bitcoin = require('../bitcoin')
 var ECPubKey = bitcoin.ECPubKey
 var HDNode = bitcoin.HDNode
 

@@ -1,7 +1,7 @@
 var base58 = require('bs58')
 var bufferEqual = require('buffer-equal')
 
-var bitcoin = require('../cclib').bitcoin
+var bitcoin = require('../bitcoin')
 var verify = require('../verify')
 
 

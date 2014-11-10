@@ -7,10 +7,11 @@ var blockchain = require('./blockchain')
 var coin = require('./coin')
 var ConfigStorage = require('./ConfigStorage')
 var history = require('./history')
+var network = require('./network')
 var tx = require('./tx')
 
 var cclib = require('./cclib')
-var bitcoin = cclib.bitcoin
+var bitcoin = require('./bitcoin')
 var verify = require('./verify')
 
 
@@ -24,31 +25,38 @@ var verify = require('./verify')
  *
  * @param {Object} opts
  * @param {boolean} [opts.testnet=false]
- * @param {string} [opts.blockchain='Chain'] Now available BlockrIo, Chain
+ * @param {string} [opts.network=Electrum]
+ * @param {Object} [opts.networkOpts]
+ * @param {string} [opts.blockchain=VerifiedBlockchain]
  */
 function Wallet(opts) {
   opts = _.extend({
     testnet: false,
-    blockchain: 'Chain'
+    network: 'Electrum',
+    blockchain: 'VerifiedBlockchain'
   }, opts)
 
   verify.boolean(opts.testnet)
+  verify.string(opts.network)
+  opts.networkOpts = _.extend({ testnet: opts.testnet }, opts.networkOpts)
+  verify.boolean(opts.networkOpts.testnet)
   verify.string(opts.blockchain)
 
-  this.network = opts.testnet ? bitcoin.networks.testnet : bitcoin.networks.bitcoin
+  this.bitcoinNetwork = opts.testnet ? bitcoin.networks.testnet : bitcoin.networks.bitcoin
 
   this.config = new ConfigStorage()
 
-  this.blockchain = new blockchain[opts.blockchain]({ testnet: opts.testnet })
+  this.network = new network[opts.network](opts.networkOpts)
+  this.blockchain = new blockchain[opts.blockchain](this.network, { testnet: opts.testnet })
 
   this.cdStorage = new cclib.ColorDefinitionStorage()
   this.cdManager = new cclib.ColorDefinitionManager(this.cdStorage)
 
   this.cDataStorage = new cclib.ColorDataStorage()
-  this.cData = new cclib.ColorData(this.cDataStorage, this.blockchain)
+  this.cData = new cclib.ColorData(this.cDataStorage)
 
   this.aStorage = new address.AddressStorage()
-  this.aManager = new address.AddressManager(this.aStorage, this.network)
+  this.aManager = new address.AddressManager(this.aStorage, this.bitcoinNetwork)
 
   this.adStorage = new asset.AssetDefinitionStorage()
   this.adManager = new asset.AssetDefinitionManager(this.cdManager, this.adStorage)
@@ -57,28 +65,25 @@ function Wallet(opts) {
       this.adManager.resolveAssetDefinition(sad)
     }.bind(this))
 
+  this.txStorage = new tx.TxStorage()
+  this.txDb = new tx.TxDb(this.txStorage, this.blockchain)
+  this.txFetcher = new tx.TxFetcher(this.txDb, this.blockchain)
+
   this.coinStorage = new coin.CoinStorage()
   this.coinManager = new coin.CoinManager(this, this.coinStorage)
 
   this.historyManager = new history.HistoryManager(this)
-
-  this.txStorage = new tx.TxStorage()
-  this.txDb = new tx.NaiveTxDb(this, this.txStorage)
-  this.blockchain.txDb = this.txDb // not good, but else sendCoins with addUnconfirmedTx not working
-  this.txFetcher = new tx.TxFetcher(this.txDb, this.blockchain)
 }
 
-Wallet.prototype.getNetwork = function() { return this.network }
+Wallet.prototype.getBitcoinNetwork = function() { return this.bitcoinNetwork }
 Wallet.prototype.getBlockchain = function() { return this.blockchain }
 Wallet.prototype.getColorDefinitionManager = function() { return this.cdManager }
 Wallet.prototype.getColorData = function() { return this.cData }
 Wallet.prototype.getAddressManager = function() { return this.aManager }
 Wallet.prototype.getAssetDefinitionManager = function() { return this.adManager }
+Wallet.prototype.getTxDb = function() { return this.txDb }
 Wallet.prototype.getCoinManager = function() { return this.coinManager }
 Wallet.prototype.getCoinQuery = function() { return new coin.CoinQuery(this) }
-Wallet.prototype.getHistoryManager = function() { return this.historyManager }
-Wallet.prototype.getTxDb = function() { return this.txDb }
-Wallet.prototype.getTxFetcher = function() { return this.txFetcher }
 
 /**
  * @return {boolean}
@@ -241,9 +246,9 @@ Wallet.prototype.checkAddress = function(assetdef, checkedAddress) {
 }
 
 /**
- * @return {string[]}
+ * @param {Wallet~errorCallback} cb
  */
-Wallet.prototype._getAllAddresses = function () {
+Wallet.prototype.subscribeAndSyncAllAddresses = function(cb) {
   this.isInitializedCheck()
 
   var addresses =_.chain(this.getAllAssetDefinitions())
@@ -252,25 +257,7 @@ Wallet.prototype._getAllAddresses = function () {
     .uniq()
     .value()
 
-  return addresses
-}
-
-/**
- * @param {Wallet~errorCallback} cb
- * @throws {Error} If wallet not initialized
- */
-Wallet.prototype.scanAllAddresses = function(cb) {
-  var addresses = this._getAllAddresses()
-  this.getTxFetcher().scanAddressesUnspent(addresses, cb)
-}
-
-/**
- * @param {Wallet~errorCallback} cb
- * @throws {Error} If wallet not initialized
- */
-Wallet.prototype.fullScanAllAddresses = function(cb) {
-  var addresses = this._getAllAddresses()
-  this.getTxFetcher().fullScanAddresses(addresses, cb)
+  this.txFetcher.subscribeAndSyncAllAddresses(addresses, cb)
 }
 
 /**
@@ -507,7 +494,7 @@ Wallet.prototype.sendTx = function(tx, cb) {
   Q.ninvoke(self.getBlockchain(), 'sendTx', tx).then(function() {
     var timezoneOffset = new Date().getTimezoneOffset() * 60
     var timestamp = Math.round(Date.now()/1000) + timezoneOffset
-    return Q.ninvoke(self.getTxDb(), 'addUnconfirmedTx', { tx: tx, timestamp: timestamp })
+    return Q.ninvoke(self.getTxDb(), 'addUnconfirmedTx', tx, { timestamp: timestamp })
 
   }).done(function() { cb(null) }, function(error) { cb(error) })
 }
@@ -638,6 +625,7 @@ Wallet.prototype.issueCoins = function(seedHex, moniker, pck, units, atoms, cb) 
  */
 Wallet.prototype.clearStorage = function() {
   this.config.clear()
+  this.blockchain.clear()
   this.cdStorage.clear()
   this.cDataStorage.clear()
   this.aStorage.clear()

@@ -6,18 +6,24 @@ var verify = cclib.verify
 var createInstanceCheck = verify.createInstanceCheck
 
 
+function isLength(thing, value) { return thing.length === value }
+
+function isBlockchainChunk(thing) {
+  return verify.hexString(thing) && thing.length > 0 && thing.length <= 322240 && thing.length % 160 === 0
+}
+
 var networks = Object.keys(bitcoin.networks).map(function(key) { return bitcoin.networks[key] })
 function isBitcoinNetwork(thing) {
   return networks.indexOf(thing) !== -1
 }
 
-function isHexSymbol(sym) { return '0123456789abcdef'.indexOf(sym) !== -1 }
+function isHexSymbol(sym) { return '0123456789abcdefABCDEF'.indexOf(sym) !== -1 }
 function isRawCoin(thing) {
   return (
     _.isObject(thing) &&
     _.isString(thing.txId) &&
     thing.txId.length === 64 &&
-    thing.txId.toLowerCase().split('').every(isHexSymbol) &&
+    thing.txId.split('').every(isHexSymbol) &&
     _.isNumber(thing.outIndex) &&
     _.isNumber(thing.value) &&
     _.isString(thing.script) &&
@@ -28,6 +34,8 @@ function isRawCoin(thing) {
 
 var functions = {
   buffer: Buffer.isBuffer,
+  length: isLength,
+  blockchainChunk: isBlockchainChunk,
 
   HDNode: createInstanceCheck(function() { return bitcoin.HDNode }),
   bitcoinNetwork: isBitcoinNetwork,
@@ -44,7 +52,7 @@ var functions = {
   AssetTarget: createInstanceCheck(function() { return require('./asset').AssetTarget }),
   AssetValue: createInstanceCheck(function() { return require('./asset').AssetValue }),
 
-  BlockchainBase: createInstanceCheck(function() { return require('./blockchain').BlockchainBase }),
+  Blockchain: createInstanceCheck(function() { return require('./blockchain').Blockchain }),
 
   rawCoin: isRawCoin,
   Coin: createInstanceCheck(function() { return require('./coin').Coin }),
@@ -56,8 +64,11 @@ var functions = {
   HistoryManager: createInstanceCheck(function() { return require('./history').HistoryManager }),
   HistoryTarget: createInstanceCheck(function() { return require('./history').HistoryTarget }),
 
+  Network: createInstanceCheck(function() { return require('./network').Network }),
+
   AssetTx: createInstanceCheck(function() { return require('./tx').AssetTx }),
   BaseTxDb: createInstanceCheck(function() { return require('./tx').BaseTxDb }),
+  TxDb: createInstanceCheck(function() { return require('./tx').TxDb }),
   RawTx: createInstanceCheck(function() { return require('./tx').RawTx }),
   TxFetcher: createInstanceCheck(function() { return require('./tx').TxFetcher }),
   TxStorage: createInstanceCheck(function() { return require('./tx').TxStorage })
@@ -65,6 +76,8 @@ var functions = {
 
 var expected = {
   buffer: 'Buffer',
+  length: 'other length',
+  blockchainChunk: 'blockchain chunk',
 
   HDNode: 'HDNode',
   bitcoinNetwork: 'Object from bitcoinjs-lib.networks',
@@ -81,7 +94,7 @@ var expected = {
   AssetTarget: 'AssetTarget',
   AssetValue: 'AssetValue',
 
-  BlockchainBase: 'BlockchainBase',
+  Blockchain: 'Blockchain',
 
   rawCoin: 'raw Coin Object',
   Coin: 'Coin',
@@ -89,8 +102,11 @@ var expected = {
   CoinQuery: 'CoinQuery',
   CoinStorage: 'CoinStorage',
 
+  Network: 'Network',
+
   AssetTx: 'AssetTx',
   BaseTxDb: 'BaseTxDb',
+  TxDb: 'TxDb',
   RawTx: 'RawTx',
   TxFetcher: 'TxFetcher',
   TxStorage: 'TxStorage'

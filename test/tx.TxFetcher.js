@@ -7,7 +7,7 @@ describe('tx.TxFetcher', function() {
   var wallet, txFetcher, addresses
 
   beforeEach(function() {
-    wallet = new Wallet({ testnet: true })
+    wallet = new Wallet({ testnet: true, blockchain: 'NaiveBlockchain' })
     wallet.initialize('123131123131123131123131123131123131123131123131123131')
 
     txFetcher = wallet.getTxFetcher()
@@ -16,21 +16,5 @@ describe('tx.TxFetcher', function() {
 
   afterEach(function() {
     wallet.clearStorage()
-  })
-
-  it('scanAddressesUnspent', function(done) {
-    this.timeout(2 * 60 * 1000)
-    txFetcher.scanAddressesUnspent(addresses, function(error) {
-      expect(error).to.be.null
-      done()
-    })
-  })
-
-  it('fullScanAddresses', function(done) {
-    this.timeout(2 * 60 * 1000)
-    txFetcher.fullScanAddresses(addresses, function(error) {
-      expect(error).to.be.null
-      done()
-    })
   })
 })

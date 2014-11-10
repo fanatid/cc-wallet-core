@@ -147,23 +147,22 @@ CoinQuery.prototype.getCoins = function(cb) {
 
     coins.forEach(function(coin) {
       promise = promise.then(function() {
-        return Q.ninvoke(coin, 'isConfirmed').then(function(isConfirmed) {
-          /** filter include/only unconfirmed coins */
-          if (self.query.onlyUnconfirmed && isConfirmed)
-            return
-          if (!self.query.onlyUnconfirmed && !self.query.includeUnconfirmed && !isConfirmed)
-            return
+        /** filter include/only unconfirmed coins */
+        var isConfirmed = coin.isConfirmed()
+        if (self.query.onlyUnconfirmed && isConfirmed)
+          return
+        if (!self.query.onlyUnconfirmed && !self.query.includeUnconfirmed && !isConfirmed)
+          return
 
-          /** filter color */
-          if (self.query.onlyColoredAs === null) {
+        /** filter color */
+        if (self.query.onlyColoredAs === null) {
+          result.push(coin)
+          return
+        }
+
+        return Q.ninvoke(coin, 'getMainColorValue').then(function(colorValue) {
+          if (self.query.onlyColoredAs.indexOf(colorValue.getColorId()) !== -1)
             result.push(coin)
-            return
-          }
-
-          return Q.ninvoke(coin, 'getMainColorValue').then(function(colorValue) {
-            if (self.query.onlyColoredAs.indexOf(colorValue.getColorId()) !== -1)
-              result.push(coin)
-          })
         })
       })
     })

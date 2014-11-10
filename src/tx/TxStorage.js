@@ -11,8 +11,8 @@ var verify = require('../verify')
  * @property {string} txId
  * @property {string} rawTx
  * @property {number} status
- * @property {number} [blockHeight=undefined]
- * @property {number} [timestamp=undefined]
+ * @property {number} [blockHeight=null]
+ * @property {number} [timestamp=null]
  */
 
 /**
@@ -22,123 +22,135 @@ var verify = require('../verify')
 function TxStorage() {
   SyncStorage.apply(this, Array.prototype.slice.call(arguments))
 
-  this.dbKey = this.globalPrefix + 'tx'
+  this.txDbKey = this.globalPrefix + 'tx'
+  this.txRecords = this.store.get(this.txDbKey) || {}
 
-  //if (!_.isObject(this.store.get(this.dbKey)))
-  //  this.store.set(this.dbKey, {})
+  if (_.isUndefined(this.store.get(this.txDbKey + '_version')))
+    this.store.set(this.txDbKey + '_version', '1')
 }
 
 inherits(TxStorage, SyncStorage)
 
 /**
+ * @return {TxStorageRecord[]}
+ */
+TxStorage.prototype._getRecords = function() {
+  return this.txRecords
+}
+
+/**
+ * @param {TxStorageRecord[]}
+ */
+TxStorage.prototype._saveRecords = function(records) {
+  this.txRecords = records
+  this.store.set(this.txDbKey, records)
+}
+
+/**
  * @param {string} txId
  * @param {string} rawTx
- * @param {number} status
- * @param {number} [timestamp]
+ * @param {Object} opts
+ * @param {number} opts.status
+ * @param {number} opts.blockHeight
+ * @param {number} opts.timestamp
+ * @return {TxStorageRecord}
  * @throws {Error} If txId exists
  */
-TxStorage.prototype.addTx = function(txId, rawTx, status, timestamp) {
+TxStorage.prototype.addTx = function(txId, rawTx, opts) {
   verify.txId(txId)
   verify.hexString(rawTx)
-  verify.number(status)
-  if (timestamp) verify.number(timestamp)
+  verify.object(opts)
+  verify.number(opts.status)
+  verify.number(opts.blockHeight)
+  verify.number(opts.timestamp)
 
-  var records = this.getAll()
+  var records = this._getRecords()
   if (!_.isUndefined(records[txId]))
     throw new Error('Same tx already exists')
 
   records[txId] = {
     txId: txId,
     rawTx: rawTx,
-    status: status,
-    blockHeight: undefined,
-    timestamp: timestamp
+    status: opts.status,
+    blockHeight: opts.blockHeight,
+    timestamp: opts.timestamp
   }
+  this._saveRecords(records)
 
-  this.store.set(this.dbKey, records)
+  return _.clone(records[txId])
 }
 
 /**
  * @param {string} txId
- * @param {number} status
- * @throws {Error} If txId not exists
+ * @param {Object} opts
+ * @param {number} [opts.status]
+ * @param {number} [opts.blockHeight]
+ * @param {number} [opts.timestamp]
+ * @return {TxStorageRecord}
+ * @throws {Error} If txId exists
  */
-TxStorage.prototype.setTxStatus = function(txId, status) {
+TxStorage.prototype.updateTx = function(txId, opts) {
   verify.txId(txId)
-  verify.number(status)
+  verify.object(opts)
+  if (opts.status) verify.number(opts.status)
+  if (opts.blockHeight) verify.number(opts.blockHeight)
+  if (opts.timestamp) verify.number(opts.timestamp)
 
-  var records = this.getAll()
-
-  if (_.isUndefined(records[txId]))
+  var records = this._getRecords()
+  var record = records[txId]
+  if (_.isUndefined(record))
     throw new Error('txId not exists')
 
-  records[txId].status = status
+  opts = _.extend({
+    status: record.status,
+    blockHeight: record.blockHeight,
+    timestamp: record.timestamp
+  }, opts)
 
-  this.store.set(this.dbKey, records)
-}
+  records[txId] = _.extend(record, {
+    status: opts.status,
+    blockHeight: opts.blockHeight,
+    timestamp: opts.timestamp
+  })
+  this._saveRecords(records)
 
-/**
- * @param {string} txId
- * @param {number} blockHeight
- * @throws {Error} If txId not exists
- */
-TxStorage.prototype.setBlockHeight = function(txId, blockHeight) {
-  verify.txId(txId)
-  verify.number(blockHeight)
-
-  var records = this.getAll()
-
-  if (_.isUndefined(records[txId]))
-    throw new Error('txId not exists')
-
-  records[txId].blockHeight = blockHeight
-
-  this.store.set(this.dbKey, records)
-}
-
-/**
- * @param {string} txId
- * @param {number} timestamp
- * @throws {Error} If txId not exists
- */
-TxStorage.prototype.setTimestamp = function(txId, timestamp) {
-  verify.txId(txId)
-  verify.number(timestamp)
-
-  var records = this.getAll()
-
-  if (_.isUndefined(records[txId]))
-    throw new Error('txId not exists')
-
-  records[txId].timestamp = timestamp
-
-  this.store.set(this.dbKey, records)
+  return _.clone(records[txId])
 }
 
 /**
  * @param {string} txId
  * @return {?TxStorageRecord}
  */
-TxStorage.prototype.getByTxId = function(txId) {
+TxStorage.prototype.getTx = function(txId) {
   verify.txId(txId)
 
-  var record = this.getAll()[txId] || null
+  var record = this._getRecords()[txId]
+  return _.isUndefined(record) ? null : _.clone(record)
+}
+
+/**
+ * @param {string} txId
+ * @return {?TxStorageRecord}
+ */
+TxStorage.prototype.removeTx = function(txId) {
+  verify.txId(txId)
+
+  var records = this._getRecords()
+  var record = records[txId]
+  if (_.isUndefined(record))
+    return null
+
+  delete records[txId]
+  this._saveRecords(records)
+
   return record
 }
 
 /**
- * @return {TxStorageRecord[]}
- */
-TxStorage.prototype.getAll = function() {
-  var records = this.store.get(this.dbKey) || {}
-  return records
-}
-
-/**
- * Drop all tx
  */
 TxStorage.prototype.clear = function() {
-  this.store.remove(this.dbKey)
+  this.store.remove(this.txDbKey)
+  this.store.remove(this.txDbKey + '_version')
 }
 
 

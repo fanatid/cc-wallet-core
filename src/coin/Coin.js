@@ -3,7 +3,6 @@ var verify = require('../verify')
 
 /**
  * @class Coin
- *
  * @param {CoinManager} coinManager
  * @param {CoinStorageRecord} rawCoin
  */
@@ -43,8 +42,8 @@ Coin.prototype.isSpent = function() {
 /**
  * {@link CoinManager.isCoinConfirmed}
  */
-Coin.prototype.isConfirmed = function(cb) {
-  this.coinManager.isCoinConfirmed(this, cb)
+Coin.prototype.isConfirmed = function() {
+  return this.coinManager.isCoinConfirmed(this)
 }
 
 /**
@@ -55,10 +54,10 @@ Coin.prototype.getColorValue = function(colorDefinition, cb) {
 }
 
 /**
- * {@link CoinManager.getMainCoinColorValue}
+ * {@link CoinManager.getCoinMainColorValue}
  */
 Coin.prototype.getMainColorValue = function (cb) {
-  this.coinManager.getMainCoinColorValue(this, cb)
+  this.coinManager.getCoinMainColorValue(this, cb)
 }
 
 /**

@@ -46,18 +46,18 @@ describe('Wallet', function() {
     colorDescs: ['epobc:b95323a763fa507110a89ab857af8e949810cf1e67e91104cd64222a04ccd0bb:0:180679'],
     unit: 10
   }
-  var setup = function() {
-      localStorage.clear()
-      wallet = new Wallet({ testnet: true })
+
+  function setup() {
+    localStorage.clear()
+    wallet = new Wallet({ testnet: true, blockchain: 'NaiveBlockchain' })
   }
-  var cleanup = function () {
-      wallet.clearStorage()
+
+  function cleanup() {
+    wallet.clearStorage()
   }
 
   describe('instance methods', function () {
-
     beforeEach(setup)
-
     afterEach(cleanup)
 
     describe('initialized+ methods', function() {
@@ -183,12 +183,9 @@ describe('Wallet', function() {
 
     before(function (done) {
       setup()
-      this.timeout(3 * 60 * 1000)
-
       wallet.initialize(seed)
       wallet.addAssetDefinition(seed, goldAsset)
-
-      wallet.fullScanAllAddresses(function(error) {
+      wallet.subscribeAndSyncAllAddresses(function(error) {
         if (error) throw error
         expect(error).to.be.null
         done()
@@ -211,6 +208,7 @@ describe('Wallet', function() {
         var assetdef = wallet.getAssetDefinitionByMoniker(fixture.moniker)
 
         wallet[fixture.method](assetdef, function(error, balance) {
+          if (error) throw error
           expect(error).to.be.null
           expect(balance).to.equal(fixture.balance)
           done()
@@ -221,12 +219,10 @@ describe('Wallet', function() {
 
   xdescribe('send-history-issue', function() {
     it('sendCoins', function(done) {
-      this.timeout(120000)
-
       var seed = '421fc385fdae762b346b80e0212f77bb'
       wallet.initialize(seed)
       wallet.addAssetDefinition(seed, goldAsset)
-      wallet.fullScanAllAddresses(function(error) {
+      wallet.subscribeAndSyncAllAddresses(function(error) {
         expect(error).to.be.null
 
         var bitcoin = wallet.getAssetDefinitionByMoniker('bitcoin')
@@ -249,7 +245,12 @@ describe('Wallet', function() {
 
     // Need new issued asset, this broken
     it.skip('sendCoins epobc', function(done) {
-      wallet = new Wallet({ masterKey: '421fc385fdae762b346b80e0212f77bd', testnet: true })
+      wallet = new Wallet({
+        masterKey: '421fc385fdae762b346b80e0212f77bd',
+        testnet: true,
+        blockchain: 'NaiveBlockchain'
+      })
+
       var data = {
         monikers: ['gold'],
         colorDescs: ['epobc:b77b5d214b2f9fd23b377cbbf443a9da445fd7c6c24ba1b92d3a3bfdf26aabf2:0:273921'],
@@ -257,7 +258,7 @@ describe('Wallet', function() {
       }
       var assetdef = wallet.addAssetDefinition(data)
 
-      wallet.fullScanAllAddresses(function(error) {
+      wallet.subscribeAndSyncAllAddresses(function(error) {
         expect(error).to.be.null
 
         var address = wallet.getSomeAddress(assetdef)
@@ -275,7 +276,7 @@ describe('Wallet', function() {
 
     it('history', function(done) {
       wallet.initialize(seed)
-      wallet.fullScanAllAddresses(function(error) {
+      wallet.subscribeAndSyncAllAddresses(function(error) {
         expect(error).to.be.null
         wallet.getHistory(function(error, entries) {
           expect(error).to.be.null
@@ -289,7 +290,7 @@ describe('Wallet', function() {
       var seed = '421fc385fdaed1121221222eddad0dae'
       wallet.initialize(seed)
       wallet.addAssetDefinition(seed, goldAsset)
-      wallet.fullScanAllAddresses(function(error) {
+      wallet.subscribeAndSyncAllAddresses(function(error) {
         expect(error).to.be.null
 
         wallet.createIssuanceTx('newEPOBC', 'epobc', 5, 10000, seed, function(error, tx) {

@@ -1,7 +1,7 @@
 var _ = require('lodash')
 var Q = require('q')
 
-var bitcoin = require('../cclib').bitcoin
+var bitcoin = require('../bitcoin')
 var verify = require('../verify')
 
 
@@ -81,7 +81,7 @@ RawTx.prototype.sign = function(wallet, seedHex, cb) {
       var txId = Array.prototype.reverse.call(new Buffer(input.hash)).toString('hex')
 
       return Q.fcall(function() {
-        return wallet.getTxDb().getTxById(txId)
+        return wallet.getTxDb().getTx(txId)
 
       }).then(function(tx) {
         return tx !== null ? tx : Q.ninvoke(wallet.getBlockchain(), 'getTx', txId)
@@ -93,7 +93,7 @@ RawTx.prototype.sign = function(wallet, seedHex, cb) {
       })
 
     }).then(function() {
-      var addresses = bitcoin.getAddressesFromOutputScript(self.txb.prevOutScripts[index], wallet.getNetwork())
+      var addresses = bitcoin.getAddressesFromOutputScript(self.txb.prevOutScripts[index], wallet.getBitcoinNetwork())
       addresses.forEach(function(address) {
         var privKey = addressManager.getPrivKeyByAddress(address, seedHex)
         if (privKey !== null)

@@ -21,13 +21,29 @@ var verify = require('../verify')
 function AssetDefinitionStorage() {
   SyncStorage.apply(this, Array.prototype.slice.call(arguments))
 
-  this.dbKey = this.globalPrefix + 'AssetDefinitions'
+  this.assetsDbKey = this.globalPrefix + 'AssetDefinitions'
+  this.assetRecords = this.store.get(this.assetsDbKey) || []
 
-  if (!_.isObject(this.store.get(this.dbKey)))
-    this.store.set(this.dbKey, [])
+  if (_.isUndefined(this.store.get(this.assetsDbKey + '_version')))
+    this.store.set(this.assetsDbKey + '_version', '1')
 }
 
 inherits(AssetDefinitionStorage, SyncStorage)
+
+/**
+ * @return {AssetDefinitionRecord[]}
+ */
+AssetDefinitionStorage.prototype._getRecords = function() {
+  return this.assetRecords
+}
+
+/**
+ * @param {AssetDefinitionRecord[]}
+ */
+AssetDefinitionStorage.prototype._saveRecords = function(records) {
+  this.assetRecords = records
+  this.store.set(this.assetsDbKey, records)
+}
 
 /**
  * @param {AssetDefinitionRecord} data
@@ -42,7 +58,7 @@ AssetDefinitionStorage.prototype.add = function(data) {
   data.colorDescs.forEach(verify.string)
   verify.number(data.unit)
 
-  var records = this.store.get(this.dbKey) || []
+  var records = this._getRecords()
   records.forEach(function(record) {
     if (record.id === data.id)
       throw new Error('exists asset already have same id')
@@ -62,8 +78,7 @@ AssetDefinitionStorage.prototype.add = function(data) {
     colorDescs: data.colorDescs,
     unit: data.unit
   })
-
-  this.store.set(this.dbKey, records)
+  this._saveRecords(records)
 }
 
 /**
@@ -73,14 +88,11 @@ AssetDefinitionStorage.prototype.add = function(data) {
 AssetDefinitionStorage.prototype.getByMoniker = function(moniker) {
   verify.string(moniker)
 
-  var records = this.getAll().filter(function(record) {
-    return (record.monikers.indexOf(moniker) !== -1)
+  var record = _.find(this._getRecords(), function(record) {
+    return record.monikers.indexOf(moniker) !== -1
   })
 
-  if (records.length === 0)
-    return null
-
-  return records[0]
+  return _.isUndefined(record) ? null : _.cloneDeep(record)
 }
 
 /**
@@ -90,29 +102,26 @@ AssetDefinitionStorage.prototype.getByMoniker = function(moniker) {
 AssetDefinitionStorage.prototype.getByDesc = function(desc) {
   verify.string(desc)
 
-  var records = this.getAll().filter(function(record) {
-    return (record.colorDescs.indexOf(desc) !== -1)
+  var record = _.find(this._getRecords(), function(record) {
+    return record.colorDescs.indexOf(desc) !== -1
   })
 
-  if (records.length === 0)
-    return null
-
-  return records[0]
+  return _.isUndefined(record) ? null : _.cloneDeep(record)
 }
 
 /*
  * @return {AssetDefinitionRecord[]}
  */
 AssetDefinitionStorage.prototype.getAll  =function() {
-  var records = this.store.get(this.dbKey) || []
-  return records
+  return _.cloneDeep(this._getRecords())
 }
 
 /**
  * Drop all asset definions
  */
 AssetDefinitionStorage.prototype.clear = function() {
-  this.store.remove(this.dbKey)
+  this.store.remove(this.assetsDbKey)
+  this.store.remove(this.assetsDbKey + '_version')
 }
 
 
