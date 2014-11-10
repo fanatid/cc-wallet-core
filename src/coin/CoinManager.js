@@ -21,6 +21,11 @@ var verify = require('../verify')
  */
 
 /**
+ * @event CoinManager#touchAsset
+ * @param {AssetDefinition} asset
+ */
+
+/**
  * @class CoinManager
  * @extends events.EventEmitter
  * @param {Wallet} wallet
@@ -75,7 +80,11 @@ function CoinManager(wallet, storage) {
         address: walletAddresses[0]
       })
 
-      return Q.ninvoke(coin, 'getMainColorValue').then(function() {
+      return Q.ninvoke(coin, 'getMainColorValue').then(function(colorValue) {
+        var colorDesc = colorValue.getColorDefinition().getDesc()
+        var assetdef = self._wallet.getAssetDefinitionManager().getByDesc(colorDesc)
+        self.emit('touchAsset', assetdef)
+
         walletAddresses.forEach(function(address) {
           self.emit('touchAddress', address)
         })
@@ -95,11 +104,20 @@ function CoinManager(wallet, storage) {
     })
 
     tx.outs.map(function(output, index) {
-      self._wallet.getColorData().removeColorValues(txId, index)
       var coinRecord = self._storage.removeCoin(txId, index)
-      _.intersection(coinRecord.addresses, allAddresses).forEach(function(address) {
-        self.emit('touchAddress', address)
-      })
+      var coin = self.record2Coin(coinRecord)
+
+      Q.ninvoke(coin, 'getMainColorValue').then(function(colorValue) {
+        var colorDesc = colorValue.getColorDefinition().getDesc()
+        var assetdef = self._wallet.getAssetDefinitionManager().getByDesc(colorDesc)
+        self.emit('touchAsset', assetdef)
+
+        self._wallet.getColorData().removeColorValues(txId, index)
+        _.intersection(coinRecord.addresses, allAddresses).forEach(function(address) {
+          self.emit('touchAddress', address)
+        })
+
+      }).catch(function(error) { self.emit('error', error) })
     })
   })
 }
