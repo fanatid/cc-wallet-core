@@ -54,6 +54,7 @@ describe('Wallet', function() {
 
   function cleanup() {
     wallet.clearStorage()
+    delete wallet
   }
 
   describe('instance methods', function () {
@@ -180,7 +181,6 @@ describe('Wallet', function() {
   })
 
   describe('balance methods', function() {
-
     before(function (done) {
       setup()
       wallet.initialize(seed)
@@ -195,12 +195,12 @@ describe('Wallet', function() {
     after(cleanup)
 
     var fixtures = [
-      { method: 'getAvailableBalance',   moniker: 'bitcoin', balance: 63326039 }
-      , { method: 'getAvailableBalance',   moniker: 'gold',    balance: 2000 }
-      , { method: 'getTotalBalance',       moniker: 'bitcoin', balance: 63326039 }
-      , { method: 'getTotalBalance',       moniker: 'gold',    balance: 2000 }
-      , { method: 'getUnconfirmedBalance', moniker: 'bitcoin', balance: 0 }
-      , { method: 'getUnconfirmedBalance', moniker: 'gold',    balance: 0 }
+      { method: 'getAvailableBalance',   moniker: 'bitcoin', balance: 63326039 },
+      { method: 'getAvailableBalance',   moniker: 'gold',    balance: 2000 },
+      { method: 'getTotalBalance',       moniker: 'bitcoin', balance: 63326039 },
+      { method: 'getTotalBalance',       moniker: 'gold',    balance: 2000 },
+      { method: 'getUnconfirmedBalance', moniker: 'bitcoin', balance: 0 },
+      { method: 'getUnconfirmedBalance', moniker: 'gold',    balance: 0 }
     ]
 
     fixtures.forEach(function (fixture) {
@@ -217,7 +217,10 @@ describe('Wallet', function() {
     })
   })
 
-  xdescribe('send-history-issue', function() {
+  describe('send, history, issue', function() {
+    beforeEach(setup)
+    afterEach(cleanup)
+
     it('sendCoins', function(done) {
       var seed = '421fc385fdae762b346b80e0212f77bb'
       wallet.initialize(seed)

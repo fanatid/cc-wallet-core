@@ -8,7 +8,11 @@ var helpers = require('./helpers')
 
 
 function networkImplementationTest(opts) {
-  describe('network.' + opts.class.name, function() {
+  opts = _.extend({
+    'describe': describe
+  }, opts)
+
+  opts.describe('network.' + opts.class.name, function() {
     var network
 
     beforeEach(function(done) {

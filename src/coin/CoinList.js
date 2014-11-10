@@ -38,25 +38,23 @@ CoinList.prototype.getCoins = function() {
 CoinList.prototype.getTotalValue = function(cb) {
   verify.function(cb)
 
-  var self = this;
-  var dColorValues = {};
+  var self = this
+  var dColorValues = {}
 
-  Q.all(self.coins.map(function (coin) {
-      return Q.ninvoke(coin, 'getMainColorValue').
-          then(function (colorValue) {
-               var colorId = colorValue.getColorId();
-               if (_.isUndefined(dColorValues[colorId]))
-                   dColorValues[colorId] = colorValue;
-               else
-                   dColorValues[colorId] = dColorValues[colorId].plus(colorValue);
-               return true;
-          });
-   })).then(function(all_ok) {
-       var colorValues = Object.keys(dColorValues).map(function(colorId) {
-           return dColorValues[colorId];
-       });
-       return colorValues;
-  }).done(function(colorValues) { cb(null, colorValues); }, function(error) { cb(error); });
+  var promises = self.coins.map(function(coin) {
+    return Q.ninvoke(coin, 'getMainColorValue').then(function(colorValue) {
+      var colorId = colorValue.getColorId()
+      if (_.isUndefined(dColorValues[colorId]))
+        dColorValues[colorId] = colorValue
+      else
+        dColorValues[colorId] = dColorValues[colorId].plus(colorValue)
+    })
+  })
+
+  Q.all(promises).then(function() {
+    return _.values(dColorValues)
+
+  }).done(function(result) { cb(null, result) }, function(error) { cb(error) })
 }
 
 

@@ -106,7 +106,7 @@ HistoryManager.prototype.getEntries = function(cb) {
           if (!_.isUndefined(coins[tx.getId()+index]))
             return
 
-          var address = bitcoin.getAddressesFromOutputScript(output.script, self.wallet.getNetwork())[0]
+          var address = bitcoin.getAddressesFromOutputScript(output.script, self.wallet.getBitcoinNetwork())[0]
           var coin = new Coin(self.wallet.getCoinManager(), {
             txId: tx.getId(),
             outIndex: index,
@@ -139,7 +139,7 @@ HistoryManager.prototype.getEntries = function(cb) {
           if (assetdef === null)
             throw new Error('asset for ColorValue ' + ct.getColorValue() + ' not found')
           var assetValue = new AssetValue(assetdef, ct.getValue())
-          return new HistoryTarget(assetValue, ct.getScript(), self.wallet.getNetwork())
+          return new HistoryTarget(assetValue, ct.getScript(), self.wallet.getBitcoinNetwork())
         })
 
         var entryType = HistoryEntry.entryTypes.Send
@@ -152,7 +152,7 @@ HistoryManager.prototype.getEntries = function(cb) {
             if (assetdef === null)
               throw new Error('asset for ColorValue ' + ct.getColorValue() + ' not found')
             var assetValue = new AssetValue(assetdef, ct.getValue())
-            return new HistoryTarget(assetValue, ct.getScript(), self.wallet.getNetwork())
+            return new HistoryTarget(assetValue, ct.getScript(), self.wallet.getBitcoinNetwork())
           })
         }
         if (ins.length === tx.ins.length && outs.length === tx.outs.length)
