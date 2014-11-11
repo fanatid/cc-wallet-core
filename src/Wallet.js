@@ -6,7 +6,7 @@ var asset = require('./asset')
 var blockchain = require('./blockchain')
 var coin = require('./coin')
 var ConfigStorage = require('./ConfigStorage')
-var history = require('./history')
+var HistoryManager = require('./history').HistoryManager
 var network = require('./network')
 var tx = require('./tx')
 
@@ -72,7 +72,7 @@ function Wallet(opts) {
   this.coinStorage = new coin.CoinStorage()
   this.coinManager = new coin.CoinManager(this, this.coinStorage)
 
-  this.historyManager = new history.HistoryManager(this)
+  this.historyManager = new HistoryManager(this)
 }
 
 Wallet.prototype.getBitcoinNetwork = function() { return this.bitcoinNetwork }
@@ -528,7 +528,7 @@ Wallet.prototype.sendTx = function(tx, cb) {
  * @throws {Error} If wallet not initialized or not currently seedHex
  */
 Wallet.prototype.sendCoins = function(seedHex, assetdef, rawTargets, cb) {
-  console.warn("Wallet.prototype.sendCoins is deprecated. Use createTx, transformTx and sendTx instead.")
+  console.warn('Wallet.prototype.sendCoins is deprecated. Use createTx, transformTx and sendTx instead.')
 
   this.isInitializedCheck()
   this.getAddressManager().isCurrentSeedCheck(seedHex)
@@ -579,7 +579,7 @@ Wallet.prototype.sendCoins = function(seedHex, assetdef, rawTargets, cb) {
  * @throws {Error} If wallet not initialized
  */
 Wallet.prototype.issueCoins = function(seedHex, moniker, pck, units, atoms, cb) {
-  console.warn("Wallet.prototype.issueCoins is deprecated. Use createIssuanceTx, transformTx and sendTx instead.")
+  console.warn('Wallet.prototype.issueCoins is deprecated. Use createIssuanceTx, transformTx and sendTx instead.')
 
   this.isInitializedCheck()
   this.getAddressManager().isCurrentSeedCheck(seedHex)

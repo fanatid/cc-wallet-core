@@ -2,7 +2,6 @@ var expect = require('chai').expect
 
 var bitcoin = require('../src/bitcoin')
 var Wallet = require('../src').Wallet
-var VerifiedBlockchain = require('../src').blockchain.VerifiedBlockchain
 
 
 describe('blockchain.VerifiedBlockchain', function() {

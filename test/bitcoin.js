@@ -13,7 +13,10 @@ describe('bitcoin', function() {
     bits: 437610131,
     nonce: 2247265470
   }
-  var buffer = new Buffer('020000006b7f296c593efd228da249d84de6d5feaf2cd99de73f5b2f76ba76f3000000008cd903418b7dc6bc0958182a712271934708b7eccbfb05759aee8784626c7af222074e549366151abe8cf285', 'hex')
+  var headerHex = '\
+020000006b7f296c593efd228da249d84de6d5feaf2cd99de73f5b2f76ba76f3000000008cd90341\
+8b7dc6bc0958182a712271934708b7eccbfb05759aee8784626c7af222074e549366151abe8cf285'
+  var buffer = new Buffer(headerHex, 'hex')
 
   it('header2buffer', function() {
     var result = bitcoin.header2buffer(header)

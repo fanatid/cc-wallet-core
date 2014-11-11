@@ -1,10 +1,6 @@
 var expect = require('chai').expect
 
-var _ = require('lodash')
-
-var cclib = require('../src/cclib')
 var AssetDefinition = require('../src/asset').AssetDefinition
-var coin = require('../src/coin')
 var Wallet = require('../src/index').Wallet
 
 
@@ -53,11 +49,12 @@ describe('Wallet', function() {
   }
 
   function cleanup() {
-    wallet.clearStorage()
-    delete wallet
+    //wallet.clearStorage()
+    localStorage.clear()
+    wallet = undefined
   }
 
-  describe('instance methods', function () {
+  describe.only('instance methods', function () {
     beforeEach(setup)
     afterEach(cleanup)
 
@@ -264,7 +261,7 @@ describe('Wallet', function() {
       wallet.subscribeAndSyncAllAddresses(function(error) {
         expect(error).to.be.null
 
-        var address = wallet.getSomeAddress(assetdef)
+        //var address = wallet.getSomeAddress(assetdef)
         //console.log('Address to:   ' + 'mo8Ni5kFSxcuEVXbfBaSaDzMiq1j4E6wUE')
         var targets = [{ address: 'mo8Ni5kFSxcuEVXbfBaSaDzMiq1j4E6wUE', value: 10000 }]
         //wallet.getAvailableBalance(assetdef, function(error, balance) {

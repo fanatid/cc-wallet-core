@@ -1,5 +1,3 @@
-var events = require('events')
-
 var expect = require('chai').expect
 
 var cccore = require('../src')

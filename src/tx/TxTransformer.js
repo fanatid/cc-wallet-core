@@ -10,6 +10,10 @@ var verify = require('../verify')
 
 
 /**
+ */
+function transformTx() {}
+
+/**
  * For a given transaction tx, returns a string that represents
  *  the type of transaction (asset, operational, composed, signed) that it is
  *
@@ -177,7 +181,7 @@ function transformRawTx(rawTx, targetKind, opts, cb) {
     return Q.ninvoke(rawTx, 'sign', opts.wallet, opts.seedHex)
 
   }).then(function() {
-    var allowIncomplete = (targetKind == 'partially-signed')
+    var allowIncomplete = (targetKind === 'partially-signed')
     return rawTx.toTransaction(allowIncomplete)
 
   }).then(function(signedTx) {
