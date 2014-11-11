@@ -54,7 +54,7 @@ describe('Wallet', function() {
     wallet = undefined
   }
 
-  describe.only('instance methods', function () {
+  describe('instance methods', function () {
     beforeEach(setup)
     afterEach(cleanup)
 
