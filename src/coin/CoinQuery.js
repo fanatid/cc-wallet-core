@@ -146,20 +146,19 @@ CoinQuery.prototype.getCoins = function(cb) {
     var promise = Q()
 
     coins.forEach(function(coin) {
+      /** filter include/only unconfirmed coins */
+      var isConfirmed = coin.isConfirmed()
+      if (self.query.onlyUnconfirmed && isConfirmed)
+        return
+
+      if (!self.query.onlyUnconfirmed && !self.query.includeUnconfirmed && !isConfirmed)
+        return
+
+      /** filter color */
+      if (self.query.onlyColoredAs === null)
+        return result.push(coin)
+
       promise = promise.then(function() {
-        /** filter include/only unconfirmed coins */
-        var isConfirmed = coin.isConfirmed()
-        if (self.query.onlyUnconfirmed && isConfirmed)
-          return
-        if (!self.query.onlyUnconfirmed && !self.query.includeUnconfirmed && !isConfirmed)
-          return
-
-        /** filter color */
-        if (self.query.onlyColoredAs === null) {
-          result.push(coin)
-          return
-        }
-
         return Q.ninvoke(coin, 'getMainColorValue').then(function(colorValue) {
           if (self.query.onlyColoredAs.indexOf(colorValue.getColorId()) !== -1)
             result.push(coin)
