@@ -12,9 +12,9 @@ function isBlockchainChunk(thing) {
   return verify.hexString(thing) && thing.length > 0 && thing.length <= 322240 && thing.length % 160 === 0
 }
 
-var networks = Object.keys(bitcoin.networks).map(function(key) { return bitcoin.networks[key] })
+var networks = _.values(bitcoin.networks)
 function isBitcoinNetwork(thing) {
-  return networks.indexOf(thing) !== -1
+  return _.some(networks, function(network) { return _.isEqual(network, thing) })
 }
 
 function isHexSymbol(sym) { return '0123456789abcdefABCDEF'.indexOf(sym) !== -1 }

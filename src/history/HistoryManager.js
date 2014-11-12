@@ -47,7 +47,7 @@ HistoryManager.prototype.getEntries = function(cb) {
       .map(function(txId) {
         var entry = {
           tx: txDb.getTx(txId),
-          blockHeight: txDb.getTxBlockHeight(txId),
+          height: txDb.getTxHeight(txId),
           timestamp: txDb.getTxTimestamp(txId)
         }
         if (entry.tx === null)
@@ -56,7 +56,7 @@ HistoryManager.prototype.getEntries = function(cb) {
         return [entry.tx.getId(), entry]
       })
       .sortBy(function(entry) {
-        var value = entry[1].blockHeight + entry[1].timestamp/10000000000
+        var value = entry[1].height + entry[1].timestamp/10000000000
         // -1 or Infinity ?
         return isNaN(value) ? -1 : value
       })
@@ -160,7 +160,7 @@ HistoryManager.prototype.getEntries = function(cb) {
 
         entries.push(new HistoryEntry({
           tx: tx,
-          blockHeight: txEntries[tx.getId()].blockHeight,
+          height: txEntries[tx.getId()].height,
           timestamp: txEntries[tx.getId()].timestamp,
           values: _.values(assetValues),
           targets: historyTargets,

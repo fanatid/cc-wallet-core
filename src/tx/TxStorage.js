@@ -4,6 +4,7 @@ var _ = require('lodash')
 
 var SyncStorage = require('../SyncStorage')
 var verify = require('../verify')
+var txStatus = require('./const').txStatus
 
 
 /**
@@ -11,7 +12,7 @@ var verify = require('../verify')
  * @property {string} txId
  * @property {string} rawTx
  * @property {number} status
- * @property {number} [blockHeight=null]
+ * @property {number} [height=null]
  * @property {number} [timestamp=null]
  */
 
@@ -27,6 +28,16 @@ function TxStorage() {
 
   if (_.isUndefined(this.store.get(this.txDbKey + '_version')))
     this.store.set(this.txDbKey + '_version', '1')
+
+  if (this.store.get(this.txDbKey + '_version') === '1') {
+    var records = this._getRecords()
+    _.keys(records).forEach(function(txId) {
+      records[txId].height = records[txId].blockHeight
+      delete records[txId].blockHeight
+    })
+    this._saveRecords(records)
+    this.store.set(this.txDbKey + '_version', '2')
+  }
 }
 
 inherits(TxStorage, SyncStorage)
@@ -51,7 +62,7 @@ TxStorage.prototype._saveRecords = function(records) {
  * @param {string} rawTx
  * @param {Object} opts
  * @param {number} opts.status
- * @param {number} opts.blockHeight
+ * @param {number} opts.height
  * @param {number} opts.timestamp
  * @return {TxStorageRecord}
  * @throws {Error} If txId exists
@@ -61,7 +72,7 @@ TxStorage.prototype.addTx = function(txId, rawTx, opts) {
   verify.hexString(rawTx)
   verify.object(opts)
   verify.number(opts.status)
-  verify.number(opts.blockHeight)
+  verify.number(opts.height)
   verify.number(opts.timestamp)
 
   var records = this._getRecords()
@@ -72,7 +83,7 @@ TxStorage.prototype.addTx = function(txId, rawTx, opts) {
     txId: txId,
     rawTx: rawTx,
     status: opts.status,
-    blockHeight: opts.blockHeight,
+    height: opts.height,
     timestamp: opts.timestamp
   }
   this._saveRecords(records)
@@ -84,7 +95,7 @@ TxStorage.prototype.addTx = function(txId, rawTx, opts) {
  * @param {string} txId
  * @param {Object} opts
  * @param {number} [opts.status]
- * @param {number} [opts.blockHeight]
+ * @param {number} [opts.height]
  * @param {number} [opts.timestamp]
  * @return {TxStorageRecord}
  * @throws {Error} If txId exists
@@ -93,7 +104,7 @@ TxStorage.prototype.updateTx = function(txId, opts) {
   verify.txId(txId)
   verify.object(opts)
   if (opts.status) verify.number(opts.status)
-  if (opts.blockHeight) verify.number(opts.blockHeight)
+  if (opts.height) verify.number(opts.height)
   if (opts.timestamp) verify.number(opts.timestamp)
 
   var records = this._getRecords()
@@ -103,13 +114,13 @@ TxStorage.prototype.updateTx = function(txId, opts) {
 
   opts = _.extend({
     status: record.status,
-    blockHeight: record.blockHeight,
+    height: record.height,
     timestamp: record.timestamp
   }, opts)
 
   records[txId] = _.extend(record, {
     status: opts.status,
-    blockHeight: opts.blockHeight,
+    height: opts.height,
     timestamp: opts.timestamp
   })
   this._saveRecords(records)
@@ -126,6 +137,18 @@ TxStorage.prototype.getTx = function(txId) {
 
   var record = this._getRecords()[txId]
   return _.isUndefined(record) ? null : _.clone(record)
+}
+
+/**
+ * @return {TxStorageRecord[]}
+ */
+TxStorage.prototype.getAllPendingTxIds = function() {
+  var result = []
+  _.forEach(this._getRecords(), function(record, txId) {
+    if (record.status === txStatus.pending) { result.push(txId) }
+  })
+
+  return result
 }
 
 /**

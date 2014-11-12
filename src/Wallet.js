@@ -498,18 +498,11 @@ Wallet.prototype.transformTx = function(currentTx, targetKind, seedHex, cb) {
 Wallet.prototype.sendTx = function(tx, cb) {
   verify.function(cb)
 
-  var self = this
-
-  Q.ninvoke(self.getBlockchain(), 'sendTx', tx).then(function() {
-    var timezoneOffset = new Date().getTimezoneOffset() * 60
-    var timestamp = Math.round(Date.now()/1000) + timezoneOffset
-    return Q.ninvoke(self.getTxDb(), 'addUnconfirmedTx', tx, { timestamp: timestamp })
-
-  }).done(function() { cb(null) }, function(error) { cb(error) })
+  Q.ninvoke(this.getTxDb(), 'sendTx', tx)
+    .done(function() { cb(null) }, function(error) { cb(error) })
 }
 
 /**
- * Drop all data from storage's
  */
 Wallet.prototype.clearStorage = function() {
   this.config.clear()

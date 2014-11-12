@@ -6,7 +6,7 @@ var verify = require('../verify')
  *
  * @param {Object} data
  * @param {bitcoinjs-lib.Transaction} data.tx
- * @param {number} data.blockHeight
+ * @param {number} data.height
  * @param {number} data.timestamp
  * @param {AssetValue[]} data.values
  * @param {HistoryTarget[]} data.targets
@@ -15,7 +15,7 @@ var verify = require('../verify')
 function HistoryEntry(data) {
   verify.object(data)
   verify.Transaction(data.tx)
-  verify.number(data.blockHeight)
+  verify.number(data.height)
   verify.number(data.timestamp)
   verify.array(data.values)
   data.values.forEach(verify.AssetValue)
@@ -24,7 +24,7 @@ function HistoryEntry(data) {
   verify.number(data.entryType)
 
   this.txId = data.tx.getId()
-  this.blockHeight = data.blockHeight
+  this.height = data.height
   this.timestamp = data.timestamp
   this.values = data.values
   this.targets = data.targets
@@ -49,7 +49,7 @@ HistoryEntry.prototype.getTxId = function() {
  * @return {number}
  */
 HistoryEntry.prototype.getBlockHeight = function() {
-  return this.blockHeight
+  return this.height
 }
 
 /**
