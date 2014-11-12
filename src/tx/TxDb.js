@@ -246,11 +246,18 @@ TxDb.prototype.historySync = function(address, entries, cb) {
   verify.function(cb)
 
   var self = this
-  var entriesTxId = _.indexBy(entries, 'txId')
+
+  entries = _.chain(entries)
+    .uniq('txId')
+    .sortBy(function(entry) { return entry.height === 0 ? Infinity : entry.height })
+    .value()
+
+  var entriesTxId = {}
+  entries.forEach(function(entry) { entriesTxId[entry.txId] = true })
 
   _.chain(self._history[address] = self._history[address] || {})
     .keys()
-    .filter(function(txId) { return !_.isUndefined(entriesTxId[txId]) })
+    .filter(function(txId) { return _.isUndefined(entriesTxId[txId]) })
     .forEach(function(txId) {
       delete self._history[address][txId]
 
@@ -258,31 +265,27 @@ TxDb.prototype.historySync = function(address, entries, cb) {
       if (self._historyTx[txId] === 0) {
         delete self._historyTx[txId]
 
-        var tx = this._txStorage.removeTx(txId)
+        var tx = self._txStorage.removeTx(txId)
         if (tx !== null)
-          this.emit('revertTx', tx)
+          self.emit('revertTx', tx)
       }
     })
 
-  var promises = _.chain(entries)
-    .uniq()
-    .sortBy(function(entry) { return entry.height === 0 ? Infinity : entry.height })
-    .map(function(entry) {
-      var txId = entry.txId
+  var promises = entries.map(function(entry) {
+    var txId = entry.txId
 
-      if (_.isUndefined(self._history[address][txId])) {
-        self._history[address][txId] = true
-        self._historyTx[txId] = (self._historyTx[txId] || 0) + 1
-      }
+    if (_.isUndefined(self._history[address][txId])) {
+      self._history[address][txId] = true
+      self._historyTx[txId] = (self._historyTx[txId] || 0) + 1
+    }
 
-      var addTxOpts = {
-        height: entry.height,
-        status: entry.height === 0 ? txStatus.unconfirmed : txStatus.confirmed
-      }
+    var addTxOpts = {
+      height: entry.height,
+      status: entry.height === 0 ? txStatus.unconfirmed : txStatus.confirmed
+    }
 
-      return Q.ninvoke(self, '_addTx', txId, addTxOpts)
-    })
-    .value()
+    return Q.ninvoke(self, '_addTx', txId, addTxOpts)
+  })
 
   Q.all(promises).done(function() { cb(null) }, function(error) { cb(error) })
 }

@@ -7,8 +7,15 @@ describe('blockchain.NaiveBlockchain', function() {
   var wallet, nb
 
   beforeEach(function() {
+    localStorage.clear()
     wallet = new cccore.Wallet({ testnet: true, blockchain: 'NaiveBlockchain' })
     nb = wallet.getBlockchain()
+  })
+
+  afterEach(function() {
+    //wallet.clearStorage()
+    localStorage.clear()
+    wallet = undefined
   })
 
   it('inherits Blockchain', function() {
@@ -69,6 +76,38 @@ describe('blockchain.NaiveBlockchain', function() {
     nb.subscribeAddress(address, function(error) {
       expect(error).to.be.null
       done()
+    })
+  })
+
+  it('send tx and wait touchAddress', function(done) {
+    var seed = '421fc385fdae762b346b80e0212f77ff'
+    wallet.initialize(seed)
+    wallet.subscribeAndSyncAllAddresses(function(error) {
+      expect(error).to.be.null
+
+      var bitcoin = wallet.getAssetDefinitionByMoniker('bitcoin')
+      var myBitcoinAddress = wallet.getSomeAddress(bitcoin)
+      var targets = [{ address: 'n3Ty71CD9NuepYMRg3b5HpX4QULQXc5tuH', value: 10000 }]
+
+      wallet.createTx(bitcoin, targets, function(error, tx) {
+        expect(error).to.be.null
+
+        wallet.transformTx(tx, 'signed', seed, function(error, tx) {
+          expect(error).to.be.null
+
+          function onTouchAddress(address) {
+            if (address === myBitcoinAddress) {
+              wallet.getBlockchain().removeListener('touchAddress', onTouchAddress)
+              done()
+            }
+          }
+          wallet.getBlockchain().on('touchAddress', onTouchAddress)
+
+          wallet.sendTx(tx, function(error) {
+            expect(error).to.be.null
+          })
+        })
+      })
     })
   })
 })

@@ -48,14 +48,14 @@ function Electrum(opts) {
 
     if (response.id === null) {
       var isMethod = response.method === 'blockchain.numblocks.subscribe'
-      var isArgs = _.isNumber(response.result)
+      var isArgs = _.isNumber(response.params) && _.isNumber(response.params[0])
       if (isMethod && isArgs)
-        return self._setCurrentHeight(response.result)
+        return self._setCurrentHeight(response.params[0])
 
       isMethod = response.method === 'blockchain.address.subscribe'
-      isArgs = _.isArray(response.result) && _.isString(response.result[0])
+      isArgs = _.isArray(response.params) && _.isString(response.params[0])
       if (isMethod && isArgs)
-        return self.emit('touchAddress', response.result[0])
+        return self.emit('touchAddress', response.params[0])
     }
 
     var deferred = self._requests[response.id]

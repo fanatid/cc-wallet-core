@@ -234,9 +234,8 @@ describe('Wallet', function() {
           wallet.transformTx(tx, 'signed', seed, function(error, tx) {
             expect(error).to.be.null
 
-            // Todo: change event addTx to updateTx...
-            wallet.getTxDb().on('addTx', function(newTx) {
-              if (newTx.getId() === tx.getId()) { done() }
+            wallet.getTxDb().on('updateTx', function(newTxId) {
+              if (newTxId === tx.getId()) { done() }
             })
 
             wallet.sendTx(tx, function(error) {
