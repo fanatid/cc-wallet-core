@@ -13,11 +13,13 @@ var Network = require('./Network')
  * @class Electrum
  * @extends Network
  *
+ * @param {Wallet} wallet
  * @param {Object} [opts]
  * @param {boolean} [opts.testnet=false]
  * @param {string} [opts.url]
  */
-function Electrum(opts) {
+function Electrum(wallet, opts) {
+  verify.Wallet(wallet)
   opts = _.extend({ testnet: false }, opts)
   opts = _.extend({
     url: 'ws://devel.hz.udoidio.info:' + (opts.testnet ? '8784' : '8783')
@@ -27,6 +29,8 @@ function Electrum(opts) {
 
   var self = this
   Network.call(self)
+
+  self._wallet = wallet
 
   self._requestId = 0
   self._requests = {}
@@ -154,14 +158,18 @@ Electrum.prototype.getTx = function(txId, cb) {
   verify.txId(txId)
   verify.function(cb)
 
+  var tx = this._wallet.getTxDb().getTx(txId)
+  if (tx !== null)
+    return process.nextTick(function() { cb(null, tx) })
+
   this._request('blockchain.transaction.get', [txId]).then(function(rawTx) {
-    var tx = bitcoin.Transaction.fromHex(rawTx)
+    tx = bitcoin.Transaction.fromHex(rawTx)
     if (tx.getId() !== txId)
       throw new Error('Received tx is incorrect')
 
     return tx
 
-  }).done(function(tx) { cb(null, tx) }, function(error) { cb(error) })
+  }).done(function(tx) { cb(null, tx) }, function(error) { console.log(txId, error);cb(error) })
 }
 
 /**

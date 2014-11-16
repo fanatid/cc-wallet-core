@@ -83,7 +83,8 @@ function VerifiedBlockchain(network, opts) {
       running = false
       if (queue.length > 0)
         queue.pop().resolve()
-    })
+
+    }).done()
   }
 
   self._network.on('newHeight', onNewHeight)

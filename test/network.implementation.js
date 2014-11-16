@@ -2,6 +2,7 @@ var expect = require('chai').expect
 
 var _ = require('lodash')
 
+var Wallet = require('../src').Wallet
 var Network = require('../src').network.Network
 
 var helpers = require('./helpers')
@@ -13,11 +14,23 @@ function networkImplementationTest(opts) {
   }, opts)
 
   opts.describe('network.' + opts.class.name, function() {
-    var network
+    var wallet, network
 
     beforeEach(function(done) {
-      network = new opts.class({ testnet: true })
+      wallet = new Wallet({
+        testnet: true,
+        network: opts.class.name,
+        blockchain: 'NaiveBlockchain',
+        storageSaveTimeout: 0
+      })
+      network = wallet.network
       network.once('connect', done)
+    })
+
+    afterEach(function() {
+      wallet.clearStorage()
+      wallet = undefined
+      network = undefined
     })
 
     it('inherits Network', function() {

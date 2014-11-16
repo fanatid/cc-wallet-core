@@ -93,7 +93,8 @@ Network.prototype._setCurrentHeight = function(newHeight) {
     self._setCurrentHeightRunning = false
     if (self._setCurrentHeightQueue.length > 0)
       self._setCurrentHeightQueue.pop().resolve()
-  })
+
+  }).done()
 }
 
 /**

@@ -1,5 +1,7 @@
 var expect = require('chai').expect
 
+var Q = require('q')
+
 var AssetDefinition = require('../src/asset').AssetDefinition
 var Wallet = require('../src/index').Wallet
 
@@ -45,7 +47,7 @@ describe('Wallet', function() {
 
   function setup() {
     localStorage.clear()
-    wallet = new Wallet({ testnet: true, blockchain: 'NaiveBlockchain' })
+    wallet = new Wallet({ testnet: true, blockchain: 'NaiveBlockchain', storageSaveTimeout: 0 })
   }
 
   function cleanup() {
@@ -219,6 +221,9 @@ describe('Wallet', function() {
     afterEach(cleanup)
 
     it('sendCoins', function(done) {
+      var deferred = Q.defer()
+      deferred.promise.done(done, done)
+
       var seed = '421fc385fdae762b346b80e0212f77bb'
       wallet.initialize(seed)
       wallet.addAssetDefinition(seed, goldAsset)
@@ -234,8 +239,8 @@ describe('Wallet', function() {
           wallet.transformTx(tx, 'signed', seed, function(error, tx) {
             expect(error).to.be.null
 
-            wallet.getTxDb().on('updateTx', function(newTxId) {
-              if (newTxId === tx.getId()) { done() }
+            wallet.getTxDb().on('updateTx', function(newTx) {
+              if (newTx.getId() === tx.getId()) { deferred.resolve() }
             })
 
             wallet.sendTx(tx, function(error) {
@@ -251,7 +256,8 @@ describe('Wallet', function() {
       wallet = new Wallet({
         masterKey: '421fc385fdae762b346b80e0212f77bd',
         testnet: true,
-        blockchain: 'NaiveBlockchain'
+        blockchain: 'NaiveBlockchain',
+        storageSaveTimeout: 0
       })
 
       var data = {

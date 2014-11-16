@@ -73,7 +73,7 @@ TxFetcher.prototype.subscribeAndSyncAddress = function(address, cb) {
 
   var self = this
   if (!_.isUndefined(self._subscribedAddresses[address]))
-    return cb(null)
+    return process.nextTick(function() { cb(null) })
 
   Q.ninvoke(self._blockchain, 'subscribeAddress', address).then(function() {
     self._subscribedAddresses[address] = true

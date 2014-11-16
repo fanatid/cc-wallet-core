@@ -4,9 +4,9 @@ var inherits = require('util').inherits
 var _ = require('lodash')
 var Q = require('q')
 
-var bitcoin = require('../bitcoin')
+var Transaction = require('../bitcoin').Transaction
 var verify = require('../verify')
-var txStatus = require('./const').txStatus
+var txStatus = require('../const').txStatus
 
 
 /**
@@ -29,13 +29,18 @@ function getCurrentTimestamp() {
  */
 
 /**
+ * @event TxDb#loadTx
+ * @param {Transaction} tx
+ */
+
+/**
  * @event TxDb#addTx
  * @param {Transaction} tx
  */
 
 /**
  * @event TxDb#updateTx
- * @param {string} txId
+ * @param {string} tx
  */
 
 /**
@@ -49,24 +54,24 @@ function getCurrentTimestamp() {
  * @param {TxStorage} txStorage
  * @param {Blockchain} blockchain
  */
-function TxDb(txStorage, blockchain) {
+function TxDb(wallet, txStorage) {
+  verify.Wallet(wallet)
   verify.TxStorage(txStorage)
-  verify.Blockchain(blockchain)
 
   var self = this
 
   events.EventEmitter.call(self)
 
+  self._wallet = wallet
   self._txStorage = txStorage
-  self._blockchain = blockchain
 
-  self._history = {}
-  self._historyTx = {}
   self._addTxSync = {}
   self._addTxQueue = {}
 
-  self._txStorage.getAllPendingTxIds().forEach(function(txId) {
-    process.nextTick(function() { self._attemptSendTx(txId) })
+  self._txStorage.getAllTxIds().forEach(function(txId) {
+    var record = self._txStorage.get(txId)
+    if (record !== null && record.status === txStatus.pending)
+      process.nextTick(function() { self._attemptSendTx(txId) })
   })
 }
 
@@ -83,18 +88,18 @@ TxDb.prototype._attemptSendTx = function(txId, attempt) {
 
   var self = this
 
-  var record = self._txStorage.getTx(txId)
+  var record = self._txStorage.get(txId)
   if (record === null)
     return
 
-  // No needed change status on success, historySync do it
-  var tx = bitcoin.Transaction.fromHex(record.rawTx)
-  Q.ninvoke(self._blockchain, 'sendTx', tx).catch(function(error) {
+  // No needed change status: on success, historySync do it
+  var tx = Transaction.fromHex(record.rawTx)
+  Q.ninvoke(self._wallet.getBlockchain(), 'sendTx', tx).catch(function(error) {
     self.emit('error', error)
 
     if (attempt >= 5) {
-      self._txStorage.updateTx(txId, {status: txStatus.invalid})
-      return self.emit('updateTx', txId)
+      self._txStorage.update(txId, {status: txStatus.invalid})
+      return self.emit('updateTx', tx)
     }
 
     var timeout = 15000 * Math.pow(2, attempt)
@@ -115,6 +120,7 @@ TxDb.prototype._attemptSendTx = function(txId, attempt) {
  * @param {Transaction} [data.tx]
  * @param {number} [data.status=txStatus.unknown]
  * @param {number} [data.timestamp]
+ * @param {string[]} [data.tAddresses]
  * @param {TxDb~errorCallback} cb
  */
 TxDb.prototype._addTx = function(txId, data, cb) {
@@ -123,6 +129,8 @@ TxDb.prototype._addTx = function(txId, data, cb) {
   verify.number(data.height)
   if (data.tx) verify.Transaction(data.tx)
   if (data.timestamp) verify.number(data.timestamp)
+  if (data.tAddresses) verify.array(data.tAddresses)
+  if (data.tAddresses) data.tAddresses.forEach(verify.string)
   verify.function(cb)
 
   if (data.tx) data.rawTx = data.tx.toHex()
@@ -130,25 +138,28 @@ TxDb.prototype._addTx = function(txId, data, cb) {
 
   var self = this
 
+  var deferred = Q.defer()
+  deferred.promise.done(function() { cb(null) }, function(error) { cb(error) })
+
   if (_.isUndefined(self._addTxQueue[txId]))
     self._addTxQueue[txId] = []
 
   var promise = Q()
   if (!_.isUndefined(self._addTxSync[txId])) {
     self._addTxQueue[txId].push(Q.defer())
-    promise = self._addTxQueue[txId][self._addTxQueue[txId].length - 1].promise
+    promise = _.last(self._addTxQueue[txId]).promise
   }
   self._addTxSync[txId] = true
 
   var record
   promise.then(function() {
-    record = self._txStorage.getTx(txId)
+    record = self._txStorage.get(txId)
 
     if (_.isUndefined(data.rawTx)) {
       if (record !== null)
         return (data.rawTx = record.rawTx)
 
-      return Q.ninvoke(self._blockchain, 'getTx', txId).then(function(tx) {
+      return Q.ninvoke(self._wallet.getBlockchain(), 'getTx', txId).then(function(tx) {
         data.rawTx = tx.toHex()
       })
     }
@@ -158,48 +169,54 @@ TxDb.prototype._addTx = function(txId, data, cb) {
       if (record !== null)
         return (data.timestamp = record.timestamp)
 
+      // Approximate unconfirmed transaction timestamp
       if (data.height === 0)
         return (data.timestamp = getCurrentTimestamp())
 
-      return Q.ninvoke(self._blockchain, 'getBlockTime', data.height).then(function(ts) {
+      return Q.ninvoke(self._wallet.getBlockchain(), 'getBlockTime', data.height).then(function(ts) {
         data.timestamp = ts
       })
     }
 
   }).then(function() {
+    if (_.isUndefined(data.tAddresses)) data.tAddresses = []
+    if (record !== null)
+      data.tAddresses = _.union(data.tAddresses, record.tAddresses)
+
     var opts = {
       status: data.status,
       height: data.height,
-      timestamp: data.timestamp
+      timestamp: data.timestamp,
+      tAddresses: _.sortBy(data.tAddresses)
     }
 
     if (record !== null) {
-      self._txStorage.updateTx(txId, opts)
-      return self.emit('updateTx', txId)
+      var isEqual = _.every(opts, function(v, k) { return _.isEqual(record[k], v) })
+      if (isEqual)
+        return
+
+      self._txStorage.update(txId, opts)
+      return self.emit('updateTx', Transaction.fromHex(data.rawTx))
     }
 
-    self._txStorage.addTx(txId, data.rawTx, opts)
-    self.emit('addTx', bitcoin.Transaction.fromHex(data.rawTx))
+    self._txStorage.add(txId, data.rawTx, opts)
+    self.emit('addTx', Transaction.fromHex(data.rawTx))
 
   }).then(function() {
-    cb(null)
+    deferred.resolve()
 
   }).catch(function(error) {
-    cb(error)
+    deferred.reject(error)
 
   }).finally(function() {
     delete self._addTxSync[txId]
 
-    var deferred = Q.defer()
-
     if (!_.isUndefined(self._addTxQueue[txId])) {
       if (self._addTxQueue[txId].length > 0)
-        deferred = self._addTxQueue[txId].pop()
+        self._addTxQueue[txId].pop().resolve()
       if (self._addTxQueue[txId].length === 0)
         delete self._addTxQueue[txId]
     }
-
-    deferred.resolve()
 
   }).done()
 }
@@ -214,11 +231,14 @@ TxDb.prototype.sendTx = function(tx, cb) {
   var self = this
 
   var txId = tx.getId()
+// Yes, I send empty addresses array, they will be filled in historySync
+//   if transaction will be accepted or will be empty if tx is invalid :-(
   var addTxOpts = {
     height: 0,
     tx: tx,
     status: txStatus.pending,
-    timestamp: getCurrentTimestamp()
+    timestamp: getCurrentTimestamp(),
+    tAddresses: []
   }
 
   Q.ninvoke(self, '_addTx', txId, addTxOpts).then(function() {
@@ -255,39 +275,45 @@ TxDb.prototype.historySync = function(address, entries, cb) {
   var entriesTxId = {}
   entries.forEach(function(entry) { entriesTxId[entry.txId] = true })
 
-  _.chain(self._history[address] = self._history[address] || {})
-    .keys()
+  _.chain(self._txStorage.getAllTxIds())
     .filter(function(txId) { return _.isUndefined(entriesTxId[txId]) })
     .forEach(function(txId) {
-      delete self._history[address][txId]
+      var record = self._txStorage.removeTouchedAddress(txId, address)
+      if (record === null || !_.isEqual(record.tAddresses, record.rAddresses))
+        return
 
-      self._historyTx[txId] -= 1
-      if (self._historyTx[txId] === 0) {
-        delete self._historyTx[txId]
-
-        var tx = self._txStorage.removeTx(txId)
-        if (tx !== null)
-          self.emit('revertTx', tx)
-      }
+      record = self._txStorage.update(txId, {status: txStatus.invalid})
+      if (record !== null)
+        self.emit('revertTx', Transaction.fromHex(record.rawTx))
     })
 
   var promises = entries.map(function(entry) {
-    var txId = entry.txId
-
-    if (_.isUndefined(self._history[address][txId])) {
-      self._history[address][txId] = true
-      self._historyTx[txId] = (self._historyTx[txId] || 0) + 1
-    }
-
     var addTxOpts = {
       height: entry.height,
-      status: entry.height === 0 ? txStatus.unconfirmed : txStatus.confirmed
+      status: entry.height === 0 ? txStatus.unconfirmed : txStatus.confirmed,
+      tAddresses: [address]
     }
 
-    return Q.ninvoke(self, '_addTx', txId, addTxOpts)
+    // Todo:
+    // How add tx if they was marked as invalid because was aborted in revert case
+    //   and now re-created with equals params and have same txId... ?
+    // Example:
+    // Create tx with txId1
+    // Included in block #zzz
+    // On block #zzz+2 network make revert to #zzz-1 and not include tx with txId1 (can this happen?)
+    // Re-create tx with txId1
+    // In our db txId1 alrady marked as invalid...
+    return Q.ninvoke(self, '_addTx', entry.txId, addTxOpts)
   })
 
   Q.all(promises).done(function() { cb(null) }, function(error) { cb(error) })
+}
+
+/**
+ * @return {string[]}
+ */
+TxDb.prototype.getAllTxIds = function() {
+  return this._txStorage.getAllTxIds()
 }
 
 /**
@@ -295,23 +321,17 @@ TxDb.prototype.historySync = function(address, entries, cb) {
  * @return {?Transaction}
  */
 TxDb.prototype.getTx = function(txId) {
-  var record = this._txStorage.getTx(txId)
-  if (record === null)
-    return null
-
-  return bitcoin.Transaction.fromHex(record.rawTx)
+  var record = this._txStorage.get(txId)
+  return record === null ? null : Transaction.fromHex(record.rawTx)
 }
 
 /**
  * @param {string} txId
- * @return {?boolean}
+ * @return {?number}
  */
-TxDb.prototype.isTxConfirmed = function(txId) {
-  var record = this._txStorage.getTx(txId)
-  if (record === null)
-    return null
-
-  return record.status === txStatus.confirmed
+TxDb.prototype.getTxStatus = function(txId) {
+  var record = this._txStorage.get(txId)
+  return record === null ? null : record.status
 }
 
 /**
@@ -319,11 +339,8 @@ TxDb.prototype.isTxConfirmed = function(txId) {
  * @return {?number}
  */
 TxDb.prototype.getTxHeight = function(txId) {
-  var record = this._txStorage.getTx(txId)
-  if (record === null)
-    return null
-
-  return record.height
+  var record = this._txStorage.get(txId)
+  return record === null ? null : record.height
 }
 
 /**
@@ -331,11 +348,8 @@ TxDb.prototype.getTxHeight = function(txId) {
  * @return {?number}
  */
 TxDb.prototype.getTxTimestamp = function(txId) {
-  var record = this._txStorage.getTx(txId)
-  if (record === null)
-    return null
-
-  return record.timestamp
+  var record = this._txStorage.get(txId)
+  return record === null ? null : record.timestamp
 }
 
 

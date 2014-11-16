@@ -15,13 +15,15 @@ var Network = require('./Network')
  * @class Chain
  * @extends Network
  *
+ * @param {Wallet} wallet
  * @param {Object} [opts]
  * @param {boolean} [opts.testnet=false]
  * @param {string} [opts.apiKeyId=DEMO-4a5e1e4]
  * @param {number} [opts.requestTimeout=10*1000]
  * @param {number} [opts.refreshInterval=30*1000]
  */
-function Chain(opts) {
+function Chain(wallet, opts) {
+  verify.Wallet(wallet)
   opts = _.extend({
     testnet: false,
     apiKeyId: 'DEMO-4a5e1e4',
@@ -35,6 +37,8 @@ function Chain(opts) {
 
   var self = this
   Network.call(self)
+
+  self._wallet = wallet
 
   self._blockChain = opts.testnet ? 'testnet3' : 'bitcoin'
   self._apiKeyId = opts.apiKeyId
@@ -88,7 +92,7 @@ function Chain(opts) {
     })).catch(function(error) {
       self.emit('error', error)
 
-    }).finally(function() { Q.delay(opts.refreshInterval).then(testSubscribedAddresses)  })
+    }).finally(function() { Q.delay(opts.refreshInterval).then(testSubscribedAddresses) })
   }
   testSubscribedAddresses()
 }
@@ -167,11 +171,14 @@ Chain.prototype.getTx = function(txId, cb) {
   verify.txId(txId)
   verify.function(cb)
 
+  var tx = this._wallet.getTxDb().getTx(txId)
+  if (tx !== null)
+    return process.nextTick(function() { cb(null, tx) })
+
   this._request('/transactions/' + txId + '/hex').then(function(response) {
     verify.object(response)
-    verify.hexString(response.hex)
 
-    var tx = bitcoin.Transaction.fromHex(response.hex)
+    tx = bitcoin.Transaction.fromHex(response.hex)
     if (tx.getId() !== txId)
       throw new Error('Received tx is incorrect')
 

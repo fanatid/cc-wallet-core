@@ -1,6 +1,7 @@
 var inherits = require('util').inherits
 
 var _ = require('lodash')
+var delayed = require('delayed')
 
 var SyncStorage = require('../SyncStorage')
 var verify = require('../verify')
@@ -18,9 +19,19 @@ var verify = require('../verify')
 /**
  * @class CoinStorage
  * @extends SyncStorage
+ *
+ * @param {Object} [opts]
+ * @param {number} [opts.saveTimeout=1000] In milliseconds
  */
-function CoinStorage() {
+function CoinStorage(opts) {
+  opts = _.extend({
+    saveTimeout: 1000
+  }, opts)
+  verify.number(opts.saveTimeout)
+
   SyncStorage.apply(this, Array.prototype.slice.call(arguments))
+
+  this._save2store = delayed.debounce(this._save2store, opts.saveTimeout, this)
 
   this.coinsDbKey = this.globalPrefix + 'coins'
   this.coinsRecords = this.store.get(this.coinsDbKey) || []
@@ -57,6 +68,13 @@ function CoinStorage() {
 inherits(CoinStorage, SyncStorage)
 
 /**
+ */
+CoinStorage.prototype._save2store = function() {
+  this.store.set(this.coinsDbKey, this.coinsRecords)
+  this.store.set(this.spendsDbKey, this.spendsRecords)
+}
+
+/**
  * @return {CoinStorageRecord[]}
  */
 CoinStorage.prototype._getCoinRecords = function() {
@@ -67,8 +85,8 @@ CoinStorage.prototype._getCoinRecords = function() {
  * @param {CoinStorageRecord[]}
  */
 CoinStorage.prototype._saveCoinRecords = function(records) {
-  this.store.set(this.coinsDbKey, records)
   this.coinsRecords = records
+  this._save2store()
 }
 
 /**
@@ -104,6 +122,19 @@ CoinStorage.prototype.addCoin = function(txId, outIndex, opts) {
   })
 
   this._saveCoinRecords(records)
+}
+
+/**
+ * @param {string} txId
+ * @param {string} outIndex
+ * @return {boolean}
+ */
+CoinStorage.prototype.isCoinExists = function(txId, outIndex) {
+  verify.txId(txId)
+  verify.number(outIndex)
+
+  var record = _.find(this._getCoinRecords(), { txId: txId, outIndex: outIndex })
+  return !_.isUndefined(record)
 }
 
 /**
@@ -151,8 +182,8 @@ CoinStorage.prototype._getSpendsRecords = function() {
  * @param {{ txId0: number[], txId1: number[], txIdN: number[] }[]}
  */
 CoinStorage.prototype._saveSpendsRecords = function(records) {
-  this.store.set(this.spendsDbKey, records)
   this.spendsRecords = records
+  this._save2store()
 }
 
 /**

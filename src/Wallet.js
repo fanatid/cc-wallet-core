@@ -28,12 +28,14 @@ var verify = require('./verify')
  * @param {string} [opts.network=Electrum]
  * @param {Object} [opts.networkOpts]
  * @param {string} [opts.blockchain=VerifiedBlockchain]
+ * @param {number} [opts.storageSaveTimeout=1000] In milliseconds
  */
 function Wallet(opts) {
   opts = _.extend({
     testnet: false,
     network: 'Electrum',
-    blockchain: 'VerifiedBlockchain'
+    blockchain: 'VerifiedBlockchain',
+    storageSaveTimeout: 1000
   }, opts)
 
   verify.boolean(opts.testnet)
@@ -41,12 +43,13 @@ function Wallet(opts) {
   opts.networkOpts = _.extend({ testnet: opts.testnet }, opts.networkOpts)
   verify.boolean(opts.networkOpts.testnet)
   verify.string(opts.blockchain)
+  verify.number(opts.storageSaveTimeout)
 
   this.bitcoinNetwork = opts.testnet ? bitcoin.networks.testnet : bitcoin.networks.bitcoin
 
   this.config = new ConfigStorage()
 
-  this.network = new network[opts.network](opts.networkOpts)
+  this.network = new network[opts.network](this, opts.networkOpts)
   this.blockchain = new blockchain[opts.blockchain](this.network, { testnet: opts.testnet })
 
   this.cdStorage = new cclib.ColorDefinitionStorage()
@@ -65,11 +68,11 @@ function Wallet(opts) {
       this.adManager.resolveAssetDefinition(sad)
     }.bind(this))
 
-  this.txStorage = new tx.TxStorage()
-  this.txDb = new tx.TxDb(this.txStorage, this.blockchain)
+  this.txStorage = new tx.TxStorage({saveTimeout: opts.storageSaveTimeout})
+  this.txDb = new tx.TxDb(this, this.txStorage)
   this.txFetcher = new tx.TxFetcher(this.txDb, this.blockchain)
 
-  this.coinStorage = new coin.CoinStorage()
+  this.coinStorage = new coin.CoinStorage({saveTimeout: opts.storageSaveTimeout})
   this.coinManager = new coin.CoinManager(this, this.coinStorage)
 
   this.historyManager = new HistoryManager(this)

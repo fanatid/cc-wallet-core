@@ -8,7 +8,7 @@ describe('blockchain.VerifiedBlockchain', function() {
   var wallet
 
   beforeEach(function() {
-    wallet = new Wallet({ testnet: true })
+    wallet = new Wallet({ testnet: true, storageSaveTimeout: 0 })
   })
 
   afterEach(function() {

@@ -1,27 +1,39 @@
 var inherits = require('util').inherits
 
 var _ = require('lodash')
+var delayed = require('delayed')
 
 var SyncStorage = require('../SyncStorage')
 var verify = require('../verify')
-var txStatus = require('./const').txStatus
 
 
+// Todo: add shrotcut names for save storage's size
 /**
  * @typedef {Object} TxStorageRecord
- * @property {string} txId
  * @property {string} rawTx
  * @property {number} status
  * @property {number} [height=null]
  * @property {number} [timestamp=null]
+ * @property {string[]} [tAddresses=[]]
+ * @property {string[]} [rAddresses=[]]
  */
 
 /**
  * @class TxStorage
  * @extends SyncStorage
+ *
+ * @param {Object} [opts]
+ * @param {number} [opts.saveTimeout=1000] In milliseconds
  */
-function TxStorage() {
+function TxStorage(opts) {
+  opts = _.extend({
+    saveTimeout: 1000
+  }, opts)
+  verify.number(opts.saveTimeout)
+
   SyncStorage.apply(this, Array.prototype.slice.call(arguments))
+
+  this._save2store = delayed.debounce(this._save2store, opts.saveTimeout, this)
 
   this.txDbKey = this.globalPrefix + 'tx'
   this.txRecords = this.store.get(this.txDbKey) || {}
@@ -37,6 +49,11 @@ function TxStorage() {
     })
     this._saveRecords(records)
     this.store.set(this.txDbKey + '_version', '2')
+  }
+
+  if (this.store.get(this.txDbKey + '_version') === '2') {
+    this._saveRecords([])
+    this.store.set(this.txDbKey + '_version', '3')
   }
 }
 
@@ -54,7 +71,13 @@ TxStorage.prototype._getRecords = function() {
  */
 TxStorage.prototype._saveRecords = function(records) {
   this.txRecords = records
-  this.store.set(this.txDbKey, records)
+  this._save2store()
+}
+
+/**
+ */
+TxStorage.prototype._save2store = function() {
+  this.store.set(this.txDbKey, this.txRecords)
 }
 
 /**
@@ -64,31 +87,34 @@ TxStorage.prototype._saveRecords = function(records) {
  * @param {number} opts.status
  * @param {number} opts.height
  * @param {number} opts.timestamp
+ * @param {string} opts.tAddresses
  * @return {TxStorageRecord}
  * @throws {Error} If txId exists
  */
-TxStorage.prototype.addTx = function(txId, rawTx, opts) {
+TxStorage.prototype.add = function(txId, rawTx, opts) {
   verify.txId(txId)
   verify.hexString(rawTx)
   verify.object(opts)
   verify.number(opts.status)
   verify.number(opts.height)
   verify.number(opts.timestamp)
+  verify.array(opts.tAddresses)
+  opts.tAddresses.forEach(verify.string)
 
   var records = this._getRecords()
   if (!_.isUndefined(records[txId]))
     throw new Error('Same tx already exists')
 
   records[txId] = {
-    txId: txId,
     rawTx: rawTx,
     status: opts.status,
     height: opts.height,
-    timestamp: opts.timestamp
+    timestamp: opts.timestamp,
+    tAddresses: opts.tAddresses
   }
   this._saveRecords(records)
 
-  return _.clone(records[txId])
+  return _.cloneDeep(records[txId])
 }
 
 /**
@@ -97,15 +123,18 @@ TxStorage.prototype.addTx = function(txId, rawTx, opts) {
  * @param {number} [opts.status]
  * @param {number} [opts.height]
  * @param {number} [opts.timestamp]
+ * @param {string[]} [opts.tAddresses]
  * @return {TxStorageRecord}
  * @throws {Error} If txId exists
  */
-TxStorage.prototype.updateTx = function(txId, opts) {
+TxStorage.prototype.update = function(txId, opts) {
   verify.txId(txId)
   verify.object(opts)
   if (opts.status) verify.number(opts.status)
   if (opts.height) verify.number(opts.height)
   if (opts.timestamp) verify.number(opts.timestamp)
+  if (opts.tAddresses) verify.array(opts.tAddresses)
+  if (opts.tAddresses) opts.tAddresses.forEach(verify.string)
 
   var records = this._getRecords()
   var record = records[txId]
@@ -115,47 +144,64 @@ TxStorage.prototype.updateTx = function(txId, opts) {
   opts = _.extend({
     status: record.status,
     height: record.height,
-    timestamp: record.timestamp
+    timestamp: record.timestamp,
+    tAddresses: record.tAddresses
   }, opts)
 
   records[txId] = _.extend(record, {
     status: opts.status,
     height: opts.height,
-    timestamp: opts.timestamp
+    timestamp: opts.timestamp,
+    tAddresses: opts.tAddresses,
   })
+  record.rAddresses = _.intersection(record.rAddresses, record.tAddresses)
   this._saveRecords(records)
 
-  return _.clone(records[txId])
+  return _.cloneDeep(records[txId])
 }
 
 /**
  * @param {string} txId
  * @return {?TxStorageRecord}
  */
-TxStorage.prototype.getTx = function(txId) {
+TxStorage.prototype.get = function(txId) {
   verify.txId(txId)
 
   var record = this._getRecords()[txId]
-  return _.isUndefined(record) ? null : _.clone(record)
+  return _.isUndefined(record) ? null : _.cloneDeep(record)
 }
 
 /**
- * @return {TxStorageRecord[]}
+ * @return {string[]}
  */
-TxStorage.prototype.getAllPendingTxIds = function() {
-  var result = []
-  _.forEach(this._getRecords(), function(record, txId) {
-    if (record.status === txStatus.pending) { result.push(txId) }
-  })
+TxStorage.prototype.getAllTxIds = function() {
+  return _.keys(this._getRecords())
+}
 
-  return result
+/**
+ * @param {string} address
+ * @return {?TxStorageRecord}
+ */
+TxStorage.prototype.removeTouchedAddress = function(txId, address) {
+  verify.txId(txId)
+  verify.string(address)
+
+  var records = this._getRecords()
+  var record = records[txId]
+  if (_.isUndefined(record))
+    return null
+
+  record.rAddresses = _.union(record.rAddresses, [address])
+  this._saveRecords(records)
+
+  return _.cloneDeep(record)
 }
 
 /**
  * @param {string} txId
  * @return {?TxStorageRecord}
  */
-TxStorage.prototype.removeTx = function(txId) {
+TxStorage.prototype.remove = function(txId) {
   verify.txId(txId)
 
   var records = this._getRecords()

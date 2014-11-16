@@ -5,10 +5,25 @@ var _ = require('lodash')
 var Q = require('q')
 
 var cclib = require('../cclib')
+var txStatus = require('../const').txStatus
 var bitcoin = require('../bitcoin')
 var Coin = require('./Coin')
 var verify = require('../verify')
 
+
+/**
+ * @param {Wallet} wallet
+ * @return {string[]}
+ */
+function getWalletAllAddresses(wallet) {
+  verify.Wallet(wallet)
+
+  return _.chain(wallet.getAllAssetDefinitions())
+    .map(function(assetdef) { return wallet.getAllAddresses(assetdef) })
+    .flatten()
+    .uniq()
+    .value()
+}
 
 /**
  * @event CoinManager#error
@@ -41,84 +56,12 @@ function CoinManager(wallet, storage) {
   self._wallet = wallet
   self._storage = storage
 
+  self._wallet.getTxDb().on('addTx', self._addTx.bind(self))
+  self._wallet.getTxDb().on('revertTx', self._revertTx.bind(self))
 
-  function getAllAddresses() {
-    return _.chain(self._wallet.getAllAssetDefinitions())
-      .map(function(assetdef) { return self._wallet.getAllAddresses(assetdef) })
-      .flatten()
-      .uniq()
-      .value()
-  }
-
-  self._wallet.getTxDb().on('addTx', function(tx) {
-    var txId = tx.getId()
-    var allAddresses = getAllAddresses()
-
-    tx.ins.forEach(function(input) {
-      var txId = Array.prototype.reverse.call(new Buffer(input.hash)).toString('hex')
-      self._storage.markCoinAsSpent(txId, input.index)
-    })
-
-    var promises = tx.outs.map(function(output, index) {
-      var outputAddresses = bitcoin.getAddressesFromOutputScript(
-        output.script, self._wallet.getBitcoinNetwork())
-      var walletAddresses = _.intersection(allAddresses, outputAddresses)
-      if (walletAddresses.length === 0)
-        return
-
-      self._storage.addCoin(txId, index, {
-        value: output.value,
-        script: output.script.toHex(),
-        addresses: outputAddresses
-      })
-
-      var coin = self.record2Coin({
-        txId: txId,
-        outIndex: index,
-        value: output.value,
-        script: output.script.toHex(),
-        address: walletAddresses[0]
-      })
-
-      return Q.ninvoke(coin, 'getMainColorValue').then(function(colorValue) {
-        var colorDesc = colorValue.getColorDefinition().getDesc()
-        var assetdef = self._wallet.getAssetDefinitionManager().getByDesc(colorDesc)
-        self.emit('touchAsset', assetdef)
-
-        walletAddresses.forEach(function(address) {
-          self.emit('touchAddress', address)
-        })
-      })
-    })
-
-    Q.all(promises).catch(function(error) { self.emit('error', error) })
-  })
-
-  self._wallet.getTxDb().on('revertTx', function(tx) {
-    var txId = tx.getId()
-    var allAddresses = getAllAddresses()
-
-    tx.ins.forEach(function(input) {
-      var txId = Array.prototype.reverse.call(new Buffer(input.hash)).toString('hex')
-      self._storage.markCoinAsUnspent(txId, input.index)
-    })
-
-    tx.outs.map(function(output, index) {
-      var coinRecord = self._storage.removeCoin(txId, index)
-      var coin = self.record2Coin(coinRecord)
-
-      Q.ninvoke(coin, 'getMainColorValue').then(function(colorValue) {
-        var colorDesc = colorValue.getColorDefinition().getDesc()
-        var assetdef = self._wallet.getAssetDefinitionManager().getByDesc(colorDesc)
-        self.emit('touchAsset', assetdef)
-
-        self._wallet.getColorData().removeColorValues(txId, index)
-        _.intersection(coinRecord.addresses, allAddresses).forEach(function(address) {
-          self.emit('touchAddress', address)
-        })
-
-      }).catch(function(error) { self.emit('error', error) })
-    })
+  var txdb = self._wallet.getTxDb()
+  txdb.getAllTxIds().forEach(function(txId) {
+    self._addTx(txdb.getTx(txId))
   })
 }
 
@@ -128,9 +71,7 @@ inherits(CoinManager, events.EventEmitter)
  * @param {CoinStorageRecord} record
  * @return {Coin}
  */
-CoinManager.prototype.record2Coin = function(record) {
-  verify.rawCoin(record)
-
+CoinManager.prototype._record2Coin = function(record) {
   var coin = new Coin(this, {
     txId: record.txId,
     outIndex: record.outIndex,
@@ -143,6 +84,96 @@ CoinManager.prototype.record2Coin = function(record) {
 }
 
 /**
+ * @param {Transaction} tx
+ */
+CoinManager.prototype._addTx = function(tx) {
+  verify.Transaction(tx)
+
+  var self = this
+
+  var txId = tx.getId()
+  var allAddresses = getWalletAllAddresses(self._wallet)
+
+  tx.ins.forEach(function(input) {
+    var txId = Array.prototype.reverse.call(new Buffer(input.hash)).toString('hex')
+    self._storage.markCoinAsSpent(txId, input.index)
+  })
+
+  var promises = tx.outs.map(function(output, index) {
+    if (self._storage.isCoinExists(txId, index))
+      return
+
+    var outputAddresses = bitcoin.getAddressesFromOutputScript(
+      output.script, self._wallet.getBitcoinNetwork())
+    var walletAddresses = _.intersection(allAddresses, outputAddresses)
+    if (walletAddresses.length === 0)
+      return
+
+    self._storage.addCoin(txId, index, {
+      value: output.value,
+      script: output.script.toHex(),
+      addresses: outputAddresses
+    })
+
+    var coin = self._record2Coin({
+      txId: txId,
+      outIndex: index,
+      value: output.value,
+      script: output.script.toHex(),
+      address: walletAddresses[0]
+    })
+
+    return Q.ninvoke(coin, 'getMainColorValue').then(function(colorValue) {
+      var colorDesc = colorValue.getColorDefinition().getDesc()
+      var assetdef = self._wallet.getAssetDefinitionManager().getByDesc(colorDesc)
+      self.emit('touchAsset', assetdef)
+
+      walletAddresses.forEach(function(address) {
+        self.emit('touchAddress', address)
+      })
+    })
+  })
+
+  Q.all(promises).catch(function(error) { self.emit('error', error) })
+}
+
+/**
+ * @param {Transaction} tx
+ */
+CoinManager.prototype._revertTx = function(tx) {
+  verify.Transaction(tx)
+
+  var self = this
+
+  var txId = tx.getId()
+  var allAddresses = getWalletAllAddresses(self._wallet)
+
+  tx.ins.forEach(function(input) {
+    var txId = Array.prototype.reverse.call(new Buffer(input.hash)).toString('hex')
+    self._storage.markCoinAsUnspent(txId, input.index)
+  })
+
+  tx.outs.map(function(output, index) {
+    var coinRecord = self._storage.removeCoin(txId, index)
+    if (coinRecord === null)
+      return
+
+    var coin = self._record2Coin(coinRecord)
+    Q.ninvoke(coin, 'getMainColorValue').then(function(colorValue) {
+      var colorDesc = colorValue.getColorDefinition().getDesc()
+      var assetdef = self._wallet.getAssetDefinitionManager().getByDesc(colorDesc)
+      self.emit('touchAsset', assetdef)
+
+      self._wallet.getColorData().removeColorValues(txId, index)
+      _.intersection(coinRecord.addresses, allAddresses).forEach(function(address) {
+        self.emit('touchAddress', address)
+      })
+
+    }).catch(function(error) { self.emit('error', error) })
+  })
+}
+
+/**
  * @param {string} address
  * @return {Coin[]}
  */
@@ -151,7 +182,7 @@ CoinManager.prototype.getCoinsForAddress = function(address) {
 
   var records = this._storage.getCoinsForAddress(address)
   records.forEach(function(record) { record.address = address })
-  return records.map(this.record2Coin.bind(this))
+  return records.map(this._record2Coin.bind(this))
 }
 
 /**
@@ -171,7 +202,8 @@ CoinManager.prototype.isCoinSpent = function(coin) {
 CoinManager.prototype.isCoinConfirmed = function(coin) {
   verify.Coin(coin)
 
-  return this._wallet.getTxDb().isTxConfirmed(coin.txId)
+  var coinTxStatus = this._wallet.getTxDb().getTxStatus(coin.txId)
+  return coinTxStatus === txStatus.confirmed
 }
 
 /**
@@ -206,6 +238,7 @@ CoinManager.prototype.getCoinColorValue = function(coin, colorDefinition, cb) {
  * @param {Coin} coin
  * @param {CoinManager~getMainColorValue} cb
  */
+// Todo: add synchronization from one coin
 CoinManager.prototype.getCoinMainColorValue = function(coin, cb) {
   verify.Coin(coin)
   verify.function(cb)
