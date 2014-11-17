@@ -235,8 +235,10 @@ VerifiedBlockchain.prototype._getVerifiedHeader = function(height) {
   verify.number(height)
 
   var self = this
-  if (!_.isUndefined(self._headerCache.get(height)))
-    return Q(self._headerCache.get(height))
+
+  var header = self._headerCache.get(height)
+  if (!_.isUndefined(header))
+    return Q(header)
 
   var promise = Q()
   if (height > self.getCurrentHeight() && height <= self._network.getCurrentHeight())
@@ -275,11 +277,13 @@ VerifiedBlockchain.prototype._getVerifiedTx = function(txId) {
   verify.txId(txId)
 
   var self = this
-  if (!_.isUndefined(self._txCache.get(txId)))
-    return Q(self._txCache.get(txId))
+
+  var tx = self._txCache.get(txId)
+  if (!_.isUndefined(tx))
+    return Q(tx)
 
   if (_.isUndefined(self._getVerifiedTxRunning[txId])) {
-    var tx, height, merkleRoot
+    var height, merkleRoot
 
     var promise = self._getTx(txId).then(function(result) {
       tx = result

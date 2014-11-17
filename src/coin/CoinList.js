@@ -17,6 +17,9 @@ function CoinList(coins) {
   this.coins.forEach(function(coin, index) { this[index] = coin }.bind(this))
 
   this.length = this.coins.length
+
+  this._getValuesCache = null
+  this._getValuesPromise = null
 }
 
 /**
@@ -24,6 +27,64 @@ function CoinList(coins) {
  */
 CoinList.prototype.getCoins = function() {
   return this.coins
+}
+
+/**
+ * @callback CoinList~getValues
+ * @param {?Error} error
+ * @param {Object} values
+ * @param {ColorValue[]} values.total
+ * @param {ColorValue[]} values.available
+ * @param {ColorValue[]} values.unconfirmed
+ */
+
+/**
+ * @param {CoinList~getValues} cb
+ */
+CoinList.prototype.getValues = function(cb) {
+  verify.function(cb)
+
+  var self = this
+  if (self._getValuesCache !== null)
+    return cb(null, self._getValuesCache)
+
+  if (self._getValuesPromise === null) {
+    var values = {total: {}, available: {}, unconfirmed: {}}
+
+    var promises = self.coins.map(function(coin) {
+      return Q.ninvoke(coin, 'getMainColorValue').then(function(colorValue) {
+        var colorId = colorValue.getColorId()
+
+        if (_.isUndefined(values.total[colorId])) {
+          var zeroColorValue = colorValue.minus(colorValue)
+          values.total[colorId] = zeroColorValue
+          values.available[colorId] = zeroColorValue
+          values.unconfirmed[colorId] = zeroColorValue
+        }
+
+        values.total[colorId] = values.total[colorId].plus(colorValue)
+
+        if (coin.isAvailable())
+          values.available[colorId] = values.available[colorId].plus(colorValue)
+        else
+          values.unconfirmed[colorId] = values.unconfirmed[colorId].plus(colorValue)
+      })
+    })
+
+    self._getValuesPromise = Q.all(promises).then(function() {
+      self._getValuesCache = {
+        total: _.values(values.total),
+        available: _.values(values.available),
+        unconfirmed: _.values(values.unconfirmed)
+      }
+
+      return self._getValuesCache
+
+    }).finally(function() { self._getValuesPromise = null })
+  }
+
+  self._getValuesPromise
+    .done(function(values) { cb(null, values) }, function(error) { cb(error) })
 }
 
 /**
@@ -38,23 +99,8 @@ CoinList.prototype.getCoins = function() {
 CoinList.prototype.getTotalValue = function(cb) {
   verify.function(cb)
 
-  var self = this
-  var dColorValues = {}
-
-  var promises = self.coins.map(function(coin) {
-    return Q.ninvoke(coin, 'getMainColorValue').then(function(colorValue) {
-      var colorId = colorValue.getColorId()
-      if (_.isUndefined(dColorValues[colorId]))
-        dColorValues[colorId] = colorValue
-      else
-        dColorValues[colorId] = dColorValues[colorId].plus(colorValue)
-    })
-  })
-
-  Q.all(promises).then(function() {
-    return _.values(dColorValues)
-
-  }).done(function(result) { cb(null, result) }, function(error) { cb(error) })
+  Q.ninvoke(this, 'getValues')
+    .done(function(values) { cb(null, values.total) }, function(error) { cb(error) })
 }
 
 

@@ -187,7 +187,7 @@ TxDb.prototype._addTx = function(txId, data, cb) {
       status: data.status,
       height: data.height,
       timestamp: data.timestamp,
-      tAddresses: _.sortBy(data.tAddresses)
+      tAddresses: data.tAddresses
     }
 
     if (record !== null) {
@@ -231,7 +231,7 @@ TxDb.prototype.sendTx = function(tx, cb) {
   var self = this
 
   var txId = tx.getId()
-// Yes, I send empty addresses array, they will be filled in historySync
+// Yes, I save empty addresses array, they will be filled in historySync
 //   if transaction will be accepted or will be empty if tx is invalid :-(
   var addTxOpts = {
     height: 0,

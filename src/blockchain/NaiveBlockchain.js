@@ -60,8 +60,10 @@ NaiveBlockchain.prototype.getBlockTime = function(height, cb) {
   verify.function(cb)
 
   var self = this
-  if (!_.isUndefined(self._headerCache[height]))
-    return process.nextTick(function() { cb(null, self._headerCache[height]) })
+
+  var header = self._headerCache.get(height)
+  if (!_.isUndefined(header))
+    return process.nextTick(function() { cb(null, header) })
 
   if (_.isUndefined(self._getHeaderRunning[height])) {
     var promise = Q.ninvoke(this._network, 'getHeader', height).then(function(header) {
@@ -85,8 +87,10 @@ NaiveBlockchain.prototype.getTx = function(txId, cb) {
   verify.function(cb)
 
   var self = this
-  if (!_.isUndefined(self._txCache.get(txId)))
-    return process.nextTick(function() { cb(null, self._txCache.get(txId)) })
+
+  var tx = self._txCache.get(txId)
+  if (!_.isUndefined(tx))
+    return process.nextTick(function() { cb(null, tx) })
 
   if (_.isUndefined(self._getTxRunning[txId])) {
     var promise = Q.ninvoke(self._network, 'getTx', txId).then(function(tx) {

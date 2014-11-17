@@ -110,7 +110,7 @@ TxStorage.prototype.add = function(txId, rawTx, opts) {
     status: opts.status,
     height: opts.height,
     timestamp: opts.timestamp,
-    tAddresses: opts.tAddresses
+    tAddresses: _.sortBy(opts.tAddresses)
   }
   this._saveRecords(records)
 
@@ -154,7 +154,8 @@ TxStorage.prototype.update = function(txId, opts) {
     timestamp: opts.timestamp,
     tAddresses: opts.tAddresses,
   })
-  record.rAddresses = _.intersection(record.rAddresses, record.tAddresses)
+  record.tAddresses = _.sortBy(record.tAddresses)
+  record.rAddresses = _.sortBy(_.intersection(record.rAddresses, record.tAddresses))
   this._saveRecords(records)
 
   return _.cloneDeep(records[txId])
@@ -191,7 +192,11 @@ TxStorage.prototype.removeTouchedAddress = function(txId, address) {
   if (_.isUndefined(record))
     return null
 
-  record.rAddresses = _.union(record.rAddresses, [address])
+  record.rAddresses = _.chain(record.rAddresses)
+    .union([address])
+    .intersection(record.tAddresses)
+    .sortBy()
+    .value()
   this._saveRecords(records)
 
   return _.cloneDeep(record)

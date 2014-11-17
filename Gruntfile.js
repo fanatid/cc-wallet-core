@@ -22,7 +22,7 @@ module.exports = function(grunt) {
       }
     },
     jshint: {
-      src: ['Gruntfile.js', 'src', 'test'],
+      files: ['Gruntfile.js', 'src', 'test'],
       options: {
         jshintrc: true,
         reporter: require('jshint-stylish')

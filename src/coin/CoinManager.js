@@ -72,15 +72,21 @@ inherits(CoinManager, events.EventEmitter)
  * @return {Coin}
  */
 CoinManager.prototype._record2Coin = function(record) {
-  var coin = new Coin(this, {
+  var rawCoin = {
     txId: record.txId,
     outIndex: record.outIndex,
     value: record.value,
     script: record.script,
     address: record.address
-  })
+  }
+  var coinTxStatus = this._wallet.getTxDb().getTxStatus(rawCoin.txId)
+  var opts = {
+    isSpent: this._storage.isSpent(rawCoin.txId, rawCoin.outIndex),
+    isValid: txStatus.isValid(coinTxStatus),
+    isAvailable: txStatus.isAvailable(coinTxStatus)
+  }
 
-  return coin
+  return new Coin(this, rawCoin, opts)
 }
 
 /**
@@ -199,11 +205,22 @@ CoinManager.prototype.isCoinSpent = function(coin) {
  * @param {Coin} coin
  * @return {boolean}
  */
-CoinManager.prototype.isCoinConfirmed = function(coin) {
+CoinManager.prototype.isCoinValid = function(coin) {
   verify.Coin(coin)
 
   var coinTxStatus = this._wallet.getTxDb().getTxStatus(coin.txId)
-  return coinTxStatus === txStatus.confirmed
+  return txStatus.isValid(coinTxStatus)
+}
+
+/**
+ * @param {Coin} coin
+ * @return {boolean}
+ */
+CoinManager.prototype.isCoinAvailable = function(coin) {
+  verify.Coin(coin)
+
+  var coinTxStatus = this._wallet.getTxDb().getTxStatus(coin.txId)
+  return txStatus.isAvailable(coinTxStatus)
 }
 
 /**

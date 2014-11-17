@@ -273,69 +273,89 @@ Wallet.prototype.subscribeAndSyncAllAddresses = function(cb) {
 }
 
 /**
- * @param {CoinQuery} coinQuery
- * @param {AssetDefinition} assetdef
- * @param {function} cb
+ * @callback Wallet~getBalance
+ * @param {?Error} error
+ * @param {Object} balance
+ * @param {number} balance.total
+ * @param {number} balance.available
+ * @param {number} balance.unconfirmed
  */
-Wallet.prototype._getBalance = function(coinQuery, assetdef, cb) {
-  verify.CoinQuery(coinQuery)
+
+/**
+ * @param {AssetDefinition} assetdef
+ * @param {Wallet~getBalance} cb
+ * @throws {Error} If wallet not initialized
+ */
+Wallet.prototype.getBalance = function(assetdef, cb) {
   verify.AssetDefinition(assetdef)
   verify.function(cb)
 
   var self = this
+  self.isInitializedCheck()
 
   Q.fcall(function() {
+    var coinQuery = self.getCoinQuery()
     coinQuery = coinQuery.onlyColoredAs(assetdef.getColorSet().getColorDefinitions())
     coinQuery = coinQuery.onlyAddresses(self.getAllAddresses(assetdef))
 
     return Q.ninvoke(coinQuery, 'getCoins')
 
   }).then(function(coinList) {
-    return Q.ninvoke(coinList, 'getTotalValue')
+    return Q.ninvoke(coinList, 'getValues')
 
-  }).then(function(colorValues) {
-    if (colorValues.length === 0)
-      return 0
+  }).then(function(values) {
+    var result = {}
 
-    return cclib.ColorValue.sum(colorValues).getValue()
+    function getValue(name) {
+      if (values[name].length > 0)
+        result[name] = values[name][0].getValue()
+      else
+        result[name] = 0
+    }
 
-  }).done(function(balance) { cb(null, balance) }, function(error) { cb(error) })
+    getValue('total')
+    getValue('available')
+    getValue('unconfirmed')
+
+    return result
+
+  }).done(function(result) { cb(null, result) }, function(error) { cb(error) })
 }
 
 /**
- * @param {AssetDefinition} assetdef
- * @param {function} cb
- * @throws {Error} If wallet not initialized
+ * @callback Wallet~getBalanceType
+ * @param {?Error} error
+ * @param {number} balance
  */
-Wallet.prototype.getAvailableBalance = function(assetdef, cb) {
-  this.isInitializedCheck()
-
-  var coinQuery = this.getCoinQuery()
-  this._getBalance(coinQuery, assetdef, cb)
-}
 
 /**
  * @param {AssetDefinition} assetdef
- * @param {function} cb
+ * @param {Wallet~getBalanceType} cb
  * @throws {Error} If wallet not initialized
  */
 Wallet.prototype.getTotalBalance = function(assetdef, cb) {
-  this.isInitializedCheck()
-
-  var coinQuery = this.getCoinQuery().includeUnconfirmed()
-  this._getBalance(coinQuery, assetdef, cb)
+  Q.ninvoke(this, 'getBalance', assetdef)
+    .done(function(balance) { cb(null, balance.total) }, function(error) { cb(error) })
 }
 
 /**
  * @param {AssetDefinition} assetdef
- * @param {function} cb
+ * @param {Wallet~getBalanceType} cb
+ * @throws {Error} If wallet not initialized
+ */
+Wallet.prototype.getAvailableBalance = function(assetdef, cb) {
+  Q.ninvoke(this, 'getBalance', assetdef)
+    .done(function(balance) { cb(null, balance.available) }, function(error) { cb(error) })
+}
+
+/**
+ * @param {AssetDefinition} assetdef
+ * @param {Wallet~getBalanceType} cb
  * @throws {Error} If wallet not initialized
  */
 Wallet.prototype.getUnconfirmedBalance = function(assetdef, cb) {
-  this.isInitializedCheck()
-
-  var coinQuery = this.getCoinQuery().onlyUnconfirmed()
-  this._getBalance(coinQuery, assetdef, cb)
+  Q.ninvoke(this, 'getBalance', assetdef)
+    .done(function(balance) { cb(null, balance.unconfirmed) }, function(error) { cb(error) })
 }
 
 /**

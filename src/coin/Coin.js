@@ -1,3 +1,5 @@
+var _ = require('lodash')
+
 var verify = require('../verify')
 
 
@@ -5,10 +7,20 @@ var verify = require('../verify')
  * @class Coin
  * @param {CoinManager} coinManager
  * @param {CoinStorageRecord} rawCoin
+ * @param {Object} [opts]
+ * @param {boolean} [opts.isSpent]
+ * @param {boolean} [opts.isValid]
+ * @param {boolean} [opts.isAvailable]
  */
-function Coin(coinManager, rawCoin) {
+function Coin(coinManager, rawCoin, opts) {
   verify.CoinManager(coinManager)
   verify.rawCoin(rawCoin)
+  if (!_.isUndefined(opts)) {
+    verify.object(opts)
+    verify.boolean(opts.isSpent)
+    verify.boolean(opts.isValid)
+    verify.boolean(opts.isAvailable)
+  }
 
   this.coinManager = coinManager
 
@@ -17,6 +29,12 @@ function Coin(coinManager, rawCoin) {
   this.value = rawCoin.value
   this.script = rawCoin.script
   this.address = rawCoin.address
+
+  if (!_.isUndefined(opts)) {
+    this._isSpent = opts.isSpent
+    this._isValid = opts.isValid
+    this._isAvailable = opts.isAvailable
+  }
 }
 
 /**
@@ -36,14 +54,30 @@ Coin.prototype.toRawCoin = function () {
  * {@link CoinManager.isCoinSpent}
  */
 Coin.prototype.isSpent = function() {
+  if (!_.isUndefined(this._isSpent))
+    return this._isSpent
+
   return this.coinManager.isCoinSpent(this)
 }
 
 /**
- * {@link CoinManager.isCoinConfirmed}
+ * {@link CoinManager.isCoinValid}
  */
-Coin.prototype.isConfirmed = function() {
-  return this.coinManager.isCoinConfirmed(this)
+Coin.prototype.isValid = function() {
+  if (!_.isUndefined(this._isValid))
+    return this._isValid
+
+  return this.coinManager.isCoinValid(this)
+}
+
+/**
+ * {@link CoinManager.isCoinAvailable}
+ */
+Coin.prototype.isAvailable = function() {
+  if (!_.isUndefined(this._isAvailable))
+    return this._isAvailable
+
+  return this.coinManager.isCoinAvailable(this)
 }
 
 /**
