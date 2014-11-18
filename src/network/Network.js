@@ -57,6 +57,13 @@ inherits(Network, events.EventEmitter)
 /**
  * @return {boolean}
  */
+Network.prototype.supportVerificationMethods = function() {
+  return false
+}
+
+/**
+ * @return {boolean}
+ */
 Network.prototype.isConnected = function() {
   return this._isConnected
 }

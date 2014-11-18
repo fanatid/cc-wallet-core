@@ -84,6 +84,13 @@ function Electrum(wallet, opts) {
 inherits(Electrum, Network)
 
 /**
+ * @return {boolean}
+ */
+Electrum.prototype.supportVerificationMethods = function() {
+  return true
+}
+
+/**
  * @param {string} method
  * @param {*[]} [params]
  * @return {Q.Promise}

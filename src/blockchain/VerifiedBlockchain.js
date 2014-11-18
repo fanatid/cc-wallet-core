@@ -34,6 +34,8 @@ var VerifyTxError = createError('VerifyTxError')
  */
 function VerifiedBlockchain(network, opts) {
   verify.Network(network)
+  if (!network.supportVerificationMethods())
+    throw new Error('Network doesn\'t support verification methods (getChunk, getMerkle)')
   opts = _.extend({ testnet: false, txCacheSize: 250, headerCacheSize: 6500 }, opts)
   verify.boolean(opts.testnet)
   verify.number(opts.txCacheSize)

@@ -80,12 +80,8 @@ function networkImplementationTest(opts) {
     })
 
     it('getChunk', function(done) {
-      try {
-        network.getChunk()
-      } catch(error) {
-        if (error.type === 'NotImplementedError')
-          return done()
-      }
+      if (!network.supportVerificationMethods())
+        return done()
 
       network.getChunk(0, function(error, chunk) {
         expect(error).to.be.null
@@ -105,12 +101,8 @@ function networkImplementationTest(opts) {
     })
 
     it('getMerkle', function(done) {
-      try {
-        network.getChunk()
-      } catch(error) {
-        if (error.type === 'NotImplementedError')
-          return done()
-      }
+      if (!network.supportVerificationMethods())
+        return done()
 
       var txId = '9854bf4761024a1075ebede93d968ce1ba98d240ba282fb1f0170e555d8fdbd8'
       var blockHeight = 279774
