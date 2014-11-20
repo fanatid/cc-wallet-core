@@ -176,7 +176,7 @@ Electrum.prototype.getTx = function(txId, cb) {
 
     return tx
 
-  }).done(function(tx) { cb(null, tx) }, function(error) { console.log(txId, error);cb(error) })
+  }).done(function(tx) { cb(null, tx) }, function(error) { cb(error) })
 }
 
 /**

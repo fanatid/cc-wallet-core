@@ -29,11 +29,6 @@ var verify = require('./verify')
  */
 
 /**
- * @event Wallet#loadTx
- * @param {Transaction} tx
- */
-
-/**
  * @event Wallet#addTx
  * @param {Transaction} tx
  */
@@ -147,7 +142,6 @@ function Wallet(opts) {
 
   self.blockchain.on('newHeight', function(height) { self.emit('newHeight', height) })
 
-  self.txDb.on('loadTx', function(tx) { self.emit('loadTx', tx) })
   self.txDb.on('addTx', function(tx) { self.emit('addTx', tx) })
   self.txDb.on('updateTx', function(tx) { self.emit('updateTx', tx) })
   self.txDb.on('revertTx', function(tx) { self.emit('revertTx', tx) })

@@ -29,11 +29,6 @@ function getCurrentTimestamp() {
  */
 
 /**
- * @event TxDb#loadTx
- * @param {Transaction} tx
- */
-
-/**
  * @event TxDb#addTx
  * @param {Transaction} tx
  */
