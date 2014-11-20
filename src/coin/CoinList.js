@@ -46,7 +46,7 @@ CoinList.prototype.getValues = function(cb) {
 
   var self = this
   if (self._getValuesCache !== null)
-    return cb(null, self._getValuesCache)
+    return process.nextTick(function() { cb(null, self._getValuesCache) })
 
   if (self._getValuesPromise === null) {
     var values = {total: {}, available: {}, unconfirmed: {}}

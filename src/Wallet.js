@@ -96,7 +96,6 @@ function Wallet(opts) {
     storageSaveTimeout: 1000
   }, opts)
 
-
   var self = this
   events.EventEmitter.call(self)
 
@@ -335,9 +334,13 @@ Wallet.prototype.checkAddress = function(assetdef, checkedAddress) {
 }
 
 /**
+ * @param {string} address
  * @param {Wallet~errorCallback} cb
  */
-Wallet.prototype.subscribeAndSyncAddress = function(cb) {
+Wallet.prototype.subscribeAndSyncAddress = function(address, cb) {
+  verify.string(address)
+  verify.function(cb)
+
   this.isInitializedCheck()
 
   this.txFetcher.subscribeAndSyncAddress(address, cb)
@@ -347,6 +350,8 @@ Wallet.prototype.subscribeAndSyncAddress = function(cb) {
  * @param {Wallet~errorCallback} cb
  */
 Wallet.prototype.subscribeAndSyncAllAddresses = function(cb) {
+  verify.function(cb)
+
   this.isInitializedCheck()
 
   var addresses =_.chain(this.getAllAssetDefinitions())
