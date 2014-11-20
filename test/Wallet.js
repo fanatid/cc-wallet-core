@@ -333,7 +333,6 @@ describe('Wallet', function() {
       {event: 'error', prop: 'txFetcher'},
       {event: 'error', prop: 'coinManager'},
       {event: 'newHeight', prop: 'blockchain'},
-      {event: 'loadTx', prop: 'txDb'},
       {event: 'addTx', prop: 'txDb'},
       {event: 'updateTx', prop: 'txDb'},
       {event: 'revertTx', prop: 'txDb'},
