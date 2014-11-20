@@ -12,6 +12,7 @@ describe('blockchain.VerifiedBlockchain', function() {
   })
 
   afterEach(function() {
+    wallet.removeListeners()
     wallet.clearStorage()
   })
 

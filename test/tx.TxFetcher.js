@@ -13,6 +13,7 @@ describe('tx.TxFetcher', function() {
   })
 
   afterEach(function() {
+    wallet.removeListeners()
     wallet.clearStorage()
   })
 })

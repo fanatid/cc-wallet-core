@@ -6,16 +6,17 @@ var errors = require('../errors')
 
 /**
  * @event Blockchain#error
- * @type {Error} error
+ * @param {Error} error
  */
 
 /**
  * @event Blockchain#newHeight
+ * @param {number} height
  */
 
 /**
  * @event Blockchain#touchAddress
- * @type {string} address
+ * @param {string} address
  */
 
 /**

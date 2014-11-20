@@ -1,3 +1,6 @@
+var events = require('events')
+var inherits = require('util').inherits
+
 var _ = require('lodash')
 
 var AssetDefinition = require('./AssetDefinition')
@@ -5,14 +8,21 @@ var verify = require('../verify')
 
 
 /**
+ * @event AssetDefinitionManager#newAsset
+ * @param {AssetDefinition} assetdef
+ */
+
+/**
  * @class AssetDefinitionManager
- *
+ * @extends events.EventEmitter
  * @param {coloredcoinjs-lib.ColorDefinitionManager} cdManager
  * @param {AssetDefinitionStorage} storage
  */
 function AssetDefinitionManager(cdManager, storage) {
   verify.ColorDefinitionManager(cdManager)
   verify.AssetDefinitionStorage(storage)
+
+  events.EventEmitter.call(this)
 
   this.cdManager = cdManager
   this.storage = storage
@@ -23,6 +33,8 @@ function AssetDefinitionManager(cdManager, storage) {
     unit: 100000000
   })
 }
+
+inherits(AssetDefinitionManager, events.EventEmitter)
 
 /**
  * @param {Object} data
@@ -60,6 +72,7 @@ AssetDefinitionManager.prototype.resolveAssetDefinition = function(data, autoAdd
     colorDescs: assetdef.getColorSet().getColorDescs(),
     unit: assetdef.getData().unit
   })
+  this.emit('newAsset', assetdef)
 
   return assetdef
 }

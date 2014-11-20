@@ -1,3 +1,6 @@
+var events = require('events')
+var inherits = require('util').inherits
+
 var _ = require('lodash')
 var Q = require('q')
 
@@ -16,12 +19,67 @@ var verify = require('./verify')
 
 
 /**
+ * @event Wallet#error
+ * @param {Error} error
+ */
+
+/**
+ * @event Wallet#newHeight
+ * @param {number} height
+ */
+
+/**
+ * @event Wallet#loadTx
+ * @param {Transaction} tx
+ */
+
+/**
+ * @event Wallet#addTx
+ * @param {Transaction} tx
+ */
+
+/**
+ * @event Wallet#updateTx
+ * @param {string} tx
+ */
+
+/**
+ * @event Wallet#revertTx
+ * @param {Transaction} tx
+ */
+
+/**
+ * @event Wallet#newAddress
+ * @param {Address} address
+ */
+
+/**
+ * @event Wallet#touchAddress
+ * @param {string} address
+ */
+
+/**
+ * @event Wallet#newAsset
+ * @param {AssetDefinition} assetdef
+ */
+
+/**
+ * @event Wallet#touchAsset
+ * @param {AssetDefinition} assetdef
+ */
+
+/**
+ * @event Wallet#initialize
+ */
+
+/**
  * @callback Wallet~errorCallback
  * @param {?Error} error
  */
 
 /**
  * @class Wallet
+ * @extends events.EventEmitter
  *
  * @param {Object} opts
  * @param {boolean} [opts.testnet=false]
@@ -38,6 +96,10 @@ function Wallet(opts) {
     storageSaveTimeout: 1000
   }, opts)
 
+
+  var self = this
+  events.EventEmitter.call(self)
+
   verify.boolean(opts.testnet)
   verify.string(opts.network)
   opts.networkOpts = _.extend({ testnet: opts.testnet }, opts.networkOpts)
@@ -45,40 +107,63 @@ function Wallet(opts) {
   verify.string(opts.blockchain)
   verify.number(opts.storageSaveTimeout)
 
-  this.bitcoinNetwork = opts.testnet ? bitcoin.networks.testnet : bitcoin.networks.bitcoin
+  self.bitcoinNetwork = opts.testnet ? bitcoin.networks.testnet : bitcoin.networks.bitcoin
 
-  this.config = new ConfigStorage()
+  self.config = new ConfigStorage()
 
-  this.network = new network[opts.network](this, opts.networkOpts)
-  this.blockchain = new blockchain[opts.blockchain](this.network, { testnet: opts.testnet })
+  self.network = new network[opts.network](self, opts.networkOpts)
+  self.blockchain = new blockchain[opts.blockchain](self.network, { testnet: opts.testnet })
 
-  this.cdStorage = new cclib.ColorDefinitionStorage()
-  this.cdManager = new cclib.ColorDefinitionManager(this.cdStorage)
+  self.cdStorage = new cclib.ColorDefinitionStorage()
+  self.cdManager = new cclib.ColorDefinitionManager(self.cdStorage)
 
-  this.cDataStorage = new cclib.ColorDataStorage()
-  this.cData = new cclib.ColorData(this.cDataStorage)
+  self.cDataStorage = new cclib.ColorDataStorage()
+  self.cData = new cclib.ColorData(self.cDataStorage)
 
-  this.aStorage = new address.AddressStorage()
-  this.aManager = new address.AddressManager(this.aStorage, this.bitcoinNetwork)
+  self.aStorage = new address.AddressStorage()
+  self.aManager = new address.AddressManager(self.aStorage, self.bitcoinNetwork)
 
-  this.adStorage = new asset.AssetDefinitionStorage()
-  this.adManager = new asset.AssetDefinitionManager(this.cdManager, this.adStorage)
+  self.adStorage = new asset.AssetDefinitionStorage()
+  self.adManager = new asset.AssetDefinitionManager(self.cdManager, self.adStorage)
   if (opts.systemAssetDefinitions)
     opts.systemAssetDefinitions.forEach(function(sad) {
-      this.adManager.resolveAssetDefinition(sad)
-    }.bind(this))
+      self.adManager.resolveAssetDefinition(sad)
+    }.bind(self))
 
-  this.txStorage = new tx.TxStorage({saveTimeout: opts.storageSaveTimeout})
-  this.txDb = new tx.TxDb(this, this.txStorage)
-  this.txFetcher = new tx.TxFetcher(this.txDb, this.blockchain)
+  self.txStorage = new tx.TxStorage({saveTimeout: opts.storageSaveTimeout})
+  self.txDb = new tx.TxDb(self, self.txStorage)
+  self.txFetcher = new tx.TxFetcher(self.txDb, self.blockchain)
 
-  this.coinStorage = new coin.CoinStorage({saveTimeout: opts.storageSaveTimeout})
-  this.coinManager = new coin.CoinManager(this, this.coinStorage)
+  self.coinStorage = new coin.CoinStorage({saveTimeout: opts.storageSaveTimeout})
+  self.coinManager = new coin.CoinManager(self, self.coinStorage)
 
-  this.historyManager = new HistoryManager(this)
+  self.historyManager = new HistoryManager(self)
+
+  // events
+  self.network.on('error', function(error) { self.emit('error', error) })
+  self.blockchain.on('error', function(error) { self.emit('error', error) })
+  self.txDb.on('error', function(error) { self.emit('error', error) })
+  self.txFetcher.on('error', function(error) { self.emit('error', error) })
+  self.coinManager.on('error', function(error) { self.emit('error', error) })
+
+  self.blockchain.on('newHeight', function(height) { self.emit('newHeight', height) })
+
+  self.txDb.on('loadTx', function(tx) { self.emit('loadTx', tx) })
+  self.txDb.on('addTx', function(tx) { self.emit('addTx', tx) })
+  self.txDb.on('updateTx', function(tx) { self.emit('updateTx', tx) })
+  self.txDb.on('revertTx', function(tx) { self.emit('revertTx', tx) })
+
+  self.aManager.on('newAddress', function(address) { self.emit('newAddress', address) })
+  self.coinManager.on('touchAddress', function(address) { self.emit('touchAddress', address) })
+
+  self.aManager.on('newAsset', function(assetdef) { self.emit('newAsset', assetdef) })
+  self.coinManager.on('touchAsset', function(assetdef) { self.emit('touchAsset', assetdef) })
 }
 
+inherits(Wallet, events.EventEmitter)
+
 Wallet.prototype.getBitcoinNetwork = function() { return this.bitcoinNetwork }
+Wallet.prototype.getNetwork = function() { return this.network }
 Wallet.prototype.getBlockchain = function() { return this.blockchain }
 Wallet.prototype.getColorDefinitionManager = function() { return this.cdManager }
 Wallet.prototype.getColorData = function() { return this.cData }
@@ -120,6 +205,7 @@ Wallet.prototype.initialize = function(seedHex) {
   })
 
   this.config.set('initialized', true)
+  this.emit('initialize')
 }
 
 /**
@@ -528,6 +614,19 @@ Wallet.prototype.sendTx = function(tx, cb) {
 
 /**
  */
+Wallet.prototype.removeListeners = function() {
+  this.removeAllListeners()
+  this.network.removeAllListeners()
+  this.blockchain.removeAllListeners()
+  this.aManager.removeAllListeners()
+  this.adManager.removeAllListeners()
+  this.txDb.removeAllListeners()
+  this.txFetcher.removeAllListeners()
+  this.coinManager.removeAllListeners()
+}
+
+/**
+ */
 Wallet.prototype.clearStorage = function() {
   this.config.clear()
   this.blockchain.clear()
@@ -535,8 +634,8 @@ Wallet.prototype.clearStorage = function() {
   this.cDataStorage.clear()
   this.aStorage.clear()
   this.adStorage.clear()
-  this.coinStorage.clear()
   this.txStorage.clear()
+  this.coinStorage.clear()
 }
 
 

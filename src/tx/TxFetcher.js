@@ -9,7 +9,7 @@ var verify = require('../verify')
 
 /**
  * @event TxFetcher#error
- * @type {Error} error
+ * @param {Error} error
  */
 
 /**

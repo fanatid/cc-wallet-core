@@ -1,3 +1,6 @@
+var events = require('events')
+var inherits = require('util').inherits
+
 var _ = require('lodash')
 
 var cclib = require('../cclib')
@@ -73,8 +76,13 @@ function selectChain(definition) {
 
 
 /**
+ * @event AddressManager#newAddress
+ * @param {Address} address
+ */
+
+/**
  * @class AddressManager
- *
+ * @extends events.EventEmitter
  * @param {storage.AddressStorage} storage
  * @param {Object} network Network description from bitcoinjs-lib.networks
  */
@@ -82,9 +90,13 @@ function AddressManager(storage, network) {
   verify.AddressStorage(storage)
   verify.bitcoinNetwork(network)
 
+  events.EventEmitter.call(this)
+
   this.storage = storage
   this.network = network
 }
+
+inherits(AddressManager, events.EventEmitter)
 
 /**
  * @param {string} seedHex
@@ -151,7 +163,10 @@ AddressManager.prototype.getNewAddress = function(definition, seedHex) {
   if (definition instanceof AssetDefinition)
     assetDefinition = definition
 
-  return new Address(this, record, this.network, assetDefinition)
+  var address = new Address(this, record, this.network, assetDefinition)
+  this.emit('newAddress', address)
+
+  return address
 }
 
 /**

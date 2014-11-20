@@ -12,7 +12,7 @@ var verify = require('../verify')
 
 /**
  * @event Network#error
- * @type {Error} error
+ * @param {Error} error
  */
 
 /**
@@ -25,11 +25,12 @@ var verify = require('../verify')
 
 /**
  * @event Network#newHeight
+ * @param {number} height
  */
 
 /**
  * @event Network#touchAddress
- * @type {string} address
+ * @param {string} address
  */
 
 /**
@@ -91,7 +92,7 @@ Network.prototype._setCurrentHeight = function(newHeight) {
     header = bitcoin.header2buffer(header)
     self._currentBlockHash = bitcoin.headerHash(header)
     self._currentHeight = newHeight
-    self.emit('newHeight')
+    self.emit('newHeight', newHeight)
 
   }).catch(function(error) {
     self.emit('error', error)

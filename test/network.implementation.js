@@ -28,6 +28,7 @@ function networkImplementationTest(opts) {
     })
 
     afterEach(function() {
+      wallet.removeListeners()
       wallet.clearStorage()
       wallet = undefined
       network = undefined

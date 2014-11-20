@@ -169,8 +169,8 @@ VerifiedBlockchain.prototype._waitHeight = function(height) {
 
   var deferred = Q.defer()
 
-  function onNewHeight() {
-    if (height <= self.getCurrentHeight())
+  function onNewHeight(newHeight) {
+    if (height <= newHeight)
       deferred.resolve()
   }
   self.on('newHeight', onNewHeight)
@@ -542,7 +542,7 @@ VerifiedBlockchain.prototype._sync = function() {
 
       self._currentBlockHash = self._storage.getLastHash()
       self._currentHeight = _.last(chain).height
-      self.emit('newHeight')
+      self.emit('newHeight', self._currentHeight)
 
       deferred.resolve()
 
@@ -610,7 +610,7 @@ VerifiedBlockchain.prototype._sync = function() {
 
       self._currentBlockHash = self._storage.getLastHash()
       self._currentHeight = index*2016 + chunk.length/80 - 1
-      self.emit('newHeight')
+      self.emit('newHeight', self._currentHeight)
 
       index += 1
       runChunkLoopOnce()

@@ -51,8 +51,8 @@ describe('Wallet', function() {
   }
 
   function cleanup() {
-    //wallet.clearStorage()
-    localStorage.clear()
+    wallet.removeListeners()
+    wallet.clearStorage()
     wallet = undefined
   }
 
@@ -253,6 +253,7 @@ describe('Wallet', function() {
 
     // Need new issued asset, this broken
     it.skip('sendCoins epobc', function(done) {
+      // need removeListeners and clearStorage
       wallet = new Wallet({
         masterKey: '421fc385fdae762b346b80e0212f77bd',
         testnet: true,
@@ -314,6 +315,45 @@ describe('Wallet', function() {
             })
           })
         })
+      })
+    })
+  })
+
+  describe('events (fake)', function() {
+    this.timeout(1000)
+    function CustomMessage() {}
+
+    beforeEach(setup)
+    afterEach(cleanup)
+
+    var fixtures = [
+      {event: 'error', prop: 'network'},
+      {event: 'error', prop: 'blockchain'},
+      {event: 'error', prop: 'txDb'},
+      {event: 'error', prop: 'txFetcher'},
+      {event: 'error', prop: 'coinManager'},
+      {event: 'newHeight', prop: 'blockchain'},
+      {event: 'loadTx', prop: 'txDb'},
+      {event: 'addTx', prop: 'txDb'},
+      {event: 'updateTx', prop: 'txDb'},
+      {event: 'revertTx', prop: 'txDb'},
+      {event: 'newAddress', prop: 'aManager'},
+      {event: 'touchAddress', prop: 'coinManager'},
+      {event: 'newAsset', prop: 'aManager'},
+      {event: 'touchAsset', prop: 'coinManager'}
+    ]
+
+    fixtures.forEach(function(fixture) {
+      it(fixture.prop + ' ' + fixture.event, function(done) {
+        // patching txdb events, bad way
+        wallet.txDb._events.addTx = wallet.txDb._events.addTx.slice(1)
+        wallet.txDb._events.revertTx = wallet.txDb._events.revertTx.slice(1)
+
+        wallet.on(fixture.event, function(msg) {
+          expect(msg).to.be.instanceof(CustomMessage)
+          done()
+        })
+        wallet[fixture.prop].emit(fixture.event, new CustomMessage())
       })
     })
   })

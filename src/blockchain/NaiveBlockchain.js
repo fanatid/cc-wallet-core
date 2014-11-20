@@ -34,9 +34,9 @@ function NaiveBlockchain(network, opts) {
   self._headerCache = LRU({ max: opts.headerCacheSize })
   this._txCache = LRU({ max: opts.txCacheSize })
 
-  self._network.on('newHeight', function() {
-    self._currentHeight = self._network.getCurrentHeight()
-    self.emit('newHeight')
+  self._network.on('newHeight', function(newHeight) {
+    self._currentHeight = newHeight
+    self.emit('newHeight', newHeight)
   })
 
   self._network.on('touchAddress', function(address) {
