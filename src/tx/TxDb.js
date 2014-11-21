@@ -65,7 +65,7 @@ function TxDb(wallet, txStorage) {
 
   self._txStorage.getAllTxIds().forEach(function(txId) {
     var record = self._txStorage.get(txId)
-    if (record !== null && record.status === txStatus.pending)
+    if (record !== null && record.status === txStatus.dispatch)
       process.nextTick(function() { self._attemptSendTx(txId) })
   })
 }
@@ -87,20 +87,29 @@ TxDb.prototype._attemptSendTx = function(txId, attempt) {
   if (record === null)
     return
 
-  // No needed change status: on success, historySync do it
+  /**
+   * @param {number} status
+   */
+  function updateTx(status) {
+    self._txStorage.update(txId, {status: status})
+    self.emit('updateTx', tx)
+  }
+
   var tx = Transaction.fromHex(record.rawTx)
-  Q.ninvoke(self._wallet.getBlockchain(), 'sendTx', tx).catch(function(error) {
+  Q.ninvoke(self._wallet.getBlockchain(), 'sendTx', tx).done(function () {
+    updateTx(txStatus.pending)
+
+  }, function(error) {
     self.emit('error', error)
 
     if (attempt >= 5) {
-      self._txStorage.update(txId, {status: txStatus.invalid})
-      return self.emit('updateTx', tx)
+      return updateTx(txStatus.invalid)
     }
 
     var timeout = 15000 * Math.pow(2, attempt)
     Q.delay(timeout).then(function() { self._attemptSendTx(txId, attempt + 1) })
 
-  }).done()
+  })
 }
 
 /**
@@ -129,7 +138,6 @@ TxDb.prototype._addTx = function(txId, data, cb) {
   verify.function(cb)
 
   if (data.tx) data.rawTx = data.tx.toHex()
-  if (_.isUndefined(data.status)) data.status = txStatus.unknown
 
   var self = this
 
@@ -174,6 +182,10 @@ TxDb.prototype._addTx = function(txId, data, cb) {
     }
 
   }).then(function() {
+    if (_.isUndefined(data.status)) data.status = txStatus.unknown
+    if (record !== null && record.status === txStatus.pending && data.status === txStatus.unconfirmed)
+      data.status = txStatus.pending
+
     if (_.isUndefined(data.tAddresses)) data.tAddresses = []
     if (record !== null)
       data.tAddresses = _.union(data.tAddresses, record.tAddresses)
@@ -231,7 +243,7 @@ TxDb.prototype.sendTx = function(tx, cb) {
   var addTxOpts = {
     height: 0,
     tx: tx,
-    status: txStatus.pending,
+    status: txStatus.dispatch,
     timestamp: getCurrentTimestamp(),
     tAddresses: []
   }

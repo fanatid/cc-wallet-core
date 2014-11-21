@@ -21,7 +21,8 @@ function networkImplementationTest(opts) {
         testnet: true,
         network: opts.class.name,
         blockchain: 'NaiveBlockchain',
-        storageSaveTimeout: 0
+        storageSaveTimeout: 0,
+        spendUnconfirmedCoins: true
       })
       network = wallet.network
       network.once('connect', done)

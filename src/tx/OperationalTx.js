@@ -116,7 +116,8 @@ OperationalTx.prototype.selectCoins = function(colorValue, feeEstimator, cb) {
     var coinQuery = self.wallet.getCoinQuery()
     coinQuery = coinQuery.onlyColoredAs(colordef)
     coinQuery = coinQuery.onlyAddresses(self.wallet.getAllAddresses(colordef))
-    coinQuery = coinQuery.includeUnconfirmed()
+    if (self.wallet.canSpendUnconfirmedCoins())
+      coinQuery = coinQuery.includeUnconfirmed()
 
     return Q.ninvoke(coinQuery, 'getCoins')
 

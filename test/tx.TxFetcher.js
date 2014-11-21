@@ -5,7 +5,12 @@ describe('tx.TxFetcher', function() {
   var wallet, txFetcher, addresses
 
   beforeEach(function() {
-    wallet = new Wallet({ testnet: true, blockchain: 'NaiveBlockchain', storageSaveTimeout: 0 })
+    wallet = new Wallet({
+      testnet: true,
+      blockchain: 'NaiveBlockchain',
+      storageSaveTimeout: 0,
+      spendUnconfirmedCoins: true
+    })
     wallet.initialize('123131123131123131123131123131123131123131123131123131')
 
     txFetcher = wallet.getTxFetcher()

@@ -82,13 +82,15 @@ var verify = require('./verify')
  * @param {Object} [opts.networkOpts]
  * @param {string} [opts.blockchain=VerifiedBlockchain]
  * @param {number} [opts.storageSaveTimeout=1000] In milliseconds
+ * @param {boolean} [opts.spendUnconfirmedCoins=false]
  */
 function Wallet(opts) {
   opts = _.extend({
     testnet: false,
     network: 'Electrum',
     blockchain: 'VerifiedBlockchain',
-    storageSaveTimeout: 1000
+    storageSaveTimeout: 1000,
+    spendUnconfirmedCoins: false
   }, opts)
 
   var self = this
@@ -100,8 +102,10 @@ function Wallet(opts) {
   verify.boolean(opts.networkOpts.testnet)
   verify.string(opts.blockchain)
   verify.number(opts.storageSaveTimeout)
+  verify.boolean(opts.spendUnconfirmedCoins)
 
   self.bitcoinNetwork = opts.testnet ? bitcoin.networks.testnet : bitcoin.networks.bitcoin
+  self._spendUnconfirmedCoins = opts.spendUnconfirmedCoins
 
   self.config = new ConfigStorage()
 
@@ -156,6 +160,7 @@ function Wallet(opts) {
 inherits(Wallet, events.EventEmitter)
 
 Wallet.prototype.getBitcoinNetwork = function() { return this.bitcoinNetwork }
+Wallet.prototype.canSpendUnconfirmedCoins = function() { return this._spendUnconfirmedCoins }
 Wallet.prototype.getNetwork = function() { return this.network }
 Wallet.prototype.getBlockchain = function() { return this.blockchain }
 Wallet.prototype.getColorDefinitionManager = function() { return this.cdManager }

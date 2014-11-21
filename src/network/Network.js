@@ -81,7 +81,7 @@ Network.prototype._setCurrentHeight = function(newHeight) {
   var promise = Q()
   if (self._setCurrentHeightRunning === true) {
     self._setCurrentHeightQueue.push(Q.defer())
-    promise = _.last(self._setCurrentHeightQueue)
+    promise = _.last(self._setCurrentHeightQueue).promise
   }
   self._setCurrentHeightRunning = true
 

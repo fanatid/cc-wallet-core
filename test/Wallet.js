@@ -47,7 +47,12 @@ describe('Wallet', function() {
 
   function setup() {
     localStorage.clear()
-    wallet = new Wallet({ testnet: true, blockchain: 'NaiveBlockchain', storageSaveTimeout: 0 })
+    wallet = new Wallet({
+      testnet: true,
+      blockchain: 'NaiveBlockchain',
+      storageSaveTimeout: 0,
+      spendUnconfirmedCoins: true
+    })
   }
 
   function cleanup() {
@@ -224,14 +229,14 @@ describe('Wallet', function() {
       var deferred = Q.defer()
       deferred.promise.done(done, done)
 
-      var seed = '421fc385fdae762b346b80e0212f77bb'
+      var seed = '421fc385fdae762b246b80e0212f77bb'
       wallet.initialize(seed)
       wallet.addAssetDefinition(seed, goldAsset)
       wallet.subscribeAndSyncAllAddresses(function(error) {
         expect(error).to.be.null
 
         var bitcoin = wallet.getAssetDefinitionByMoniker('bitcoin')
-        var targets = [{ address: 'mo8Ni5kFSxcuEVXbfBaSaDzMiq1j4E6wUE', value: 10000 }]
+        var targets = [{ address: 'miFxiMoU4AmybucyCM5sXB8mPUVpEtP5E1', value: 10000 }]
 
         wallet.createTx(bitcoin, targets, function(error, tx) {
           expect(error).to.be.null
@@ -258,7 +263,8 @@ describe('Wallet', function() {
         masterKey: '421fc385fdae762b346b80e0212f77bd',
         testnet: true,
         blockchain: 'NaiveBlockchain',
-        storageSaveTimeout: 0
+        storageSaveTimeout: 0,
+        spendUnconfirmedCoins: true
       })
 
       var data = {
@@ -297,13 +303,13 @@ describe('Wallet', function() {
     })
 
     it('issueCoins epobc', function(done) {
-      var seed = '421fc385fdaed1121221222eddad0dae'
+      var seed = '421ac385fdaed1121321222eddad0dae'
       wallet.initialize(seed)
       wallet.addAssetDefinition(seed, goldAsset)
       wallet.subscribeAndSyncAllAddresses(function(error) {
         expect(error).to.be.null
 
-        wallet.createIssuanceTx('newEPOBC', 'epobc', 5, 10000, seed, function(error, tx) {
+        wallet.createIssuanceTx('newEPOBC', 'epobc', 2, 10000, seed, function(error, tx) {
           expect(error).to.be.null
 
           wallet.transformTx(tx, 'signed', seed, function(error, tx) {

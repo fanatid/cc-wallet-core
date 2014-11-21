@@ -8,7 +8,11 @@ describe('blockchain.NaiveBlockchain', function() {
 
   beforeEach(function() {
     localStorage.clear()
-    wallet = new cccore.Wallet({ testnet: true, blockchain: 'NaiveBlockchain' })
+    wallet = new cccore.Wallet({
+      testnet: true,
+      blockchain: 'NaiveBlockchain',
+      spendUnconfirmedCoins: true
+    })
     nb = wallet.getBlockchain()
   })
 

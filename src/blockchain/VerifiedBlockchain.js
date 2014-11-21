@@ -71,7 +71,7 @@ function VerifiedBlockchain(network, opts) {
 
     if (running) {
       queue.push(Q.defer())
-      promise = _.last(queue)
+      promise = _.last(queue).promise
     }
     running = true
 
@@ -347,8 +347,7 @@ VerifiedBlockchain.prototype._sync = function() {
   var networkLastHash = self._network.getCurrentBlockHash()
 
   if (bufferEqual(self._currentBlockHash, networkLastHash) || networkHeight === -1) {
-    deferred.resolve()
-    return deferred.promise
+    return Q()
   }
 
   var maxBits = 0x1d00ffff

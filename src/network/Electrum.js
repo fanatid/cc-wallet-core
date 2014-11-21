@@ -52,7 +52,7 @@ function Electrum(wallet, opts) {
 
     if (response.id === null) {
       var isMethod = response.method === 'blockchain.numblocks.subscribe'
-      var isArgs = _.isNumber(response.params) && _.isNumber(response.params[0])
+      var isArgs = _.isArray(response.params) && _.isNumber(response.params[0])
       if (isMethod && isArgs)
         return self._setCurrentHeight(response.params[0])
 
