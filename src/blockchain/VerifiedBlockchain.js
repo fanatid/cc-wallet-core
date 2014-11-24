@@ -280,12 +280,12 @@ VerifiedBlockchain.prototype._getVerifiedTx = function(txId) {
 
   var self = this
 
-  var tx = self._txCache.get(txId)
-  if (!_.isUndefined(tx))
-    return Q(tx)
+  var cachedResult = self._txCache.get(txId)
+  if (!_.isUndefined(cachedResult))
+    return Q(cachedResult.tx)
 
   if (_.isUndefined(self._getVerifiedTxRunning[txId])) {
-    var height, merkleRoot
+    var tx, height, merkleRoot
 
     var promise = self._getTx(txId).then(function(result) {
       tx = result
