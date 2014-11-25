@@ -24,8 +24,13 @@ function AssetDefinitionStorage() {
   this.assetsDbKey = this.globalPrefix + 'AssetDefinitions'
   this.assetRecords = this.store.get(this.assetsDbKey) || []
 
-  if (_.isUndefined(this.store.get(this.assetsDbKey + '_version')))
+  if (_.isUndefined(this.store.get(this.assetsDbKey + '_version'))) {
     this.store.set(this.assetsDbKey + '_version', '1')
+  }
+
+  if (this.store.get(this.assetsDbKey + '_version') === '1') {
+    this.store.set(this.assetsDbKey + '_version', 2)
+  }
 }
 
 inherits(AssetDefinitionStorage, SyncStorage)

@@ -30,4 +30,17 @@ txStatus.isAvailable = function(status) {
 }
 
 
+/**
+ * @readonly
+ * @enum {number}
+ */
+var historyEntryType = {
+  send: 1,
+  receive: 2,
+  payment2yourself: 3,
+  issue: 4
+}
+
+
 module.exports.txStatus = txStatus
+module.exports.historyEntryType = historyEntryType

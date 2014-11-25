@@ -9,6 +9,7 @@ var Coin = require('../coin').Coin
 var toposort = require('../tx').toposort
 var HistoryEntry = require('./HistoryEntry')
 var verify = require('../verify')
+var historyEntryType = require('../const').historyEntryType
 
 
 /**
@@ -19,95 +20,111 @@ var verify = require('../verify')
 function HistoryManager(wallet) {
   verify.Wallet(wallet)
 
-  this.wallet = wallet
+  var self = this
+
+  self._wallet = wallet
+  self._entries = []
+  self._needUpdating = 1
+  self._updatePromise = null
+
+  self._wallet.getCoinManager().on('touchAsset', function () { self._needUpdating += 1 })
 }
 
 /**
- * @callback HistoryManager~getEntries
- * @param {?Error} error
- * @param {HistoryEntry[]} entries
+ * @return {Q.Promise}
  */
-
-/**
- * @param {HistoryManager~getEntries} cb
- */
-HistoryManager.prototype.getEntries = function(cb) {
-  verify.function(cb)
-
+HistoryManager.prototype._updateEntries = function () {
   var self = this
+  self._entries = []
 
-  Q.fcall(function() {
-    return Q.ninvoke(self.wallet.getCoinQuery().includeSpent().includeUnconfirmed(), 'getCoins')
+  var currentNeedUpdating = self._needUpdating
+  var coinQuery = self._wallet.getCoinQuery().includeSpent().includeUnconfirmed()
 
-  }).then(function(coinList) {
-    var txDb = self.wallet.getTxDb()
+  return Q.ninvoke(coinQuery, 'getCoins').then(function (coinList) {
+    var txDb = self._wallet.getTxDb()
     var transactions = _.chain(coinList.getCoins())
       .pluck('txId')
       .uniq()
-      .map(function(txId) {
-        var entry = {
-          tx: txDb.getTx(txId),
+      .map(function (txId) {
+        var tx = txDb.getTx(txId)
+        if (tx === null) {
+          throw new Error('txId ' + txId + ' not found in txDb')
+        }
+
+        return [tx.getId(), {
+          tx: tx,
           height: txDb.getTxHeight(txId),
           timestamp: txDb.getTxTimestamp(txId)
-        }
-        if (entry.tx === null)
-          throw new Error('txId ' + txId + ' not found in txDb')
-
-        return [entry.tx.getId(), entry]
+        }]
       })
-      .sortBy(function(entry) {
-        var value = entry[1].height + entry[1].timestamp/10000000000
-        // -1 or Infinity ?
-        return isNaN(value) ? -1 : value
+      .sortBy(function (entry) {
+        if (entry[1].height === 0) { return entry[1].timestamp }
+        return entry[1].height + entry[1].timestamp/10000000000
       })
       .value()
 
     var txEntries = _.zipObject(transactions)
-    transactions = transactions.map(function(entry) { return entry[1].tx })
+    transactions = transactions.map(function (entry) { return entry[1].tx })
 
     var promise = Q()
-    var entries = []
-    var coins = _.zipObject(coinList.getCoins().map(function(coin) { return [coin.txId+coin.outIndex, coin] }))
+    var coins = _.chain(coinList.getCoins())
+      .map(function (coin) { return [coin.txId+coin.outIndex, coin] })
+      .zipObject()
+      .value()
 
     toposort(transactions).forEach(function(tx) {
-      var ins = _.filter(tx.ins.map(function(input) {
+      var colorValues = {}
+      var myColorTargets = []
+
+      var ins = _.filter(tx.ins.map(function (input) {
         var txId = Array.prototype.reverse.call(new Buffer(input.hash)).toString('hex')
         return coins[txId+input.index]
       }))
-      var outs = _.filter(tx.outs.map(function(output, index) {
-        return coins[tx.getId()+index]
-      }))
+      ins.forEach(function (coin) {
+        promise = promise.then(function () {
+          return Q.ninvoke(coin, 'getMainColorValue')
 
-      var colorValues = {}
-      var myColorTargets = []
-      ins.forEach(function(coin) {
-        promise = promise.then(function() { return Q.ninvoke(coin, 'getMainColorValue') }).then(function(cv) {
+        }).then(function (cv) {
           var cid = cv.getColorId()
-          if (_.isUndefined(colorValues[cid]))
+          if (_.isUndefined(colorValues[cid])) {
             colorValues[cid] = cv.neg()
-          else
+
+          } else {
             colorValues[cid] = colorValues[cid].minus(cv)
+
+          }
+
         })
       })
+
+      var outs = _.filter(tx.outs.map(function (output, index) {
+        return coins[tx.getId()+index]
+      }))
       outs.forEach(function(coin) {
-        promise = promise.then(function() { return Q.ninvoke(coin, 'getMainColorValue') }).then(function(cv) {
+        promise = promise.then(function() {
+          return Q.ninvoke(coin, 'getMainColorValue')
+
+        }).then(function (cv) {
           var cid = cv.getColorId()
-          if (_.isUndefined(colorValues[cid]))
+          if (_.isUndefined(colorValues[cid])) {
             colorValues[cid] = cv
-          else
+
+          } else {
             colorValues[cid] = colorValues[cid].plus(cv)
+
+          }
+
           myColorTargets.push(new cclib.ColorTarget(coin.script, cv))
         })
       })
 
       var colorTargets = []
-      tx.outs.forEach(function(output, index) {
-        promise = promise.then(function() {
-          if (!_.isUndefined(coins[tx.getId()+index]))
-            return
+      tx.outs.forEach(function (output, index) {
+        promise = promise.then(function () {
+          if (!_.isUndefined(coins[tx.getId()+index])) { return }
 
-          var address = bitcoin.getAddressesFromOutputScript(output.script, self.wallet.getBitcoinNetwork())[0]
-          var coin = new Coin(self.wallet.getCoinManager(), {
+          var address = bitcoin.getAddressesFromOutputScript(output.script, self._wallet.getBitcoinNetwork())[0]
+          var coin = new Coin(self._wallet.getCoinManager(), {
             txId: tx.getId(),
             outIndex: index,
             value: output.value,
@@ -115,50 +132,59 @@ HistoryManager.prototype.getEntries = function(cb) {
             address: address
           })
 
-          return Q.ninvoke(coin, 'getMainColorValue').then(function(cv) {
+          return Q.ninvoke(coin, 'getMainColorValue').then(function (cv) {
             colorTargets.push(new cclib.ColorTarget(output.script.toHex(), cv))
           })
         })
       })
 
-      promise = promise.then(function() {
+      promise = promise.then(function () {
         var assetValues = {}
-        _.values(colorValues).forEach(function(cv) {
+        _.values(colorValues).forEach(function (cv) {
           var desc = cv.getColorDefinition().getDesc()
-          var assetdef = self.wallet.getAssetDefinitionManager().getByDesc(desc)
-          if (assetdef === null)
+          var assetdef = self._wallet.getAssetDefinitionManager().getByDesc(desc)
+          if (assetdef === null) {
             throw new Error('asset for ColorValue ' + cv + ' not found')
-          if (!_.isUndefined(assetValues[assetdef.getId()]))
+          }
+
+          if (!_.isUndefined(assetValues[assetdef.getId()])) {
             throw new Error('multi asset not supported')
+          }
+
           assetValues[assetdef.getId()] = new AssetValue(assetdef, cv.getValue())
         })
 
-        var historyTargets = colorTargets.map(function(ct) {
+        var historyTargets = colorTargets.map(function (ct) {
           var desc = ct.getColorDefinition().getDesc()
-          var assetdef = self.wallet.getAssetDefinitionManager().getByDesc(desc)
-          if (assetdef === null)
+          var assetdef = self._wallet.getAssetDefinitionManager().getByDesc(desc)
+          if (assetdef === null) {
             throw new Error('asset for ColorValue ' + ct.getColorValue() + ' not found')
+          }
+
           var assetValue = new AssetValue(assetdef, ct.getValue())
-          return new HistoryTarget(assetValue, ct.getScript(), self.wallet.getBitcoinNetwork())
+          return new HistoryTarget(assetValue, ct.getScript(), self._wallet.getBitcoinNetwork())
         })
 
-        var entryType = HistoryEntry.entryTypes.Send
+        var entryType = historyEntryType.send
         if (ins.length === 0) {
-          entryType = HistoryEntry.entryTypes.Receive
+          entryType = historyEntryType.receive
           // replace targets
-          historyTargets = myColorTargets.map(function(ct) {
+          historyTargets = myColorTargets.map(function (ct) {
             var desc = ct.getColorDefinition().getDesc()
-            var assetdef = self.wallet.getAssetDefinitionManager().getByDesc(desc)
-            if (assetdef === null)
+            var assetdef = self._wallet.getAssetDefinitionManager().getByDesc(desc)
+            if (assetdef === null) {
               throw new Error('asset for ColorValue ' + ct.getColorValue() + ' not found')
+            }
+
             var assetValue = new AssetValue(assetdef, ct.getValue())
-            return new HistoryTarget(assetValue, ct.getScript(), self.wallet.getBitcoinNetwork())
+            return new HistoryTarget(assetValue, ct.getScript(), self._wallet.getBitcoinNetwork())
           })
         }
-        if (ins.length === tx.ins.length && outs.length === tx.outs.length)
-          entryType = HistoryEntry.entryTypes.PaymentToYourself
+        if (ins.length === tx.ins.length && outs.length === tx.outs.length) {
+          entryType = historyEntryType.payment2yourself
+        }
 
-        entries.push(new HistoryEntry({
+        self._entries.push(new HistoryEntry({
           tx: tx,
           height: txEntries[tx.getId()].height,
           timestamp: txEntries[tx.getId()].timestamp,
@@ -169,7 +195,58 @@ HistoryManager.prototype.getEntries = function(cb) {
       })
     })
 
-    return promise.then(function() { return entries })
+    return promise
+
+  }).then(function () {
+    self._needUpdating = self._needUpdating - currentNeedUpdating
+    if (self._needUpdating > 0) {
+      return self._updateEntries()
+    }
+
+    self._updatePromise = null
+
+  })
+}
+
+/**
+ * @callback HistoryManager~getEntries
+ * @param {?Error} error
+ * @param {HistoryEntry[]} entries
+ */
+
+/**
+ * @param {AssetDefinition} [assetdef]
+ * @param {HistoryManager~getEntries} cb
+ */
+HistoryManager.prototype.getEntries = function(assetdef, cb) {
+  if (_.isUndefined(cb)) {
+    cb = assetdef
+    assetdef = null
+  }
+
+  if (assetdef !== null) verify.AssetDefinition(assetdef)
+  verify.function(cb)
+
+  var self = this
+  var promise = Q()
+  if (self._needUpdating > 0) {
+    if (self._updatePromise === null) { self._updatePromise = self._updateEntries() }
+    promise = self._updatePromise
+  }
+
+  promise.then(function () {
+    if (assetdef === null)
+      return self._entries
+
+    var assetId = assetdef.getId()
+    return self._entries.filter(function (entry) {
+      var assetIds = entry.getTargets().map(function (at) { return at.getAsset().getId() })
+      return assetIds.indexOf(assetId) !== -1
+    })
+
+  }).then(function (entries) {
+    // clone
+    return entries.slice()
 
   }).done(function(entries) { cb(null, entries) }, function(error) { cb(error) })
 }

@@ -82,9 +82,14 @@ function VerifiedBlockchain(network, opts) {
       self.emit('error', error)
 
     }).finally(function() {
-      running = false
-      if (queue.length > 0)
-        queue.pop().resolve()
+      if (queue.length === 0) {
+        running = false
+
+      } else {
+        // @todo Using queue instead array, because shift is slow
+        queue.shift().resolve()
+
+      }
 
     }).done()
   }

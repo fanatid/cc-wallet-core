@@ -41,6 +41,7 @@ function TxStorage(opts) {
   if (_.isUndefined(this.store.get(this.txDbKey + '_version')))
     this.store.set(this.txDbKey + '_version', '1')
 
+/*
   if (this.store.get(this.txDbKey + '_version') === '1') {
     var records = this._getRecords()
     _.keys(records).forEach(function(txId) {
@@ -54,6 +55,12 @@ function TxStorage(opts) {
   if (this.store.get(this.txDbKey + '_version') === '2') {
     this._saveRecords([])
     this.store.set(this.txDbKey + '_version', '3')
+  }
+*/
+
+  if (['1', '2', '3'].indexOf(this.store.get(this.txDbKey + '_version')) !== -1) {
+    this._saveRecords({})
+    this.store.set(this.txDbKey + '_version', 4)
   }
 }
 

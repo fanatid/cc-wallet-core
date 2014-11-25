@@ -216,13 +216,14 @@ TxDb.prototype._addTx = function(txId, data, cb) {
     deferred.reject(error)
 
   }).finally(function() {
-    delete self._addTxSync[txId]
+    if (self._addTxQueue[txId].length === 0) {
+      delete self._addTxQueue[txId]
+      delete self._addTxSync[txId]
 
-    if (!_.isUndefined(self._addTxQueue[txId])) {
-      if (self._addTxQueue[txId].length > 0)
-        self._addTxQueue[txId].pop().resolve()
-      if (self._addTxQueue[txId].length === 0)
-        delete self._addTxQueue[txId]
+    } else {
+      // @todo Using queue instead array, because shift is slow
+      self._addTxQueue[txId].shift().resolve()
+
     }
 
   }).done()

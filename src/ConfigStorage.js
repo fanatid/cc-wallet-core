@@ -15,8 +15,13 @@ function ConfigStorage() {
   this.configDbKey = this.globalPrefix + 'config'
   this.configRecords = this.store.get(this.configDbKey) || {}
 
-  if (_.isUndefined(this.store.get(this.configDbKey + '_version')))
+  if (_.isUndefined(this.store.get(this.configDbKey + '_version'))) {
     this.store.set(this.configDbKey + '_version', '1')
+  }
+
+  if (this.store.get(this.configDbKey + '_version') === '1') {
+    this.store.set(this.configDbKey + '_version', 2)
+  }
 }
 
 inherits(ConfigStorage, SyncStorage)

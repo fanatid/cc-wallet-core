@@ -15,10 +15,10 @@ function toposort(transactions) {
 
   var transactionsIds = _.zipObject(transactions.map(function(tx) { return [tx.getId(), tx] }))
   var result = []
-  var resultIds = []
+  var resultIds = {}
 
   function sort(tx, topTx) {
-    if (resultIds.indexOf(tx.getId()) !== -1)
+    if (resultIds[tx.getId()] === true)
       return
 
     tx.ins.forEach(function(input) {
@@ -32,8 +32,8 @@ function toposort(transactions) {
       sort(transactionsIds[inputId], tx)
     })
 
+    resultIds[tx.getId()] = true
     result.push(tx)
-    resultIds.push(tx.getId())
   }
 
   transactions.forEach(function(tx) { sort(tx, tx) })

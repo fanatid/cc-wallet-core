@@ -450,38 +450,10 @@ Wallet.prototype.getUnconfirmedBalance = function(assetdef, cb) {
 }
 
 /**
- * @callback Wallet~getHistory
- * @param {?Error} error
- * @param {HistoryEntry[]} history
- */
-
-/**
- * @param {AssetDefinition} [assetdef]
- * @param {Wallet~getHistory} cb
+ * {@link HistoryManager~getEntries}
  */
 Wallet.prototype.getHistory = function(assetdef, cb) {
-  if (_.isUndefined(cb)) {
-    cb = assetdef
-    assetdef = null
-  }
-
-  if (assetdef !== null) verify.AssetDefinition(assetdef)
-  verify.function(cb)
-
-  Q.ninvoke(this.historyManager, 'getEntries').then(function(entries) {
-    if (assetdef !== null) {
-      var assetId = assetdef.getId()
-      entries = entries.filter(function(entry) {
-        return entry.getTargets().some(function(assetTarget) {
-          var targetAssetId = assetTarget.getAsset().getId()
-          return targetAssetId === assetId
-        })
-      })
-    }
-
-    return entries
-
-  }).done(function(entries) { cb(null, entries) }, function(error) { cb(error) })
+  this.historyManager.getEntries(assetdef, cb)
 }
 
 /**

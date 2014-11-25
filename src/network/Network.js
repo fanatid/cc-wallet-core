@@ -98,9 +98,14 @@ Network.prototype._setCurrentHeight = function(newHeight) {
     self.emit('error', error)
 
   }).finally(function() {
-    self._setCurrentHeightRunning = false
-    if (self._setCurrentHeightQueue.length > 0)
-      self._setCurrentHeightQueue.pop().resolve()
+    if (self._setCurrentHeightQueue.length === 0) {
+      self._setCurrentHeightRunning = false
+
+    } else {
+      // @todo Using queue instead array, because shift is slow
+      self._setCurrentHeightQueue.shift().resolve()
+
+    }
 
   }).done()
 }

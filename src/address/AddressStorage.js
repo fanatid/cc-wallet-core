@@ -24,8 +24,13 @@ function AddressStorage() {
   this.addressesDbKey = this.globalPrefix + 'pubKeys'
   this.addressesRecords = this.store.get(this.addressesDbKey) || []
 
-  if (_.isUndefined(this.store.get(this.addressesDbKey + '_version')))
+  if (_.isUndefined(this.store.get(this.addressesDbKey + '_version'))) {
     this.store.set(this.addressesDbKey + '_version', '1')
+  }
+
+  if (this.store.get(this.addressesDbKey + '_version') === '1') {
+    this.store.set(this.addressesDbKey + '_version', 2)
+  }
 }
 
 inherits(AddressStorage, SyncStorage)

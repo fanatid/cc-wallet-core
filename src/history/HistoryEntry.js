@@ -1,4 +1,5 @@
 var verify = require('../verify')
+var historyEntryType = require('../const').historyEntryType
 
 
 /**
@@ -29,13 +30,6 @@ function HistoryEntry(data) {
   this.values = data.values
   this.targets = data.targets
   this.entryType = data.entryType
-}
-
-HistoryEntry.entryTypes = {
-  Send: 0,
-  Receive: 1,
-  PaymentToYourself: 2,
-  Issue: 3
 }
 
 /**
@@ -77,28 +71,28 @@ HistoryEntry.prototype.getTargets = function() {
  * @return {boolean}
  */
 HistoryEntry.prototype.isSend = function() {
-  return this.entryType === HistoryEntry.entryTypes.Send
+  return this.entryType === historyEntryType.send
 }
 
 /**
  * @return {boolean}
  */
 HistoryEntry.prototype.isReceive = function() {
-  return this.entryType === HistoryEntry.entryTypes.Receive
+  return this.entryType === historyEntryType.receive
 }
 
 /**
  * @return {boolean}
  */
 HistoryEntry.prototype.isPaymentToYourself = function() {
-  return this.entryType === HistoryEntry.entryTypes.PaymentToYourself
+  return this.entryType === historyEntryType.payment2yourself
 }
 
 /**
  * @return {boolean}
  */
 HistoryEntry.prototype.isIssue = function() {
-  return this.entryType === HistoryEntry.entryTypes.Issue
+  return this.entryType === historyEntryType.issue
 }
 
 

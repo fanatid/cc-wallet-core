@@ -38,17 +38,19 @@ function CoinStorage(opts) {
   this.spendsDbKey = this.globalPrefix + 'spends'
   this.spendsRecords = this.store.get(this.spendsDbKey) || {}
 
-  if (_.isUndefined(this.store.get(this.coinsDbKey + '_version')))
+  if (_.isUndefined(this.store.get(this.coinsDbKey + '_version'))) {
     this.store.set(this.coinsDbKey + '_version', '1')
+  }
 
   if (this.store.get(this.coinsDbKey + '_version') === '1') {
     var records = []
-    this._getCoinRecords().forEach(function(record) {
-      var exists = records.some(function(obj) {
-        if (obj.txId === record.txId && obj.outIndex === record.outIndex)
+    this._getCoinRecords().forEach(function (record) {
+      var exists = records.some(function (obj) {
+        if (obj.txId === record.txId && obj.outIndex === record.outIndex) {
           return obj.addresses.push(record.address)
+        }
       })
-      if (!exists)
+      if (!exists) {
         records.push({
           txId: record.txId,
           outIndex: record.outIndex,
@@ -56,13 +58,23 @@ function CoinStorage(opts) {
           script: record.script,
           addresses: [record.address]
         })
+      }
     })
     this._saveCoinRecords(records)
     this.store.set(this.coinsDbKey + '_version', '2')
   }
 
-  if (_.isUndefined(this.store.get(this.spendsDbKey + '_version')))
+  if (this.store.get(this.coinsDbKey + '_version') === '2') {
+    this.store.set(this.coinsDbKey + '_version', 3)
+  }
+
+  if (_.isUndefined(this.store.get(this.spendsDbKey + '_version'))) {
     this.store.set(this.spendsDbKey + '_version', '1')
+  }
+
+  if (this.store.get(this.spendsDbKey + '_version') === '1') {
+    this.store.set(this.spendsDbKey + '_version', 2)
+  }
 }
 
 inherits(CoinStorage, SyncStorage)

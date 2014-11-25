@@ -80,6 +80,10 @@ CoinManager.prototype._record2Coin = function(record) {
     address: record.address
   }
   var coinTxStatus = this._wallet.getTxDb().getTxStatus(rawCoin.txId)
+  if (coinTxStatus === null) {
+    throw new Error('Can\'t find tx for coin: ' + record.txId + ':' + record.outIndex)
+  }
+
   var opts = {
     isSpent: this._storage.isSpent(rawCoin.txId, rawCoin.outIndex),
     isValid: txStatus.isValid(coinTxStatus),

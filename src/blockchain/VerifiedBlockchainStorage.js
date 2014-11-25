@@ -20,11 +20,17 @@ function VerifiedBlockchainStorage() {
 
   this.blockchainDbKey = this.globalPrefix + 'verifiedBlockchain'
   this.blockchainData = this.store.get(this.blockchainDbKey)
-  if (_.isUndefined(this.blockchainData))
+  if (_.isUndefined(this.blockchainData)) {
     this.blockchainData = { lastHash: zfill('', 64), hashes: '', headers: '' }
+  }
 
-  if (_.isUndefined(this.store.get(this.blockchainDbKey + '_version')))
+  if (_.isUndefined(this.store.get(this.blockchainDbKey + '_version'))) {
     this.store.set(this.blockchainDbKey + '_version', '1')
+  }
+
+  if (this.store.get(this.blockchainDbKey + '_version') === '1') {
+    this.store.set(this.blockchainDbKey + '_version', 2)
+  }
 }
 
 inherits(VerifiedBlockchainStorage, SyncStorage)
