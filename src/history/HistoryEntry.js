@@ -9,6 +9,7 @@ var historyEntryType = require('../const').historyEntryType
  * @param {bitcoinjs-lib.Transaction} data.tx
  * @param {number} data.height
  * @param {number} data.timestamp
+ * @param {boolean} data.isBlockTimestamp
  * @param {AssetValue[]} data.values
  * @param {HistoryTarget[]} data.targets
  * @param {number} data.entryType
@@ -18,6 +19,7 @@ function HistoryEntry(data) {
   verify.Transaction(data.tx)
   verify.number(data.height)
   verify.number(data.timestamp)
+  verify.boolean(data.isBlockTimestamp)
   verify.array(data.values)
   data.values.forEach(verify.AssetValue)
   verify.array(data.targets)
@@ -27,6 +29,7 @@ function HistoryEntry(data) {
   this.txId = data.tx.getId()
   this.height = data.height
   this.timestamp = data.timestamp
+  this.isBlockTimestamp = data.isBlockTimestamp
   this.values = data.values
   this.targets = data.targets
   this.entryType = data.entryType
@@ -51,6 +54,13 @@ HistoryEntry.prototype.getBlockHeight = function() {
  */
 HistoryEntry.prototype.getTimestamp = function() {
   return this.timestamp
+}
+
+/**
+ * @return {boolean}
+ */
+HistoryEntry.prototype.isBlockTimestamp = function () {
+  return this.isBlockTimestamp
 }
 
 /**

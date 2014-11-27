@@ -54,7 +54,8 @@ HistoryManager.prototype._updateEntries = function () {
         return [tx.getId(), {
           tx: tx,
           height: txDb.getTxHeight(txId),
-          timestamp: txDb.getTxTimestamp(txId)
+          timestamp: txDb.getTxTimestamp(txId),
+          isBlockTimestamp: txDb.isBlockTimestamp(txId)
         }]
       })
       .sortBy(function (entry) {
@@ -73,6 +74,7 @@ HistoryManager.prototype._updateEntries = function () {
       .value()
 
     toposort(transactions).forEach(function(tx) {
+      var txId = tx.getId()
       var colorValues = {}
       var myColorTargets = []
 
@@ -98,7 +100,7 @@ HistoryManager.prototype._updateEntries = function () {
       })
 
       var outs = _.filter(tx.outs.map(function (output, index) {
-        return coins[tx.getId()+index]
+        return coins[txId+index]
       }))
       outs.forEach(function(coin) {
         promise = promise.then(function() {
@@ -121,11 +123,11 @@ HistoryManager.prototype._updateEntries = function () {
       var colorTargets = []
       tx.outs.forEach(function (output, index) {
         promise = promise.then(function () {
-          if (!_.isUndefined(coins[tx.getId()+index])) { return }
+          if (!_.isUndefined(coins[txId+index])) { return }
 
           var address = bitcoin.getAddressesFromOutputScript(output.script, self._wallet.getBitcoinNetwork())[0]
           var coin = new Coin(self._wallet.getCoinManager(), {
-            txId: tx.getId(),
+            txId: txId,
             outIndex: index,
             value: output.value,
             script: output.script.toHex(),
@@ -186,8 +188,9 @@ HistoryManager.prototype._updateEntries = function () {
 
         self._entries.push(new HistoryEntry({
           tx: tx,
-          height: txEntries[tx.getId()].height,
-          timestamp: txEntries[tx.getId()].timestamp,
+          height: txEntries[txId].height,
+          timestamp: txEntries[txId].timestamp,
+          isBlockTimestamp: txEntries[txId].isBlockTimestamp,
           values: _.values(assetValues),
           targets: historyTargets,
           entryType: entryType

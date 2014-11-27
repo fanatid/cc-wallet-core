@@ -178,6 +178,7 @@ TxDb.prototype._addTx = function(txId, data, cb) {
 
       return Q.ninvoke(self._wallet.getBlockchain(), 'getBlockTime', data.height).then(function(ts) {
         data.timestamp = ts + TimezoneOffset
+        data.isBlockTimestamp = true
       })
     }
 
@@ -194,6 +195,7 @@ TxDb.prototype._addTx = function(txId, data, cb) {
       status: data.status,
       height: data.height,
       timestamp: data.timestamp,
+      isBlockTimestamp: data.isBlockTimestamp,
       tAddresses: data.tAddresses
     }
 
@@ -357,6 +359,15 @@ TxDb.prototype.getTxHeight = function(txId) {
 TxDb.prototype.getTxTimestamp = function(txId) {
   var record = this._txStorage.get(txId)
   return record === null ? null : record.timestamp
+}
+
+/**
+ * @param {string} txId
+ * @return {?boolean}
+ */
+TxDb.prototype.isBlockTimestamp = function(txId) {
+  var record = this._txStorage.get(txId)
+  return record === null ? null : record.isBlockTimestamp
 }
 
 

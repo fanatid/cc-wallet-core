@@ -7,15 +7,19 @@ var SyncStorage = require('../SyncStorage')
 var verify = require('../verify')
 
 
-// Todo: add shrotcut names for save storage's size
+/**
+ * @todo Add shrotcut names for save storage's size
+ */
+
 /**
  * @typedef {Object} TxStorageRecord
  * @property {string} rawTx
  * @property {number} status
- * @property {number} [height=null]
- * @property {number} [timestamp=null]
- * @property {string[]} [tAddresses=[]]
- * @property {string[]} [rAddresses=[]]
+ * @property {number} height
+ * @property {number} timestamp
+ * @property {boolean} isBlockTimestamp
+ * @property {string[]} tAddresses
+ * @property {string[]} rAddresses
  */
 
 /**
@@ -68,6 +72,13 @@ function TxStorage(opts) {
     this._saveRecords({})
     this.store.set(this.txDbKey + '_version', 5)
   }
+
+  if (this.store.get(this.txDbKey + '_version') === 5) {
+    var records = this._getRecords()
+    _.forEach(records, function (record) { record.isBlockTimestamp = true })
+    this._saveRecords(records)
+    this.store.set(this.txDbKey + '_version', 6)
+  }
 }
 
 inherits(TxStorage, SyncStorage)
@@ -100,6 +111,7 @@ TxStorage.prototype._save2store = function() {
  * @param {number} opts.status
  * @param {number} opts.height
  * @param {number} opts.timestamp
+ * @param {boolean} [opts.isBlockTimestamp=false]
  * @param {string} opts.tAddresses
  * @return {TxStorageRecord}
  * @throws {Error} If txId exists
@@ -111,6 +123,7 @@ TxStorage.prototype.add = function(txId, rawTx, opts) {
   verify.number(opts.status)
   verify.number(opts.height)
   verify.number(opts.timestamp)
+  if (!_.isUndefined(opts.isBlockTimestamp)) verify.boolean(opts.isBlockTimestamp)
   verify.array(opts.tAddresses)
   opts.tAddresses.forEach(verify.string)
 
@@ -123,6 +136,7 @@ TxStorage.prototype.add = function(txId, rawTx, opts) {
     status: opts.status,
     height: opts.height,
     timestamp: opts.timestamp,
+    isBlockTimestamp: opts.isBlockTimestamp || false,
     tAddresses: _.sortBy(opts.tAddresses)
   }
   this._saveRecords(records)
