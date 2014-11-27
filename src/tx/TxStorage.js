@@ -62,6 +62,12 @@ function TxStorage(opts) {
     this._saveRecords({})
     this.store.set(this.txDbKey + '_version', 4)
   }
+
+  if (this.store.get(this.txDbKey + '_version') === 4) {
+    // Drop, because timestamp was invalid
+    this._saveRecords({})
+    this.store.set(this.txDbKey + '_version', 5)
+  }
 }
 
 inherits(TxStorage, SyncStorage)

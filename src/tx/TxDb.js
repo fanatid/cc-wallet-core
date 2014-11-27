@@ -177,7 +177,7 @@ TxDb.prototype._addTx = function(txId, data, cb) {
         return (data.timestamp = getCurrentTimestamp())
 
       return Q.ninvoke(self._wallet.getBlockchain(), 'getBlockTime', data.height).then(function(ts) {
-        data.timestamp = ts
+        data.timestamp = ts + TimezoneOffset
       })
     }
 
@@ -221,7 +221,6 @@ TxDb.prototype._addTx = function(txId, data, cb) {
       delete self._addTxSync[txId]
 
     } else {
-      // @todo Using queue instead array, because shift is slow
       self._addTxQueue[txId].shift().resolve()
 
     }

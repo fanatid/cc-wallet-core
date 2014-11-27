@@ -86,7 +86,6 @@ function VerifiedBlockchain(network, opts) {
         running = false
 
       } else {
-        // @todo Using queue instead array, because shift is slow
         queue.shift().resolve()
 
       }
