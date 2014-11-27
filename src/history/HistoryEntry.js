@@ -29,7 +29,7 @@ function HistoryEntry(data) {
   this.txId = data.tx.getId()
   this.height = data.height
   this.timestamp = data.timestamp
-  this.isBlockTimestamp = data.isBlockTimestamp
+  this._isBlockTimestamp = data.isBlockTimestamp
   this.values = data.values
   this.targets = data.targets
   this.entryType = data.entryType
@@ -60,7 +60,7 @@ HistoryEntry.prototype.getTimestamp = function() {
  * @return {boolean}
  */
 HistoryEntry.prototype.isBlockTimestamp = function () {
-  return this.isBlockTimestamp
+  return this._isBlockTimestamp
 }
 
 /**
