@@ -16,6 +16,7 @@ var tx = require('./tx')
 var cclib = require('./cclib')
 var bitcoin = require('./bitcoin')
 var verify = require('./verify')
+var SyncMixin = require('./SyncMixin')
 
 
 /**
@@ -64,6 +65,14 @@ var verify = require('./verify')
  */
 
 /**
+ * @event Wallet#syncStart
+ */
+
+/**
+ * @event Wallet#syncStop
+ */
+
+/**
  * @event Wallet#initialize
  */
 
@@ -75,6 +84,7 @@ var verify = require('./verify')
 /**
  * @class Wallet
  * @extends events.EventEmitter
+ * @mixes SyncMixin
  *
  * @param {Object} opts
  * @param {boolean} [opts.testnet=false]
@@ -95,6 +105,7 @@ function Wallet(opts) {
 
   var self = this
   events.EventEmitter.call(self)
+  SyncMixin.call(self)
 
   verify.boolean(opts.testnet)
   verify.string(opts.network)
@@ -155,6 +166,11 @@ function Wallet(opts) {
 
   self.aManager.on('newAsset', function(assetdef) { self.emit('newAsset', assetdef) })
   self.coinManager.on('touchAsset', function(assetdef) { self.emit('touchAsset', assetdef) })
+
+  self.txDb.on('syncStart', function () { self._syncEnter() })
+  self.txDb.on('syncStop', function () { self._syncExit() })
+  self.coinManager.on('syncStart', function () { self._syncEnter() })
+  self.coinManager.on('syncStop', function () { self._syncExit() })
 }
 
 inherits(Wallet, events.EventEmitter)

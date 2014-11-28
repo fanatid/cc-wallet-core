@@ -9,6 +9,7 @@ var txStatus = require('../const').txStatus
 var bitcoin = require('../bitcoin')
 var Coin = require('./Coin')
 var verify = require('../verify')
+var SyncMixin = require('../SyncMixin')
 
 
 /**
@@ -41,8 +42,17 @@ function getWalletAllAddresses(wallet) {
  */
 
 /**
+ * @event CoinManager#syncStart
+ */
+
+/**
+ * @event CoinManager#syncStop
+ */
+
+/**
  * @class CoinManager
  * @extends events.EventEmitter
+ * @mixes SyncMixin
  * @param {Wallet} wallet
  * @param {CoinStorage} storage
  */
@@ -52,6 +62,7 @@ function CoinManager(wallet, storage) {
 
   var self = this
   events.EventEmitter.call(self)
+  SyncMixin.call(self)
 
   self._wallet = wallet
   self._storage = storage
@@ -101,6 +112,8 @@ CoinManager.prototype._addTx = function(tx) {
 
   var self = this
 
+  self._syncEnter()
+
   var txId = tx.getId()
   var allAddresses = getWalletAllAddresses(self._wallet)
 
@@ -109,7 +122,7 @@ CoinManager.prototype._addTx = function(tx) {
     self._storage.markCoinAsSpent(txId, input.index)
   })
 
-  var promises = tx.outs.map(function(output, index) {
+  var promises = tx.outs.map(function (output, index) {
     if (self._storage.isCoinExists(txId, index))
       return
 
@@ -144,7 +157,13 @@ CoinManager.prototype._addTx = function(tx) {
     })
   })
 
-  Q.all(promises).catch(function(error) { self.emit('error', error) })
+  Q.all(promises).finally(function () {
+    self._syncExit()
+
+  }).catch(function (error) {
+    self.emit('error', error)
+
+  })
 }
 
 /**
@@ -155,6 +174,8 @@ CoinManager.prototype._revertTx = function(tx) {
 
   var self = this
 
+  self._syncEnter()
+
   var txId = tx.getId()
   var allAddresses = getWalletAllAddresses(self._wallet)
 
@@ -163,13 +184,13 @@ CoinManager.prototype._revertTx = function(tx) {
     self._storage.markCoinAsUnspent(txId, input.index)
   })
 
-  tx.outs.map(function(output, index) {
+  var promises = tx.outs.map(function (output, index) {
     var coinRecord = self._storage.removeCoin(txId, index)
     if (coinRecord === null)
       return
 
     var coin = self._record2Coin(coinRecord)
-    Q.ninvoke(coin, 'getMainColorValue').then(function(colorValue) {
+    return Q.ninvoke(coin, 'getMainColorValue').then(function (colorValue) {
       var colorDesc = colorValue.getColorDefinition().getDesc()
       var assetdef = self._wallet.getAssetDefinitionManager().getByDesc(colorDesc)
       self.emit('touchAsset', assetdef)
@@ -179,7 +200,15 @@ CoinManager.prototype._revertTx = function(tx) {
         self.emit('touchAddress', address)
       })
 
-    }).catch(function(error) { self.emit('error', error) })
+    })
+  })
+
+  Q.all(promises).finally(function () {
+    self._syncExit()
+
+  }).catch(function (error) {
+    self.emit('error', error)
+
   })
 }
 

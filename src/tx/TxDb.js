@@ -7,6 +7,7 @@ var Q = require('q')
 var Transaction = require('../bitcoin').Transaction
 var verify = require('../verify')
 var txStatus = require('../const').txStatus
+var SyncMixin = require('../SyncMixin')
 
 
 /**
@@ -44,8 +45,17 @@ function getCurrentTimestamp() {
  */
 
 /**
+ * @event TxDb#syncStart
+ */
+
+/**
+ * @event TxDb#syncStop
+ */
+
+/**
  * @class TxDb
  * @extends events.EventEmitter
+ * @mixes SyncMixin
  * @param {TxStorage} txStorage
  * @param {Blockchain} blockchain
  */
@@ -56,6 +66,7 @@ function TxDb(wallet, txStorage) {
   var self = this
 
   events.EventEmitter.call(self)
+  SyncMixin.call(self)
 
   self._wallet = wallet
   self._txStorage = txStorage
@@ -141,8 +152,13 @@ TxDb.prototype._addTx = function(txId, data, cb) {
 
   var self = this
 
+  self._syncEnter()
+
   var deferred = Q.defer()
-  deferred.promise.done(function() { cb(null) }, function(error) { cb(error) })
+  deferred.promise.finally(function() {
+    self._syncExit()
+
+  }).done(function () { cb(null) }, function (error) { cb(error) })
 
   if (_.isUndefined(self._addTxQueue[txId]))
     self._addTxQueue[txId] = []
@@ -303,7 +319,7 @@ TxDb.prototype.historySync = function(address, entries, cb) {
       tAddresses: [address]
     }
 
-    // Todo:
+    // @todo
     // How add tx if they was marked as invalid because was aborted in revert case
     //   and now re-created with equals params and have same txId... ?
     // Example:

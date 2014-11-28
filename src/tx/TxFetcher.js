@@ -57,6 +57,7 @@ TxFetcher.prototype.historySync = function(address, cb) {
   verify.function(cb)
 
   var self = this
+
   Q.ninvoke(self._blockchain, 'getHistory', address).then(function(entries) {
     return Q.ninvoke(self._txdb, 'historySync', address, entries)
 

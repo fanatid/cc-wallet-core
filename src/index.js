@@ -3,6 +3,9 @@ module.exports = {
   cclib: require('./cclib'),
   verify: require('./verify'),
 
+  SyncMixin: require('./SyncMixin'),
+  SyncStorage: require('./SyncStorage'),
+
   address: require('./address'),
   asset: require('./asset'),
   blockchain: require('./blockchain'),
