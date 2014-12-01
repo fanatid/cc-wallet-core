@@ -7,7 +7,5 @@ module.exports = {
 
   TxStorage: require('./TxStorage'),
   TxDb: require('./TxDb'),
-  TxFetcher: require('./TxFetcher'),
-
-  toposort: require('./toposort')
+  TxFetcher: require('./TxFetcher')
 }

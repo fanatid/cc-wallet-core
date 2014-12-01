@@ -292,13 +292,15 @@ describe('Wallet', function() {
 
     it('history', function(done) {
       wallet.initialize(seed)
+
+      wallet.on('syncStop', function () {
+        var entries = wallet.getHistory()
+        expect(entries).to.be.instanceof(Array)
+        done()
+      })
+
       wallet.subscribeAndSyncAllAddresses(function(error) {
         expect(error).to.be.null
-        wallet.getHistory(function(error, entries) {
-          expect(error).to.be.null
-          expect(entries).to.be.instanceof(Array)
-          done()
-        })
       })
     })
 
@@ -351,8 +353,9 @@ describe('Wallet', function() {
     fixtures.forEach(function(fixture) {
       it(fixture.prop + ' ' + fixture.event, function(done) {
         // patching txdb events, bad way
-        wallet.txDb._events.addTx = wallet.txDb._events.addTx.slice(1)
-        wallet.txDb._events.revertTx = wallet.txDb._events.revertTx.slice(1)
+        wallet.txDb._events.addTx = wallet.txDb._events.addTx.slice(2)
+        wallet.txDb._events.updateTx = wallet.txDb._events.updateTx.slice(1)
+        wallet.txDb._events.revertTx = wallet.txDb._events.revertTx.slice(2)
 
         wallet.on(fixture.event, function(msg) {
           expect(msg).to.be.instanceof(CustomMessage)

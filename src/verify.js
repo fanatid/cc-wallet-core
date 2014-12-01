@@ -56,13 +56,13 @@ var functions = {
 
   rawCoin: isRawCoin,
   Coin: createInstanceCheck(function() { return require('./coin').Coin }),
-  CoinManager: createInstanceCheck(function() { return require('./coin').CoinManager }),
   CoinQuery: createInstanceCheck(function() { return require('./coin').CoinQuery }),
   CoinStorage: createInstanceCheck(function() { return require('./coin').CoinStorage }),
+  CoinManager: createInstanceCheck(function() { return require('./coin').CoinManager }),
 
   HistoryEntry: createInstanceCheck(function() { return require('./history').HistoryEntry }),
-  HistoryManager: createInstanceCheck(function() { return require('./history').HistoryManager }),
   HistoryTarget: createInstanceCheck(function() { return require('./history').HistoryTarget }),
+  HistoryManager: createInstanceCheck(function () { return require('./history').HistoryManager }),
 
   Network: createInstanceCheck(function() { return require('./network').Network }),
 

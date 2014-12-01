@@ -65,6 +65,10 @@ var SyncMixin = require('./SyncMixin')
  */
 
 /**
+ * @event Wallet#historyUpdate
+ */
+
+/**
  * @event Wallet#syncStart
  */
 
@@ -154,6 +158,7 @@ function Wallet(opts) {
   self.txDb.on('error', function(error) { self.emit('error', error) })
   self.txFetcher.on('error', function(error) { self.emit('error', error) })
   self.coinManager.on('error', function(error) { self.emit('error', error) })
+  self.historyManager.on('error', function(error) { self.emit('error', error) })
 
   self.blockchain.on('newHeight', function(height) { self.emit('newHeight', height) })
 
@@ -167,10 +172,14 @@ function Wallet(opts) {
   self.aManager.on('newAsset', function(assetdef) { self.emit('newAsset', assetdef) })
   self.coinManager.on('touchAsset', function(assetdef) { self.emit('touchAsset', assetdef) })
 
+  self.historyManager.on('update', function() { self.emit('historyUpdate') })
+
   self.txDb.on('syncStart', function () { self._syncEnter() })
   self.txDb.on('syncStop', function () { self._syncExit() })
   self.coinManager.on('syncStart', function () { self._syncEnter() })
   self.coinManager.on('syncStop', function () { self._syncExit() })
+  self.historyManager.on('syncStart', function () { self._syncEnter() })
+  self.historyManager.on('syncStop', function () { self._syncExit() })
 }
 
 inherits(Wallet, events.EventEmitter)
@@ -300,20 +309,42 @@ Wallet.prototype.getNewAddress = function(seedHex, assetdef, asColorAddress) {
 /**
  * Return all addresses for given asset
  *
- * @param {AssetDefinition} assetdef
+ * @param {AssetDefinition} [assetdef]
  * @param {boolean} [asColorAddress=false]
  * @return {string[]}
  * @throws {Error} If wallet not initialized
  */
 Wallet.prototype.getAllAddresses = function(assetdef, asColorAddress) {
-  this.isInitializedCheck()
+  var self = this
+  self.isInitializedCheck()
 
-  var addresses = this.getAddressManager().getAllAddresses(assetdef)
+  if (_.isBoolean(assetdef) && _.isUndefined(asColorAddress)) {
+    asColorAddress = assetdef
+    assetdef = undefined
+  }
 
-  if (asColorAddress)
-    return addresses.map(function(address) { return address.getColorAddress() })
+  if (!_.isUndefined(asColorAddress)) { verify.boolean(asColorAddress) }
 
-  return addresses.map(function(address) { return address.getAddress() })
+  var assetdefs
+  if (_.isUndefined(assetdef)) {
+    assetdefs = self.getAllAssetDefinitions()
+
+  } else {
+    assetdefs = [assetdef]
+
+  }
+
+  var addresses = _.chain(assetdefs)
+    .map(function (assetdef) { return self.getAddressManager().getAllAddresses(assetdef) })
+    .flatten()
+    .uniq()
+    .value()
+
+  if (asColorAddress) {
+    return addresses.map(function (address) { return address.getColorAddress() })
+  }
+
+  return addresses.map(function (address) { return address.getAddress() })
 }
 
 /**
@@ -468,8 +499,8 @@ Wallet.prototype.getUnconfirmedBalance = function(assetdef, cb) {
 /**
  * {@link HistoryManager~getEntries}
  */
-Wallet.prototype.getHistory = function(assetdef, cb) {
-  this.historyManager.getEntries(assetdef, cb)
+Wallet.prototype.getHistory = function(assetdef) {
+  return this.historyManager.getEntries(assetdef)
 }
 
 /**

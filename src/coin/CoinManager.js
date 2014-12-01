@@ -13,20 +13,6 @@ var SyncMixin = require('../SyncMixin')
 
 
 /**
- * @param {Wallet} wallet
- * @return {string[]}
- */
-function getWalletAllAddresses(wallet) {
-  verify.Wallet(wallet)
-
-  return _.chain(wallet.getAllAssetDefinitions())
-    .map(function(assetdef) { return wallet.getAllAddresses(assetdef) })
-    .flatten()
-    .uniq()
-    .value()
-}
-
-/**
  * @event CoinManager#error
  * @param {Error} error
  */
@@ -71,9 +57,10 @@ function CoinManager(wallet, storage) {
   self._wallet.getTxDb().on('revertTx', self._revertTx.bind(self))
 
   var txdb = self._wallet.getTxDb()
-  txdb.getAllTxIds().forEach(function(txId) {
-    self._addTx(txdb.getTx(txId))
-  })
+  _.chain(txdb.getAllTxIds())
+    .filter(function (txId) { return txStatus.isValid(txdb.getTxStatus(txId)) })
+    .map(txdb.getTx.bind(txdb))
+    .forEach(self._addTx.bind(self))
 }
 
 inherits(CoinManager, events.EventEmitter)
@@ -115,7 +102,7 @@ CoinManager.prototype._addTx = function(tx) {
   self._syncEnter()
 
   var txId = tx.getId()
-  var allAddresses = getWalletAllAddresses(self._wallet)
+  var allAddresses = self._wallet.getAllAddresses()
 
   tx.ins.forEach(function(input) {
     var txId = Array.prototype.reverse.call(new Buffer(input.hash)).toString('hex')
@@ -177,7 +164,7 @@ CoinManager.prototype._revertTx = function(tx) {
   self._syncEnter()
 
   var txId = tx.getId()
-  var allAddresses = getWalletAllAddresses(self._wallet)
+  var allAddresses = self._wallet.getAllAddresses()
 
   tx.ins.forEach(function(input) {
     var txId = Array.prototype.reverse.call(new Buffer(input.hash)).toString('hex')

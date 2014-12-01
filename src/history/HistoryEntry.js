@@ -26,6 +26,7 @@ function HistoryEntry(data) {
   data.targets.forEach(verify.HistoryTarget)
   verify.number(data.entryType)
 
+  this._tx = data.tx
   this.txId = data.tx.getId()
   this.height = data.height
   this.timestamp = data.timestamp
@@ -33,6 +34,27 @@ function HistoryEntry(data) {
   this.values = data.values
   this.targets = data.targets
   this.entryType = data.entryType
+}
+
+/**
+ * @return {boolean}
+ */
+HistoryEntry.prototype.isEqual = function (historyEntry) {
+  verify.HistoryEntry(historyEntry)
+
+  return (
+    this.getTxId() === historyEntry.getTxId() &&
+    this.getBlockHeight() === historyEntry.getBlockHeight() &&
+    this.getTimestamp() === historyEntry.getTimestamp() &&
+    this.isBlockTimestamp() === historyEntry.isBlockTimestamp()
+  )
+}
+
+/**
+ * @return {bitcoinjs-lib.Transaction}
+ */
+HistoryEntry.prototype.getTx = function () {
+  return this._tx
 }
 
 /**
@@ -75,6 +97,13 @@ HistoryEntry.prototype.getValues = function() {
  */
 HistoryEntry.prototype.getTargets = function() {
   return this.targets
+}
+
+/**
+ * @return {number}
+ */
+HistoryEntry.prototype.getEntryType = function () {
+  return this.entryType
 }
 
 /**
