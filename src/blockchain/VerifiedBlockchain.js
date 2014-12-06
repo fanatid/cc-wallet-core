@@ -50,6 +50,8 @@ function VerifiedBlockchain(network, opts) {
   self._headerCache = LRU({ max: opts.headerCacheSize })
   self._txCache = LRU({ max: opts.txCacheSize })
 
+  self._waitHeightDeferreds = {}
+
   self._getVerifiedTxRunning = {}
   self._getVerifiedChunkRunning = {}
 
@@ -60,7 +62,7 @@ function VerifiedBlockchain(network, opts) {
   var storageChunksCount = self._storage.getChunksCount()
   var storageHeadersCount = self._storage.getHeadersCount()
   if (storageChunksCount > 0 || storageHeadersCount > 0) {
-    self._currentHeight = storageChunksCount * 2016 + storageHeadersCount
+    self._currentHeight = storageChunksCount * 2016 + storageHeadersCount - 1
     self._currentBlockHash = self._storage.getLastHash()
   }
 
@@ -96,14 +98,22 @@ function VerifiedBlockchain(network, opts) {
   self._network.on('newHeight', onNewHeight)
   onNewHeight()
 
-  self._network.on('touchAddress', function(address) {
+  self._network.on('touchAddress', function (address) {
     self.emit('touchAddress', address)
   })
 
-  self.on('newHeight', function() {
-    self._txCache.forEach(function(value, key) {
-      if (value.height === 0)
+  self.on('newHeight', function () {
+    self._txCache.forEach(function (value, key) {
+      if (value.height === 0) {
         self._txCache.del(key)
+      }
+    })
+
+    _.keys(self._waitHeightDeferreds).forEach(function (height) {
+      if (height <= self.getCurrentHeight()) {
+        self._waitHeightDeferreds[height].forEach(function (deferred) { deferred.resolve() })
+        delete self._waitHeightDeferreds[height]
+      }
     })
   })
 }
@@ -171,18 +181,11 @@ VerifiedBlockchain.prototype.clear = function() {
 VerifiedBlockchain.prototype._waitHeight = function(height) {
   var self = this
 
-  var deferred = Q.defer()
+  var deferreds = this._waitHeightDeferreds[height] || []
+  deferreds.push(Q.defer())
+  this._waitHeightDeferreds[height] = deferreds
 
-  function onNewHeight(newHeight) {
-    if (height <= newHeight)
-      deferred.resolve()
-  }
-  self.on('newHeight', onNewHeight)
-  onNewHeight()
-
-  return deferred.promise.finally(function() {
-    self.removeListener('newHeight', onNewHeight)
-  })
+  return _.last(deferreds).promise
 }
 
 /**
@@ -247,7 +250,7 @@ VerifiedBlockchain.prototype._getVerifiedHeader = function(height) {
     return Q(header)
 
   var promise = Q()
-  if (height > self.getCurrentHeight() && height <= self._network.getCurrentHeight())
+  if (height > self.getCurrentHeight())
     promise = self._waitHeight(height)
 
   return promise.then(function() {
@@ -430,6 +433,7 @@ VerifiedBlockchain.prototype._sync = function() {
    * @return {boolean}
    */
   function isGoodHash(hash, target) {
+    // return hash.every(function (hashSym, index) { return hashSym < target[index] })
     for (var i = 0; i < 32; ++i)
       if (hash[i] < target[i])
         return true
@@ -474,14 +478,14 @@ VerifiedBlockchain.prototype._sync = function() {
   /**
    */
   function runChainLoopOnce() {
-    var height = (_.last(chain) || { height: self.getCurrentHeight() }).height + 1
+    var height = (_.last(chain) || {height: self.getCurrentHeight() - 1}).height + 1
     if (height <= networkHeight)
       return self._getHeader(height).then(function(header) {
         chain.push({ height: height, header: header })
         runChainLoopOnce()
       })
 
-    self._getVerifiedHeader(self.getCurrentHeight()).then(function(buffer) {
+    self._getVerifiedHeader(self.getCurrentHeight() - 1).then(function (buffer) {
       var prevHeader = bitcoin.buffer2header(buffer)
       var prevHash = bitcoin.headerHash(buffer)
 
@@ -509,37 +513,38 @@ VerifiedBlockchain.prototype._sync = function() {
       var lastBlockHash = bitcoin.headerHash(lastBlock).toString('hex')
       self._storage.setLastHash(lastBlockHash)
 
-      var chunkIndex = Math.floor(_.last(chain).height / 2016)
-      var headerIndex = _.last(chain).height % 2016
+      var lastChunkIndex = Math.floor(_.last(chain).height / 2016)
 
-      if (chunkIndex === self._storage.getChunksCount()) {
-        self._storage.truncateHeaders(headerIndex)
+      if (lastChunkIndex === self._storage.getChunksCount()) {
+        self._storage.truncateHeaders(chain[0].height % 2016)
         chain.forEach(function(obj) {
           self._storage.pushHeader(bitcoin.header2buffer(obj.header).toString('hex'))
         })
 
       } else {
-        assert.equal(chunkIndex-1, self._storage.getChunksCount())
-        var startHeight = chunkIndex * 2016
+        assert.equal(lastChunkIndex - 1, self._storage.getChunksCount())
+        var startHeight = lastChunkIndex * 2016
 
         var chunkHex = ''
         _.range(self._storage.getHeadersCount()).forEach(function(offset) {
           chunkHex += self._storage.getHeader(offset)
         })
-        chain.forEach(function(obj) {
-          if (obj.height < startHeight)
+        chain.forEach(function (obj) {
+          if (obj.height < startHeight) {
             chunkHex += bitcoin.header2buffer(obj.header).toString('hex')
+          }
         })
-        assert.equal(chunkHex.length, 2016*160)
+        assert.equal(chunkHex.length, 2016 * 160)
 
         var chunk = new Buffer(chunkHex, 'hex')
         var chunkHash = bitcoin.crypto.hash256(chunk).toString('hex')
         self._storage.pushChunkHash(chunkHash)
 
         self._storage.truncateHeaders(0)
-        chain.forEach(function(obj) {
-          if (obj.height >= startHeight)
+        chain.forEach(function (obj) {
+          if (obj.height >= startHeight) {
             self._storage.pushHeader(bitcoin.header2buffer(obj.header).toString('hex'))
+          }
         })
       }
 
@@ -549,46 +554,50 @@ VerifiedBlockchain.prototype._sync = function() {
 
       deferred.resolve()
 
-    }).catch(function(error) {
-      if (error instanceof LoopInterrupt)
-        startChunkLoop()
-      else
-        deferred.reject(error)
+    }).catch(function (error) {
+      if (!(error instanceof LoopInterrupt)) {
+        return deferred.reject(error)
+      }
+
+      startChunkLoop()
     })
   }
 
   /**
    */
   function runChunkLoopOnce() {
-    if (index > networkIndex)
+    if (index > networkIndex) {
       return deferred.resolve()
+    }
 
     var chunk, prevHash, prevHeader
-    Q.ninvoke(self._network, 'getChunk', index).then(function(chunkHex) {
+    Q.ninvoke(self._network, 'getChunk', index).then(function (chunkHex) {
       chunk = new Buffer(chunkHex, 'hex')
 
-      if (index > 0)
-        return self._getVerifiedHeader(index*2016 - 1)
+      if (index > 0) {
+        return self._getVerifiedHeader(index * 2016 - 1)
+      }
 
       prevHash = new Buffer(zfill('', 64), 'hex')
 
-    }).then(function(buffer) {
+    }).then(function (buffer) {
       if (Buffer.isBuffer(buffer) && buffer.length === 80) {
         prevHash = bitcoin.headerHash(buffer)
         prevHeader = bitcoin.buffer2header(buffer)
       }
 
       var chunkFirstHeader = bitcoin.buffer2header(chunk.slice(0, 80))
-      if (chunkFirstHeader.prevBlockHash === prevHash.toString('hex'))
+      if (chunkFirstHeader.prevBlockHash === prevHash.toString('hex')) {
         return getTarget(index)
+      }
 
       index -= 1
       throw new LoopInterrupt()
 
-    }).then(function(target) {
-      _.range(0, chunk.length, 80).forEach(function(offset) {
-        var currentHeader = bitcoin.buffer2header(chunk.slice(offset, offset+80))
-        var currentHash = bitcoin.headerHash(chunk.slice(offset, offset+80))
+    }).then(function (target) {
+      _.range(0, chunk.length, 80).forEach(function (offset) {
+        var currentHeader = bitcoin.buffer2header(chunk.slice(offset, offset + 80))
+        var currentHash = bitcoin.headerHash(chunk.slice(offset, offset + 80))
 
         verifyHeader(currentHash, currentHeader, prevHash, prevHeader, target)
 
@@ -596,7 +605,7 @@ VerifiedBlockchain.prototype._sync = function() {
         prevHash = currentHash
       })
 
-    }).then(function() {
+    }).then(function () {
       self._storage.setLastHash(bitcoin.headerHash(chunk.slice(-80)).toString('hex'))
       self._storage.truncateHeaders(0)
 
@@ -605,24 +614,25 @@ VerifiedBlockchain.prototype._sync = function() {
         self._storage.pushChunkHash(bitcoin.crypto.hash256(chunk).toString('hex'))
 
       } else {
-        _.range(0, chunk.length, 80).forEach(function(offset) {
-          self._storage.pushHeader(chunk.slice(offset, offset+80).toString('hex'))
+        _.range(0, chunk.length, 80).forEach(function (offset) {
+          self._storage.pushHeader(chunk.slice(offset, offset + 80).toString('hex'))
         })
 
       }
 
       self._currentBlockHash = self._storage.getLastHash()
-      self._currentHeight = index*2016 + chunk.length/80 - 1
+      self._currentHeight = index * 2016 + chunk.length / 80 - 1
       self.emit('newHeight', self._currentHeight)
 
       index += 1
       runChunkLoopOnce()
 
-    }).catch(function(error) {
-      if (error instanceof LoopInterrupt)
-        runChunkLoopOnce()
-      else
-        deferred.reject(error)
+    }).catch(function (error) {
+      if (!(error instanceof LoopInterrupt)) {
+        return deferred.reject(error)
+      }
+
+      runChunkLoopOnce()
     })
   }
 
@@ -637,10 +647,12 @@ VerifiedBlockchain.prototype._sync = function() {
 
   // chunk loop used for revert even need revert one block,
   //   otherwise logic chain loop will be very difficult
-  if (networkHeight - self.getCurrentHeight() < 50)
+  var delta = networkHeight - self.getCurrentHeight()
+  if (delta >= 0 && delta < 50) {
     runChainLoopOnce()
-  else
+  } else {
     startChunkLoop()
+  }
 
   return deferred.promise
 }

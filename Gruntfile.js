@@ -22,10 +22,16 @@ module.exports = function(grunt) {
       }
     },
     jshint: {
-      files: ['Gruntfile.js', 'src', 'test'],
+      src: ['Gruntfile.js', 'src', 'test'],
       options: {
         jshintrc: true,
         reporter: require('jshint-stylish')
+      }
+    },
+    jscs: {
+      src: ['Gruntfile.js', 'src', 'test'],
+      options: {
+        config: '.jscsrc'
       }
     },
     mocha_istanbul: {
@@ -92,6 +98,7 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-uglify')
   grunt.loadNpmTasks('grunt-contrib-watch')
   grunt.loadNpmTasks('grunt-mocha-istanbul')
+  grunt.loadNpmTasks('grunt-jscs')
   grunt.loadNpmTasks('grunt-mocha-test')
 
   grunt.registerTask('compile', ['browserify:production', 'uglify:production'])

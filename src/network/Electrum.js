@@ -69,7 +69,7 @@ function Electrum(wallet, opts) {
     if (_.isUndefined(response.error))
       deferred.resolve(response.result)
     else
-      deferred.reject(response.error)
+      deferred.reject(new Error(response.error))
 
     delete self._requests[response.id]
   })

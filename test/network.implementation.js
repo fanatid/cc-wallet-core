@@ -127,6 +127,18 @@ function networkImplementationTest(opts) {
       })
     })
 
+    it('getMerkle TransactionNotFound', function (done) {
+      if (!network.supportVerificationMethods()) { return done() }
+
+      var txId = '9854bf4761024a1075ebede93d968ce1ba98d240ba282fb1f0170e555d8fdbd9'
+      network.getMerkle(txId, function (error, result) {
+        expect(error).to.be.instanceof(Error)
+        expect(error.message).to.be.equal('TransactionNotFound')
+        expect(result).to.be.undefined
+        done()
+      })
+    })
+
     it('sendTx', function(done) {
       helpers.sendCoins(network, function() { done() })
     })
