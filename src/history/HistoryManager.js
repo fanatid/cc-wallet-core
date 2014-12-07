@@ -259,6 +259,9 @@ HistoryManager.prototype._addTx = function (tx) {
     self._resortHistoryEntries()
     self.emit('update')
 
+  }).catch(function (error) {
+    self.emit('error', error)
+
   }).finally(function () {
     self._syncExit()
 

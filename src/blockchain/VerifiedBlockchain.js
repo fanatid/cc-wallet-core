@@ -133,8 +133,10 @@ VerifiedBlockchain.prototype.getCurrentHeight = function() {
 VerifiedBlockchain.prototype.getBlockTime = function(height, cb) {
   verify.function(cb)
 
-  this._getVerifiedHeader(height)
-    .done(function(header) { cb(null, header.timestamp) }, function(error) { cb(error) })
+  this._getVerifiedHeader(height).then(function (header) {
+    return bitcoin.buffer2header(header).timestamp
+
+  }).done(function (ts) { cb(null, ts) }, function (error) { cb(error) })
 }
 
 /**
@@ -179,9 +181,8 @@ VerifiedBlockchain.prototype.clear = function() {
  * @return {Q.Promise}
  */
 VerifiedBlockchain.prototype._waitHeight = function(height) {
-  var self = this
-
   var deferreds = this._waitHeightDeferreds[height] || []
+
   deferreds.push(Q.defer())
   this._waitHeightDeferreds[height] = deferreds
 
