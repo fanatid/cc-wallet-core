@@ -60,21 +60,21 @@ HistoryEntry.prototype.getTx = function () {
 /**
  * @return {string}
  */
-HistoryEntry.prototype.getTxId = function() {
+HistoryEntry.prototype.getTxId = function () {
   return this.txId
 }
 
 /**
  * @return {number}
  */
-HistoryEntry.prototype.getBlockHeight = function() {
+HistoryEntry.prototype.getBlockHeight = function () {
   return this.height
 }
 
 /**
  * @return {number}
  */
-HistoryEntry.prototype.getTimestamp = function() {
+HistoryEntry.prototype.getTimestamp = function () {
   return this.timestamp
 }
 
@@ -88,14 +88,14 @@ HistoryEntry.prototype.isBlockTimestamp = function () {
 /**
  * @return {AssetValue[]}
  */
-HistoryEntry.prototype.getValues = function() {
+HistoryEntry.prototype.getValues = function () {
   return this.values
 }
 
 /**
  * @return {AssetTarget[]}
  */
-HistoryEntry.prototype.getTargets = function() {
+HistoryEntry.prototype.getTargets = function () {
   return this.targets
 }
 
@@ -109,28 +109,28 @@ HistoryEntry.prototype.getEntryType = function () {
 /**
  * @return {boolean}
  */
-HistoryEntry.prototype.isSend = function() {
+HistoryEntry.prototype.isSend = function () {
   return this.entryType === historyEntryType.send
 }
 
 /**
  * @return {boolean}
  */
-HistoryEntry.prototype.isReceive = function() {
+HistoryEntry.prototype.isReceive = function () {
   return this.entryType === historyEntryType.receive
 }
 
 /**
  * @return {boolean}
  */
-HistoryEntry.prototype.isPaymentToYourself = function() {
+HistoryEntry.prototype.isPaymentToYourself = function () {
   return this.entryType === historyEntryType.payment2yourself
 }
 
 /**
  * @return {boolean}
  */
-HistoryEntry.prototype.isIssue = function() {
+HistoryEntry.prototype.isIssue = function () {
   return this.entryType === historyEntryType.issue
 }
 

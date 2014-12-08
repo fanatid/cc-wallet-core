@@ -38,14 +38,14 @@ inherits(AddressStorage, SyncStorage)
 /**
  * @return {AddressStorageRecord[]}
  */
-AddressStorage.prototype._getRecords = function() {
+AddressStorage.prototype._getRecords = function () {
   return this.addressesRecords
 }
 
 /**
- * @param {AddressStorageRecord[]}
+ * @param {AddressStorageRecord[]} records
  */
-AddressStorage.prototype._saveRecords = function(records) {
+AddressStorage.prototype._saveRecords = function (records) {
   this.addressesRecords = records
   this.store.set(this.addressesDbKey, records)
 }
@@ -58,19 +58,21 @@ AddressStorage.prototype._saveRecords = function(records) {
  * @return {AddressStorageRecord}
  * @throw {Error} If account, chain, index or pubKey exists
  */
-AddressStorage.prototype.add = function(data) {
+AddressStorage.prototype.add = function (data) {
   verify.object(data)
   verify.number(data.chain)
   verify.number(data.index)
   verify.hexString(data.pubKey)
 
   var records = this._getRecords()
-  records.forEach(function(record) {
-    if (record.chain === data.chain && record.index === data.index)
+  records.forEach(function (record) {
+    if (record.chain === data.chain && record.index === data.index) {
       throw new Error('pubkey for given account, chain and index exists')
+    }
 
-    if (record.pubKey === data.pubKey)
+    if (record.pubKey === data.pubKey) {
       throw new Error('pubKey already exists')
+    }
   })
 
   records.push({
@@ -88,12 +90,12 @@ AddressStorage.prototype.add = function(data) {
  * @param {number} [chain]
  * @return {AddressStorageRecord[]}
  */
-AddressStorage.prototype.getAll = function(chain) {
+AddressStorage.prototype.getAll = function (chain) {
   var records = this._getRecords()
 
   if (!_.isUndefined(chain)) {
     verify.number(chain)
-    records = _.filter(records, { chain: chain })
+    records = _.filter(records, {chain: chain})
   }
 
   return _.cloneDeep(records)
@@ -102,7 +104,7 @@ AddressStorage.prototype.getAll = function(chain) {
 /**
  * Remove all records
  */
-AddressStorage.prototype.clear = function() {
+AddressStorage.prototype.clear = function () {
   this.store.remove(this.addressesDbKey)
   this.store.remove(this.addressesDbKey + '_version')
 }

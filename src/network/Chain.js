@@ -27,8 +27,8 @@ function Chain(wallet, opts) {
   opts = _.extend({
     testnet: false,
     apiKeyId: 'DEMO-4a5e1e4',
-    requestTimeout: 10*1000,
-    refreshInterval: 30*1000
+    requestTimeout: 10 * 1000,
+    refreshInterval: 30 * 1000
   }, opts)
   verify.boolean(opts.testnet)
   verify.string(opts.apiKeyId)
@@ -49,16 +49,17 @@ function Chain(wallet, opts) {
    * @return {Q.Promise}
    */
   function getNetworkHeight() {
-    return self._request('/blocks/latest').then(function(response) {
-      if (self.getCurrentHeight() !== response.height)
+    return self._request('/blocks/latest').then(function (response) {
+      if (self.getCurrentHeight() !== response.height) {
         return self._setCurrentHeight(response.height)
+      }
 
-    }).catch(function(error) {
+    }).catch(function (error) {
       self.emit('error', error)
 
-    }).finally(function() { Q.delay(opts.refreshInterval).then(getNetworkHeight) })
+    }).finally(function () { Q.delay(opts.refreshInterval).then(getNetworkHeight) })
   }
-  getNetworkHeight().then(function() {
+  getNetworkHeight().then(function () {
     self.emit('connect')
   })
 
@@ -66,33 +67,34 @@ function Chain(wallet, opts) {
    * @return {Q.Promise}
    */
   function testSubscribedAddresses() {
-    return Q.all(Object.keys(self._subscribedAddresses).map(function(address) {
-      return Q.ninvoke(self, 'getUnspent', address).then(function(entries) {
+    return Q.all(Object.keys(self._subscribedAddresses).map(function (address) {
+      return Q.ninvoke(self, 'getUnspent', address).then(function (entries) {
         var isTouched = false
         var addressEntries = self._subscribedAddresses[address]
         var entryTxIds = _.indexBy(entries, 'txId')
 
-        _.keys(addressEntries).forEach(function(txId) {
+        _.keys(addressEntries).forEach(function (txId) {
           if (_.isUndefined(entryTxIds[txId])) {
             delete addressEntries[txId]
             isTouched = true
           }
         })
-        entries.forEach(function(entry) {
+        entries.forEach(function (entry) {
           if (addressEntries[entry.txId] !== entry.height) {
             addressEntries[entry.txId] = entry.height
             isTouched = true
           }
         })
 
-        if (isTouched)
+        if (isTouched) {
           self.emit('touchAddress', address)
+        }
       })
 
-    })).catch(function(error) {
+    })).catch(function (error) {
       self.emit('error', error)
 
-    }).finally(function() { Q.delay(opts.refreshInterval).then(testSubscribedAddresses) })
+    }).finally(function () { Q.delay(opts.refreshInterval).then(testSubscribedAddresses) })
   }
   testSubscribedAddresses()
 }
@@ -103,7 +105,7 @@ inherits(Chain, Network)
  * @param {string} path
  * @return {string}
  */
-Chain.prototype._getRequestURL = function(path) {
+Chain.prototype._getRequestURL = function (path) {
   verify.string(path)
   return 'https://api.chain.com/v1/' + this._blockChain + path + '?api-key-id=' + this._apiKeyId
 }
@@ -113,7 +115,7 @@ Chain.prototype._getRequestURL = function(path) {
  * @param {Object} [data] Data for POST request, may be missed
  * @return {Q.Promise<string>}
  */
-Chain.prototype._request = function(path, data) {
+Chain.prototype._request = function (path, data) {
   var requestOpts = {
     method: _.isUndefined(data) ? 'GET' : 'POST',
     uri: this._getRequestURL(path),
@@ -123,22 +125,24 @@ Chain.prototype._request = function(path, data) {
     json: true
   }
 
-  return Q.nfcall(request, requestOpts).spread(function(response, body) {
-    if (response.statusCode !== 200)
-      throw new Error('Request error: ' + response.statusMessage)
+  return Q.nfcall(request, requestOpts).spread(function (response, body) {
+    if (response.statusCode === 200) {
+      return body
+    }
 
-    return body
+    throw new Error('Request error: ' + response.statusMessage)
+
   })
 }
 
 /**
  * {@link Network~getHeader}
  */
-Chain.prototype.getHeader = function(height, cb) {
+Chain.prototype.getHeader = function (height, cb) {
   verify.number(height)
   verify.function(cb)
 
-  this._request('/blocks/' + height).then(function(response) {
+  this._request('/blocks/' + height).then(function (response) {
     verify.number(response.version)
     if (height === 0) {
       verify.null(response.previous_block_hash)
@@ -156,71 +160,75 @@ Chain.prototype.getHeader = function(height, cb) {
       version: response.version,
       prevBlockHash: response.previous_block_hash,
       merkleRoot: response.merkle_root,
-      timestamp: Date.parse(response.time)/1000,
+      timestamp: Date.parse(response.time) / 1000,
       bits: parseInt(response.bits, 16),
       nonce: response.nonce
     }
 
-  }).done(function(result) { cb(null, result) }, function(error) { cb(error) })
+  }).done(function (result) { cb(null, result) }, function (error) { cb(error) })
 }
 
 /**
  * {@link Network~getTx}
  */
-Chain.prototype.getTx = function(txId, cb) {
+Chain.prototype.getTx = function (txId, cb) {
   verify.txId(txId)
   verify.function(cb)
 
   var tx = this._wallet.getTxDb().getTx(txId)
-  if (tx !== null)
-    return process.nextTick(function() { cb(null, tx) })
+  if (tx !== null) {
+    return process.nextTick(function () { cb(null, tx) })
+  }
 
-  this._request('/transactions/' + txId + '/hex').then(function(response) {
+  this._request('/transactions/' + txId + '/hex').then(function (response) {
     verify.object(response)
 
     tx = bitcoin.Transaction.fromHex(response.hex)
-    if (tx.getId() !== txId)
-      throw new Error('Received tx is incorrect')
+    if (tx.getId() === txId) {
+      return tx
+    }
 
-    return tx
+    throw new Error('Received tx is incorrect')
 
-  }).done(function(result) { cb(null, result) }, function(error) { cb(error) })
+  }).done(function (result) { cb(null, result) }, function (error) { cb(error) })
 }
 
 /**
  * {@link Network~sendTx}
  */
-Chain.prototype.sendTx = function(tx, cb) {
+Chain.prototype.sendTx = function (tx, cb) {
   verify.Transaction(tx)
   verify.function(cb)
 
-  this._request('/transactions', { 'hex': tx.toHex() }).then(function(response) {
-    if (response.transaction_hash !== tx.getId())
-      throw new Error('Received txId is incorrect')
+  this._request('/transactions', {'hex': tx.toHex()}).then(function (response) {
+    if (response.transaction_hash === tx.getId()) {
+      return response.transaction_hash
+    }
 
-    return response.transaction_hash
+    throw new Error('Received txId is incorrect')
 
-  }).done(function(txId) { cb(null, txId) }, function(error) { cb(error) })
+  }).done(function (txId) { cb(null, txId) }, function (error) { cb(error) })
 }
 
 /**
  * {@link Network~getHistory}
  */
-Chain.prototype.getHistory = function(address, cb) {
+Chain.prototype.getHistory = function (address, cb) {
   verify.string(address)
   verify.function(cb)
 
   var currentHeight = this.getCurrentHeight()
 
-  this._request('/addresses/' + address + '/transactions').then(function(response) {
+  this._request('/addresses/' + address + '/transactions').then(function (response) {
     verify.array(response)
 
-    var entries = response.map(function(entry) {
+    var entries = response.map(function (entry) {
       verify.txId(entry.hash)
       verify.number(entry.confirmations)
 
-      if (entry.confirmations === 0)
+      if (entry.confirmations === 0) {
         entry.confirmations = currentHeight + 1
+      }
 
       return {
         txId: entry.hash,
@@ -228,33 +236,34 @@ Chain.prototype.getHistory = function(address, cb) {
       }
     })
 
-    return _.sortBy(entries, function(entry) {
+    return _.sortBy(entries, function (entry) {
       return entry.height === 0 ? Infinity : entry.height
     })
 
-  }).done(function(result) { cb(null, result) }, function(error) { cb(error) })
+  }).done(function (result) { cb(null, result) }, function (error) { cb(error) })
 }
 
 /**
  * {@link Network~getHistory}
  */
-Chain.prototype.getUnspent = function(address, cb) {
+Chain.prototype.getUnspent = function (address, cb) {
   verify.string(address)
   verify.function(cb)
 
   var currentHeight = this.getCurrentHeight()
 
-  this._request('/addresses/' + address + '/unspents').then(function(response) {
+  this._request('/addresses/' + address + '/unspents').then(function (response) {
     verify.array(response)
 
-    var entries = response.map(function(entry) {
+    var entries = response.map(function (entry) {
       verify.txId(entry.transaction_hash)
       verify.number(entry.output_index)
       verify.number(entry.value)
       verify.number(entry.confirmations)
 
-      if (entry.confirmations === 0)
+      if (entry.confirmations === 0) {
         entry.confirmations = currentHeight + 1
+      }
 
       return {
         txId: entry.transaction_hash,
@@ -264,24 +273,25 @@ Chain.prototype.getUnspent = function(address, cb) {
       }
     })
 
-    return _.sortBy(entries, function(entry) {
+    return _.sortBy(entries, function (entry) {
       return entry.height === 0 ? Infinity : entry.height
     })
 
-  }).done(function(result) { cb(null, result) }, function(error) { cb(error) })
+  }).done(function (result) { cb(null, result) }, function (error) { cb(error) })
 }
 
 /**
  * {@link Network~subscribeAddress}
  */
-Chain.prototype.subscribeAddress = function(address, cb) {
+Chain.prototype.subscribeAddress = function (address, cb) {
   verify.string(address)
   verify.function(cb)
 
-  if (_.isUndefined(this._subscribedAddresses[address]))
+  if (_.isUndefined(this._subscribedAddresses[address])) {
     this._subscribedAddresses[address] = {}
+  }
 
-  process.nextTick(function() { cb(null) })
+  process.nextTick(function () { cb(null) })
 }
 
 

@@ -42,8 +42,9 @@ function TxStorage(opts) {
   this.txDbKey = this.globalPrefix + 'tx'
   this.txRecords = this.store.get(this.txDbKey) || {}
 
-  if (_.isUndefined(this.store.get(this.txDbKey + '_version')))
+  if (_.isUndefined(this.store.get(this.txDbKey + '_version'))) {
     this.store.set(this.txDbKey + '_version', '1')
+  }
 
 /*
   if (this.store.get(this.txDbKey + '_version') === '1') {
@@ -86,21 +87,21 @@ inherits(TxStorage, SyncStorage)
 /**
  * @return {TxStorageRecord[]}
  */
-TxStorage.prototype._getRecords = function() {
+TxStorage.prototype._getRecords = function () {
   return this.txRecords
 }
 
 /**
- * @param {TxStorageRecord[]}
+ * @param {TxStorageRecord[]} records
  */
-TxStorage.prototype._saveRecords = function(records) {
+TxStorage.prototype._saveRecords = function (records) {
   this.txRecords = records
   this._save2store()
 }
 
 /**
  */
-TxStorage.prototype._save2store = function() {
+TxStorage.prototype._save2store = function () {
   this.store.set(this.txDbKey, this.txRecords)
 }
 
@@ -116,20 +117,21 @@ TxStorage.prototype._save2store = function() {
  * @return {TxStorageRecord}
  * @throws {Error} If txId exists
  */
-TxStorage.prototype.add = function(txId, rawTx, opts) {
+TxStorage.prototype.add = function (txId, rawTx, opts) {
   verify.txId(txId)
   verify.hexString(rawTx)
   verify.object(opts)
   verify.number(opts.status)
   verify.number(opts.height)
   verify.number(opts.timestamp)
-  if (!_.isUndefined(opts.isBlockTimestamp)) verify.boolean(opts.isBlockTimestamp)
+  if (!_.isUndefined(opts.isBlockTimestamp)) { verify.boolean(opts.isBlockTimestamp) }
   verify.array(opts.tAddresses)
   opts.tAddresses.forEach(verify.string)
 
   var records = this._getRecords()
-  if (!_.isUndefined(records[txId]))
+  if (!_.isUndefined(records[txId])) {
     throw new Error('Same tx already exists')
+  }
 
   records[txId] = {
     rawTx: rawTx,
@@ -154,19 +156,20 @@ TxStorage.prototype.add = function(txId, rawTx, opts) {
  * @return {TxStorageRecord}
  * @throws {Error} If txId exists
  */
-TxStorage.prototype.update = function(txId, opts) {
+TxStorage.prototype.update = function (txId, opts) {
   verify.txId(txId)
   verify.object(opts)
-  if (opts.status) verify.number(opts.status)
-  if (opts.height) verify.number(opts.height)
-  if (opts.timestamp) verify.number(opts.timestamp)
-  if (opts.tAddresses) verify.array(opts.tAddresses)
-  if (opts.tAddresses) opts.tAddresses.forEach(verify.string)
+  if (opts.status) { verify.number(opts.status) }
+  if (opts.height) { verify.number(opts.height) }
+  if (opts.timestamp) { verify.number(opts.timestamp) }
+  if (opts.tAddresses) { verify.array(opts.tAddresses) }
+  if (opts.tAddresses) { opts.tAddresses.forEach(verify.string) }
 
   var records = this._getRecords()
   var record = records[txId]
-  if (_.isUndefined(record))
+  if (_.isUndefined(record)) {
     throw new Error('txId not exists')
+  }
 
   opts = _.extend({
     status: record.status,
@@ -192,7 +195,7 @@ TxStorage.prototype.update = function(txId, opts) {
  * @param {string} txId
  * @return {?TxStorageRecord}
  */
-TxStorage.prototype.get = function(txId) {
+TxStorage.prototype.get = function (txId) {
   verify.txId(txId)
 
   var record = this._getRecords()[txId]
@@ -202,22 +205,24 @@ TxStorage.prototype.get = function(txId) {
 /**
  * @return {string[]}
  */
-TxStorage.prototype.getAllTxIds = function() {
+TxStorage.prototype.getAllTxIds = function () {
   return _.keys(this._getRecords())
 }
 
 /**
+ * @param {string} txId
  * @param {string} address
  * @return {?TxStorageRecord}
  */
-TxStorage.prototype.removeTouchedAddress = function(txId, address) {
+TxStorage.prototype.removeTouchedAddress = function (txId, address) {
   verify.txId(txId)
   verify.string(address)
 
   var records = this._getRecords()
   var record = records[txId]
-  if (_.isUndefined(record))
+  if (_.isUndefined(record)) {
     return null
+  }
 
   record.rAddresses = _.chain(record.rAddresses)
     .union([address])
@@ -233,13 +238,14 @@ TxStorage.prototype.removeTouchedAddress = function(txId, address) {
  * @param {string} txId
  * @return {?TxStorageRecord}
  */
-TxStorage.prototype.remove = function(txId) {
+TxStorage.prototype.remove = function (txId) {
   verify.txId(txId)
 
   var records = this._getRecords()
   var record = records[txId]
-  if (_.isUndefined(record))
+  if (_.isUndefined(record)) {
     return null
+  }
 
   delete records[txId]
   this._saveRecords(records)
@@ -249,7 +255,7 @@ TxStorage.prototype.remove = function(txId) {
 
 /**
  */
-TxStorage.prototype.clear = function() {
+TxStorage.prototype.clear = function () {
   this.store.remove(this.txDbKey)
   this.store.remove(this.txDbKey + '_version')
 }

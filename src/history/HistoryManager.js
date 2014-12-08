@@ -17,7 +17,7 @@ var SyncMixin = require('../SyncMixin')
 
 
 /**
- * @param {HistoryEntry[]}
+ * @param {HistoryEntry[]} entries
  * @return {HistoryEntry[]}
  */
 function toposort(entries) {
@@ -47,7 +47,7 @@ function toposort(entries) {
     result.push(entry)
   }
 
-  entries.forEach(function(entry) { sort(entry, entry) })
+  entries.forEach(function (entry) { sort(entry, entry) })
 
   return result
 }
@@ -109,7 +109,7 @@ HistoryManager.prototype._resortHistoryEntries = function () {
       return entry.getTimestamp()
     }
 
-    return entry.getBlockHeight() + entry.getTimestamp()/10000000000
+    return entry.getBlockHeight() + entry.getTimestamp() / 10000000000
   })
 
   this._historyEntries = toposort(this._historyEntries)

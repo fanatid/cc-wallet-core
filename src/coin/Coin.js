@@ -53,9 +53,10 @@ Coin.prototype.toRawCoin = function () {
 /**
  * {@link CoinManager.isCoinSpent}
  */
-Coin.prototype.isSpent = function() {
-  if (!_.isUndefined(this._isSpent))
+Coin.prototype.isSpent = function () {
+  if (!_.isUndefined(this._isSpent)) {
     return this._isSpent
+  }
 
   return this.coinManager.isCoinSpent(this)
 }
@@ -63,9 +64,10 @@ Coin.prototype.isSpent = function() {
 /**
  * {@link CoinManager.isCoinValid}
  */
-Coin.prototype.isValid = function() {
-  if (!_.isUndefined(this._isValid))
+Coin.prototype.isValid = function () {
+  if (!_.isUndefined(this._isValid)) {
     return this._isValid
+  }
 
   return this.coinManager.isCoinValid(this)
 }
@@ -73,9 +75,10 @@ Coin.prototype.isValid = function() {
 /**
  * {@link CoinManager.isCoinAvailable}
  */
-Coin.prototype.isAvailable = function() {
-  if (!_.isUndefined(this._isAvailable))
+Coin.prototype.isAvailable = function () {
+  if (!_.isUndefined(this._isAvailable)) {
     return this._isAvailable
+  }
 
   return this.coinManager.isCoinAvailable(this)
 }
@@ -83,7 +86,7 @@ Coin.prototype.isAvailable = function() {
 /**
  * {@link CoinManager.getCoinColorValue}
  */
-Coin.prototype.getColorValue = function(colorDefinition, cb) {
+Coin.prototype.getColorValue = function (colorDefinition, cb) {
   this.coinManager.getCoinColorValue(this, colorDefinition, cb)
 }
 
@@ -97,7 +100,7 @@ Coin.prototype.getMainColorValue = function (cb) {
 /**
  * @return {string}
  */
-Coin.prototype.toString = function() {
+Coin.prototype.toString = function () {
   return this.txId + ':' + this.outIndex
 }
 

@@ -33,7 +33,7 @@ inherits(Blockchain, events.EventEmitter)
  * @abstract
  * @return {number}
  */
-Blockchain.prototype.getCurrentHeight = function() {
+Blockchain.prototype.getCurrentHeight = function () {
   throw new errors.NotImplementedError('Blockchain.getCurrentHeight')
 }
 
@@ -48,7 +48,7 @@ Blockchain.prototype.getCurrentHeight = function() {
  * @param {number} height
  * @param {Blockchain~getBlockTime} cb
  */
-Blockchain.prototype.getBlockTime = function() {
+Blockchain.prototype.getBlockTime = function () {
   throw new errors.NotImplementedError('Blockchain.getBlockTime')
 }
 
@@ -63,7 +63,7 @@ Blockchain.prototype.getBlockTime = function() {
  * @param {string} txId
  * @param {Blockchain~getTx} cb
  */
-Blockchain.prototype.getTx = function() {
+Blockchain.prototype.getTx = function () {
   throw new errors.NotImplementedError('Blockchain.getTx')
 }
 
@@ -78,7 +78,7 @@ Blockchain.prototype.getTx = function() {
  * @param {Transaction} tx
  * @param {Blockchain~sendTx} cb
  */
-Blockchain.prototype.sendTx = function() {
+Blockchain.prototype.sendTx = function () {
   throw new errors.NotImplementedError('Blockchain.sendTx')
 }
 
@@ -99,7 +99,7 @@ Blockchain.prototype.sendTx = function() {
  * @param {string} address
  * @param {Blockchain~getHistory} cb
  */
-Blockchain.prototype.getHistory = function() {
+Blockchain.prototype.getHistory = function () {
   throw new errors.NotImplementedError('Blockchain.getHistory')
 }
 
@@ -113,14 +113,14 @@ Blockchain.prototype.getHistory = function() {
  * @param {string} address
  * @param {Blockchain~subscribeAddress} cb
  */
-Blockchain.prototype.subscribeAddress = function() {
+Blockchain.prototype.subscribeAddress = function () {
   throw new errors.NotImplementedError('Blockchain.subscribeAddress')
 }
 
 /**
  * Clear VerifiedBlockchainStorage in VerifiedBlockchain
  */
-Blockchain.prototype.clear = function() {}
+Blockchain.prototype.clear = function () {}
 
 
 module.exports = Blockchain

@@ -21,7 +21,7 @@ function VerifiedBlockchainStorage() {
   this.blockchainDbKey = this.globalPrefix + 'verifiedBlockchain'
   this.blockchainData = this.store.get(this.blockchainDbKey)
   if (_.isUndefined(this.blockchainData)) {
-    this.blockchainData = { lastHash: zfill('', 64), hashes: '', headers: '' }
+    this.blockchainData = {lastHash: zfill('', 64), hashes: '', headers: ''}
   }
 
   if (_.isUndefined(this.store.get(this.blockchainDbKey + '_version'))) {
@@ -38,14 +38,14 @@ inherits(VerifiedBlockchainStorage, SyncStorage)
 /**
  * @return {{headers: string, hashes: string}}
  */
-VerifiedBlockchainStorage.prototype._getData = function() {
+VerifiedBlockchainStorage.prototype._getData = function () {
   return this.blockchainData
 }
 
 /**
  * @param {{headers: string, hashes: string}} data
  */
-VerifiedBlockchainStorage.prototype._saveData = function(data) {
+VerifiedBlockchainStorage.prototype._saveData = function (data) {
   this.store.set(this.blockchainDbKey, data)
   this.blockchainData = data
 }
@@ -53,14 +53,14 @@ VerifiedBlockchainStorage.prototype._saveData = function(data) {
 /**
  * @return {string}
  */
-VerifiedBlockchainStorage.prototype.getLastHash = function() {
+VerifiedBlockchainStorage.prototype.getLastHash = function () {
   return this._getData().lastHash
 }
 
 /**
  * @param {string} lastHash
  */
-VerifiedBlockchainStorage.prototype.setLastHash = function(lastHash) {
+VerifiedBlockchainStorage.prototype.setLastHash = function (lastHash) {
   verify.hexString(lastHash)
   verify.length(lastHash, 64)
 
@@ -72,7 +72,7 @@ VerifiedBlockchainStorage.prototype.setLastHash = function(lastHash) {
 /**
  * @return {number}
  */
-VerifiedBlockchainStorage.prototype.getChunksCount = function() {
+VerifiedBlockchainStorage.prototype.getChunksCount = function () {
   return this._getData().hashes.length / 64
 }
 
@@ -80,16 +80,16 @@ VerifiedBlockchainStorage.prototype.getChunksCount = function() {
  * @param {number} offset
  * @return {string}
  */
-VerifiedBlockchainStorage.prototype.getChunkHash = function(offset) {
+VerifiedBlockchainStorage.prototype.getChunkHash = function (offset) {
   verify.number(offset)
 
-  return this._getData().hashes.slice(offset*64, (offset+1)*64)
+  return this._getData().hashes.slice(offset * 64, (offset + 1) * 64)
 }
 
 /**
  * @param {string} hash
  */
-VerifiedBlockchainStorage.prototype.pushChunkHash = function(hash) {
+VerifiedBlockchainStorage.prototype.pushChunkHash = function (hash) {
   verify.hexString(hash)
   verify.length(hash, 64)
 
@@ -101,18 +101,18 @@ VerifiedBlockchainStorage.prototype.pushChunkHash = function(hash) {
 /**
  * @param {number} offset
  */
-VerifiedBlockchainStorage.prototype.truncateChunks = function(offset) {
+VerifiedBlockchainStorage.prototype.truncateChunks = function (offset) {
   verify.number(offset)
 
   var data = this._getData()
-  data.hashes = data.hashes.slice(0, offset*64)
+  data.hashes = data.hashes.slice(0, offset * 64)
   this._saveData(data)
 }
 
 /**
  * @return {number}
  */
-VerifiedBlockchainStorage.prototype.getHeadersCount = function() {
+VerifiedBlockchainStorage.prototype.getHeadersCount = function () {
   return this._getData().headers.length / 160
 }
 
@@ -120,16 +120,16 @@ VerifiedBlockchainStorage.prototype.getHeadersCount = function() {
  * @param {number} offset
  * @return {string}
  */
-VerifiedBlockchainStorage.prototype.getHeader = function(offset) {
+VerifiedBlockchainStorage.prototype.getHeader = function (offset) {
   verify.number(offset)
 
-  return this._getData().headers.slice(offset*160, (offset+1)*160)
+  return this._getData().headers.slice(offset * 160, (offset + 1) * 160)
 }
 
 /**
  * @param {string} header
  */
-VerifiedBlockchainStorage.prototype.pushHeader = function(header) {
+VerifiedBlockchainStorage.prototype.pushHeader = function (header) {
   verify.hexString(header)
   verify.length(header, 160)
 
@@ -141,17 +141,17 @@ VerifiedBlockchainStorage.prototype.pushHeader = function(header) {
 /**
  * @param {number} offset
  */
-VerifiedBlockchainStorage.prototype.truncateHeaders = function(offset) {
+VerifiedBlockchainStorage.prototype.truncateHeaders = function (offset) {
   verify.number(offset)
 
   var data = this._getData()
-  data.headers = data.headers.slice(0, offset*160)
+  data.headers = data.headers.slice(0, offset * 160)
   this._saveData(data)
 }
 
 /**
  */
-VerifiedBlockchainStorage.prototype.clear = function() {
+VerifiedBlockchainStorage.prototype.clear = function () {
   this.store.remove(this.blockchainDbKey)
   this.store.remove(this.blockchainDbKey + '_version')
 }

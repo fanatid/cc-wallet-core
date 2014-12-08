@@ -18,7 +18,7 @@ var Blockchain = require('./Blockchain')
  */
 function NaiveBlockchain(network, opts) {
   verify.Network(network)
-  opts = _.extend({ headerCacheSize: 250, txCacheSize: 250 }, opts)
+  opts = _.extend({headerCacheSize: 250, txCacheSize: 250}, opts)
   verify.number(opts.headerCacheSize)
   verify.number(opts.txCacheSize)
 
@@ -31,15 +31,15 @@ function NaiveBlockchain(network, opts) {
   self._getHeaderRunning = {}
   self._getTxRunning = {}
 
-  self._headerCache = LRU({ max: opts.headerCacheSize })
-  this._txCache = LRU({ max: opts.txCacheSize })
+  self._headerCache = LRU({max: opts.headerCacheSize})
+  this._txCache = LRU({max: opts.txCacheSize})
 
-  self._network.on('newHeight', function(newHeight) {
+  self._network.on('newHeight', function (newHeight) {
     self._currentHeight = newHeight
     self.emit('newHeight', newHeight)
   })
 
-  self._network.on('touchAddress', function(address) {
+  self._network.on('touchAddress', function (address) {
     self.emit('touchAddress', address)
   })
 }
@@ -49,81 +49,83 @@ inherits(NaiveBlockchain, Blockchain)
 /**
  * {@link Blockchain~getCurrentHeight}
  */
-NaiveBlockchain.prototype.getCurrentHeight = function() {
+NaiveBlockchain.prototype.getCurrentHeight = function () {
   return this._currentHeight
 }
 
 /**
  * {@link Blockchain~getBlockTime}
  */
-NaiveBlockchain.prototype.getBlockTime = function(height, cb) {
+NaiveBlockchain.prototype.getBlockTime = function (height, cb) {
   verify.function(cb)
 
   var self = this
 
   var header = self._headerCache.get(height)
-  if (!_.isUndefined(header))
-    return process.nextTick(function() { cb(null, header) })
+  if (!_.isUndefined(header)) {
+    return process.nextTick(function () { cb(null, header) })
+  }
 
   if (_.isUndefined(self._getHeaderRunning[height])) {
-    var promise = Q.ninvoke(this._network, 'getHeader', height).then(function(header) {
+    var promise = Q.ninvoke(this._network, 'getHeader', height).then(function (header) {
       self._headerCache.set(height, header.timestamp)
       return header.timestamp
 
-    }).finally(function() { delete self._getHeaderRunning[height] })
+    }).finally(function () { delete self._getHeaderRunning[height] })
 
     self._getHeaderRunning[height] = promise
   }
 
   self._getHeaderRunning[height]
-    .done(function(result) { cb(null, result) }, function(error) { cb(error) })
+    .done(function (result) { cb(null, result) }, function (error) { cb(error) })
 }
 
 /**
  * {@link Blockchain~getTx}
  */
-NaiveBlockchain.prototype.getTx = function(txId, cb) {
+NaiveBlockchain.prototype.getTx = function (txId, cb) {
   verify.txId(txId)
   verify.function(cb)
 
   var self = this
 
   var tx = self._txCache.get(txId)
-  if (!_.isUndefined(tx))
-    return process.nextTick(function() { cb(null, tx) })
+  if (!_.isUndefined(tx)) {
+    return process.nextTick(function () { cb(null, tx) })
+  }
 
   if (_.isUndefined(self._getTxRunning[txId])) {
-    var promise = Q.ninvoke(self._network, 'getTx', txId).then(function(tx) {
+    var promise = Q.ninvoke(self._network, 'getTx', txId).then(function (tx) {
       self._txCache.set(txId, tx)
       return tx
 
-    }).finally(function() { delete self._getTxRunning[txId] })
+    }).finally(function () { delete self._getTxRunning[txId] })
 
     self._getTxRunning[txId] = promise
   }
 
   self._getTxRunning[txId]
-    .done(function(tx) { cb(null, tx) }, function(error) { cb(error) })
+    .done(function (tx) { cb(null, tx) }, function (error) { cb(error) })
 }
 
 /**
  * {@link Blockchain~sendTx}
  */
-NaiveBlockchain.prototype.sendTx = function(tx, cb) {
+NaiveBlockchain.prototype.sendTx = function (tx, cb) {
   this._network.sendTx(tx, cb)
 }
 
 /**
  * {@link Blockchain~getHistory}
  */
-NaiveBlockchain.prototype.getHistory = function(address, cb) {
+NaiveBlockchain.prototype.getHistory = function (address, cb) {
   this._network.getHistory(address, cb)
 }
 
 /**
  * {@link Blockchain~subscribeAddress}
  */
-NaiveBlockchain.prototype.subscribeAddress = function(address, cb) {
+NaiveBlockchain.prototype.subscribeAddress = function (address, cb) {
   this._network.subscribeAddress(address, cb)
 }
 

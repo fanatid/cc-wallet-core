@@ -6,7 +6,7 @@ var verify = require('./verify')
  * @param {Buffer} s
  * @return {string}
  */
-bitcoin.hashEncode = function(s) {
+bitcoin.hashEncode = function (s) {
   return Array.prototype.reverse.call(new Buffer(s)).toString('hex')
 }
 
@@ -14,7 +14,7 @@ bitcoin.hashEncode = function(s) {
  * @param {string} s
  * @return {Buffer}
  */
-bitcoin.hashDecode = function(s) {
+bitcoin.hashDecode = function (s) {
   return Array.prototype.reverse.call(new Buffer(s, 'hex'))
 }
 
@@ -39,10 +39,10 @@ function revHex(s) {
  */
 
 /**
- * @param {Header} 
+ * @param {Header} header
  * @return {Buffer}
  */
-bitcoin.header2buffer = function(header) {
+bitcoin.header2buffer = function (header) {
   verify.object(header)
   verify.number(header.version)
   verify.string(header.prevBlockHash)
@@ -68,7 +68,7 @@ bitcoin.header2buffer = function(header) {
  * @param {Buffer} buffer
  * @return {Header}
  */
-bitcoin.buffer2header = function(buffer) {
+bitcoin.buffer2header = function (buffer) {
   verify.buffer(buffer)
   verify.length(buffer, 80)
 
@@ -87,7 +87,7 @@ bitcoin.buffer2header = function(buffer) {
  * @param {Buffer} buffer
  * @return {Buffer}
  */
-bitcoin.headerHash = function(buffer) {
+bitcoin.headerHash = function (buffer) {
   return Array.prototype.reverse.call(bitcoin.crypto.hash256(buffer))
 }
 

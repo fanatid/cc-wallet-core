@@ -13,10 +13,11 @@ function networkImplementationTest(opts) {
     'describe': describe
   }, opts)
 
-  opts.describe('network.' + opts.class.name, function() {
-    var wallet, network
+  opts.describe('network.' + opts.class.name, function () {
+    var wallet
+    var network
 
-    beforeEach(function(done) {
+    beforeEach(function (done) {
       wallet = new Wallet({
         testnet: true,
         network: opts.class.name,
@@ -28,31 +29,32 @@ function networkImplementationTest(opts) {
       network.once('connect', done)
     })
 
-    afterEach(function() {
+    afterEach(function () {
       wallet.removeListeners()
       wallet.clearStorage()
       wallet = undefined
       network = undefined
     })
 
-    it('inherits Network', function() {
+    it('inherits Network', function () {
       expect(network).to.be.instanceof(Network)
       expect(network).to.be.instanceof(opts.class)
     })
 
-    it('wait newHeight event', function(done) {
-      if (network.getCurrentHeight() !== -1)
+    it('wait newHeight event', function (done) {
+      if (network.getCurrentHeight() !== -1) {
         done()
+      }
 
-      network.once('newHeight', function() {
+      network.once('newHeight', function () {
         var currentHeight = network.getCurrentHeight()
         expect(currentHeight).to.be.at.least(0)
         done()
       })
     })
 
-    it('getHeader 0', function(done) {
-      network.getHeader(0, function(error, header) {
+    it('getHeader 0', function (done) {
+      network.getHeader(0, function (error, header) {
         expect(error).to.be.null
         expect(header).to.deep.equal({
           version: 1,
@@ -66,8 +68,8 @@ function networkImplementationTest(opts) {
       })
     })
 
-    it('getHeader 300000', function(done) {
-      network.getHeader(300000, function(error, header) {
+    it('getHeader 300000', function (done) {
+      network.getHeader(300000, function (error, header) {
         expect(error).to.be.null
         expect(header).to.deep.equal({
           version: 2,
@@ -81,35 +83,37 @@ function networkImplementationTest(opts) {
       })
     })
 
-    it('getChunk', function(done) {
-      if (!network.supportVerificationMethods())
+    it('getChunk', function (done) {
+      if (!network.supportVerificationMethods()) {
         return done()
+      }
 
-      network.getChunk(0, function(error, chunk) {
+      network.getChunk(0, function (error, chunk) {
         expect(error).to.be.null
-        expect(chunk).to.have.length(160*2016)
+        expect(chunk).to.have.length(160 * 2016)
         done()
       })
     })
 
-    it('getTx', function(done) {
+    it('getTx', function (done) {
       var txId = '9854bf4761024a1075ebede93d968ce1ba98d240ba282fb1f0170e555d8fdbd8'
 
-      network.getTx(txId, function(error, tx) {
+      network.getTx(txId, function (error, tx) {
         expect(error).to.be.null
         expect(tx.getId()).to.equal(txId)
         done()
       })
     })
 
-    it('getMerkle', function(done) {
-      if (!network.supportVerificationMethods())
+    it('getMerkle', function (done) {
+      if (!network.supportVerificationMethods()) {
         return done()
+      }
 
       var txId = '9854bf4761024a1075ebede93d968ce1ba98d240ba282fb1f0170e555d8fdbd8'
       var blockHeight = 279774
 
-      network.getMerkle(txId, function(error, result) {
+      network.getMerkle(txId, function (error, result) {
         expect(error).to.be.null
         expect(result).to.deep.equal({
           height: blockHeight,
@@ -139,14 +143,14 @@ function networkImplementationTest(opts) {
       })
     })
 
-    it('sendTx', function(done) {
-      helpers.sendCoins(network, function() { done() })
+    it('sendTx', function (done) {
+      helpers.sendCoins(network, function () { done() })
     })
 
-    it('getHistory', function(done) {
+    it('getHistory', function (done) {
       var address = 'miASVwyhoeFqoLodXUdbDC5YjrdJPwxyXE'
 
-      network.getHistory(address, function(error, result) {
+      network.getHistory(address, function (error, result) {
         expect(error).to.be.null
         expect(result).to.deep.equal([
           {
@@ -162,10 +166,10 @@ function networkImplementationTest(opts) {
       })
     })
 
-    it('getUnspent', function(done) {
+    it('getUnspent', function (done) {
       var address = 'mn675cxzUzM8hyd7TYApCvGBhQ8v69kgGb'
 
-      network.getUnspent(address, function(error, result) {
+      network.getUnspent(address, function (error, result) {
         expect(error).to.be.null
         expect(result).to.deep.equal([
           {
@@ -185,8 +189,8 @@ function networkImplementationTest(opts) {
       })
     })
 
-    it('address subscribe', function(done) {
-      network.subscribeAddress('ms8XQE6MHsreo9ZJx1vXqQVgzi84xb9FRZ', function(error) {
+    it('address subscribe', function (done) {
+      network.subscribeAddress('ms8XQE6MHsreo9ZJx1vXqQVgzi84xb9FRZ', function (error) {
         expect(error).to.be.null
         done()
       })

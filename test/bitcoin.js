@@ -3,7 +3,7 @@ var expect = require('chai').expect
 var bitcoin = require('../src/bitcoin')
 
 
-describe('bitcoin', function() {
+describe('bitcoin', function () {
   // 304765
   var header = {
     version: 2,
@@ -13,22 +13,23 @@ describe('bitcoin', function() {
     bits: 437610131,
     nonce: 2247265470
   }
-  var headerHex = '\
-020000006b7f296c593efd228da249d84de6d5feaf2cd99de73f5b2f76ba76f3000000008cd90341\
-8b7dc6bc0958182a712271934708b7eccbfb05759aee8784626c7af222074e549366151abe8cf285'
+  var headerHex = [
+    '020000006b7f296c593efd228da249d84de6d5feaf2cd99de73f5b2f76ba76f3000000008cd90341',
+    '8b7dc6bc0958182a712271934708b7eccbfb05759aee8784626c7af222074e549366151abe8cf285'
+  ].join('')
   var buffer = new Buffer(headerHex, 'hex')
 
-  it('header2buffer', function() {
+  it('header2buffer', function () {
     var result = bitcoin.header2buffer(header)
     expect(result.toString('hex')).to.equal(buffer.toString('hex'))
   })
 
-  it('buffer2header', function() {
+  it('buffer2header', function () {
     var result = bitcoin.buffer2header(buffer)
     expect(result).to.deep.equal(header)
   })
 
-  it('headerHash', function() {
+  it('headerHash', function () {
     var result = bitcoin.headerHash(buffer).toString('hex')
     expect(result).to.equal('00000000000011add760c47b4b7309191e58c48a27ca26b76c15ca44ad563151')
   })

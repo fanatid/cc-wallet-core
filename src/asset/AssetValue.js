@@ -20,14 +20,14 @@ function AssetValue(assetdef, value) {
 /**
  * @return {AssetDefinition}
  */
-AssetValue.prototype.getAsset = function() {
+AssetValue.prototype.getAsset = function () {
   return this.assetdef
 }
 
 /**
  * @return {number}
  */
-AssetValue.prototype.getValue = function() {
+AssetValue.prototype.getValue = function () {
   return this.value
 }
 

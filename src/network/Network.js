@@ -43,8 +43,8 @@ function Network() {
   events.EventEmitter.call(self)
 
   self._isConnected = false
-  self.on('connect', function() { self._isConnected = true })
-  self.on('disconnect', function() { self._isConnected = false })
+  self.on('connect', function () { self._isConnected = true })
+  self.on('disconnect', function () { self._isConnected = false })
 
   self._currentHeight = -1
   self._currentBlockHash = new Buffer(zfill('', 64), 'hex')
@@ -58,14 +58,14 @@ inherits(Network, events.EventEmitter)
 /**
  * @return {boolean}
  */
-Network.prototype.supportVerificationMethods = function() {
+Network.prototype.supportVerificationMethods = function () {
   return false
 }
 
 /**
  * @return {boolean}
  */
-Network.prototype.isConnected = function() {
+Network.prototype.isConnected = function () {
   return this._isConnected
 }
 
@@ -73,7 +73,7 @@ Network.prototype.isConnected = function() {
  * @param {number} newHeight
  * @return {Q.Promise}
  */
-Network.prototype._setCurrentHeight = function(newHeight) {
+Network.prototype._setCurrentHeight = function (newHeight) {
   verify.number(newHeight)
 
   var self = this
@@ -85,19 +85,19 @@ Network.prototype._setCurrentHeight = function(newHeight) {
   }
   self._setCurrentHeightRunning = true
 
-  return promise.then(function() {
+  return promise.then(function () {
     return Q.ninvoke(self, 'getHeader', newHeight)
 
-  }).then(function(header) {
+  }).then(function (header) {
     header = bitcoin.header2buffer(header)
     self._currentBlockHash = bitcoin.headerHash(header)
     self._currentHeight = newHeight
     self.emit('newHeight', newHeight)
 
-  }).catch(function(error) {
+  }).catch(function (error) {
     self.emit('error', error)
 
-  }).finally(function() {
+  }).finally(function () {
     if (self._setCurrentHeightQueue.length === 0) {
       self._setCurrentHeightRunning = false
 
@@ -112,14 +112,14 @@ Network.prototype._setCurrentHeight = function(newHeight) {
 /**
  * @return {number}
  */
-Network.prototype.getCurrentHeight = function() {
+Network.prototype.getCurrentHeight = function () {
   return this._currentHeight
 }
 
 /**
  * @return {Buffer}
  */
-Network.prototype.getCurrentBlockHash = function() {
+Network.prototype.getCurrentBlockHash = function () {
   return this._currentBlockHash
 }
 
@@ -144,7 +144,7 @@ Network.prototype.getCurrentBlockHash = function() {
  * @param {number} height
  * @param {Network~getHeader} cb
  */
-Network.prototype.getHeader = function() {
+Network.prototype.getHeader = function () {
   throw new errors.NotImplementedError('Network.getHeader')
 }
 
@@ -158,7 +158,7 @@ Network.prototype.getHeader = function() {
  * @param {number} index
  * @param {Network~getChunk} cb
  */
-Network.prototype.getChunk = function() {
+Network.prototype.getChunk = function () {
   throw new errors.NotImplementedError('Network.getChunk')
 }
 
@@ -173,7 +173,7 @@ Network.prototype.getChunk = function() {
  * @param {string} txId
  * @param {Network~getTx} cb
  */
-Network.prototype.getTx = function() {
+Network.prototype.getTx = function () {
   throw new errors.NotImplementedError('Network.getTx')
 }
 
@@ -195,7 +195,7 @@ Network.prototype.getTx = function() {
  * @param {number} [height]
  * @param {Network~getMerkle} cb
  */
-Network.prototype.getMerkle = function() {
+Network.prototype.getMerkle = function () {
   throw new errors.NotImplementedError('Network.getMerkle')
 }
 
@@ -210,7 +210,7 @@ Network.prototype.getMerkle = function() {
  * @param {bitcoinjs-lib.Transaction} tx
  * @param {Network~sendTx} cb
  */
-Network.prototype.sendTx = function() {
+Network.prototype.sendTx = function () {
   throw new errors.NotImplementedError('Network.sendTx')
 }
 
@@ -231,7 +231,7 @@ Network.prototype.sendTx = function() {
  * @param {string} address
  * @param {Network~getHistory} cb
  */
-Network.prototype.getHistory = function() {
+Network.prototype.getHistory = function () {
   throw new errors.NotImplementedError('Network.getHistory')
 }
 
@@ -253,7 +253,7 @@ Network.prototype.getHistory = function() {
  * @param {string} address
  * @param {Network~getUnspent} cb
  */
-Network.prototype.getUnspent = function() {
+Network.prototype.getUnspent = function () {
   throw new errors.NotImplementedError('Network.getUnspent')
 }
 
@@ -267,7 +267,7 @@ Network.prototype.getUnspent = function() {
  * @param {string} address
  * @param {Network~subscribeAddress} cb
  */
-Network.prototype.subscribeAddress = function() {
+Network.prototype.subscribeAddress = function () {
   throw new errors.NotImplementedError('Network.subscribeAddress')
 }
 

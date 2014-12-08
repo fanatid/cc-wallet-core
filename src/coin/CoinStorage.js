@@ -81,7 +81,7 @@ inherits(CoinStorage, SyncStorage)
 
 /**
  */
-CoinStorage.prototype._save2store = function() {
+CoinStorage.prototype._save2store = function () {
   this.store.set(this.coinsDbKey, this.coinsRecords)
   this.store.set(this.spendsDbKey, this.spendsRecords)
 }
@@ -89,14 +89,14 @@ CoinStorage.prototype._save2store = function() {
 /**
  * @return {CoinStorageRecord[]}
  */
-CoinStorage.prototype._getCoinRecords = function() {
+CoinStorage.prototype._getCoinRecords = function () {
   return this.coinsRecords
 }
 
 /**
- * @param {CoinStorageRecord[]}
+ * @param {CoinStorageRecord[]} records
  */
-CoinStorage.prototype._saveCoinRecords = function(records) {
+CoinStorage.prototype._saveCoinRecords = function (records) {
   this.coinsRecords = records
   this._save2store()
 }
@@ -110,7 +110,7 @@ CoinStorage.prototype._saveCoinRecords = function(records) {
  * @param {string[]} opts.addresses
  * @throws {Error} If coin already exists
  */
-CoinStorage.prototype.addCoin = function(txId, outIndex, opts) {
+CoinStorage.prototype.addCoin = function (txId, outIndex, opts) {
   verify.txId(txId)
   verify.number(outIndex)
   verify.object(opts)
@@ -120,9 +120,10 @@ CoinStorage.prototype.addCoin = function(txId, outIndex, opts) {
   opts.addresses.forEach(verify.string)
 
   var records = this._getCoinRecords()
-  records.forEach(function(record) {
-    if (record.txId === txId && record.outIndex === outIndex)
+  records.forEach(function (record) {
+    if (record.txId === txId && record.outIndex === outIndex) {
       throw new Error('Same coin already exists')
+    }
   })
 
   records.push({
@@ -141,11 +142,11 @@ CoinStorage.prototype.addCoin = function(txId, outIndex, opts) {
  * @param {string} outIndex
  * @return {boolean}
  */
-CoinStorage.prototype.isCoinExists = function(txId, outIndex) {
+CoinStorage.prototype.isCoinExists = function (txId, outIndex) {
   verify.txId(txId)
   verify.number(outIndex)
 
-  var record = _.find(this._getCoinRecords(), { txId: txId, outIndex: outIndex })
+  var record = _.find(this._getCoinRecords(), {txId: txId, outIndex: outIndex})
   return !_.isUndefined(record)
 }
 
@@ -153,10 +154,10 @@ CoinStorage.prototype.isCoinExists = function(txId, outIndex) {
  * @param {string} address
  * @return {CoinStorageRecord[]}
  */
-CoinStorage.prototype.getCoinsForAddress = function(address) {
+CoinStorage.prototype.getCoinsForAddress = function (address) {
   verify.string(address)
 
-  var records = this._getCoinRecords().filter(function(record) {
+  var records = this._getCoinRecords().filter(function (record) {
     return record.addresses.indexOf(address) !== -1
   })
 
@@ -168,13 +169,14 @@ CoinStorage.prototype.getCoinsForAddress = function(address) {
  * @param {number} outIndex
  * @return {?CoinStorageRecord}
  */
-CoinStorage.prototype.removeCoin = function(txId, outIndex) {
+CoinStorage.prototype.removeCoin = function (txId, outIndex) {
   verify.txId(txId)
   verify.number(outIndex)
 
-  var record = _.find(this._getCoinRecords(), { txId: txId, outIndex: outIndex })
-  if (_.isUndefined(record))
+  var record = _.find(this._getCoinRecords(), {txId: txId, outIndex: outIndex})
+  if (_.isUndefined(record)) {
     return null
+  }
 
   var records = _.without(this._getCoinRecords(), record)
   this._saveCoinRecords(records)
@@ -184,16 +186,16 @@ CoinStorage.prototype.removeCoin = function(txId, outIndex) {
 }
 
 /**
- * @return {{ txId0: number[], txId1: number[], txIdN: number[] }[]}
+ * @return {{txId0: number[], txId1: number[], txIdN: number[]}[]}
  */
-CoinStorage.prototype._getSpendsRecords = function() {
+CoinStorage.prototype._getSpendsRecords = function () {
   return this.spendsRecords
 }
 
 /**
- * @param {{ txId0: number[], txId1: number[], txIdN: number[] }[]}
+ * @param {{txId0: number[], txId1: number[], txIdN: number[]}[]} records
  */
-CoinStorage.prototype._saveSpendsRecords = function(records) {
+CoinStorage.prototype._saveSpendsRecords = function (records) {
   this.spendsRecords = records
   this._save2store()
 }
@@ -202,7 +204,7 @@ CoinStorage.prototype._saveSpendsRecords = function(records) {
  * @param {string} txId
  * @param {number} outIndex
  */
-CoinStorage.prototype.markCoinAsSpent = function(txId, outIndex) {
+CoinStorage.prototype.markCoinAsSpent = function (txId, outIndex) {
   verify.txId(txId)
   verify.number(outIndex)
 
@@ -220,7 +222,7 @@ CoinStorage.prototype.markCoinAsSpent = function(txId, outIndex) {
  * @param {string} txId
  * @param {number} outIndex
  */
-CoinStorage.prototype.markCoinAsUnspent = function(txId, outIndex) {
+CoinStorage.prototype.markCoinAsUnspent = function (txId, outIndex) {
   verify.txId(txId)
   verify.number(outIndex)
 
@@ -228,11 +230,15 @@ CoinStorage.prototype.markCoinAsUnspent = function(txId, outIndex) {
   var txOutIndices = records[txId] || []
 
   if (txOutIndices.indexOf(outIndex) !== -1) {
-    txOutIndices = txOutIndices.filter(function(oi) { return oi !== outIndex })
-    if (txOutIndices.length > 0)
+    txOutIndices = txOutIndices.filter(function (oi) { return oi !== outIndex })
+    if (txOutIndices.length > 0) {
       records[txId] = txOutIndices
-    else
+
+    } else {
       delete records[txId]
+
+    }
+
     this._saveSpendsRecords(records)
   }
 }
@@ -242,7 +248,7 @@ CoinStorage.prototype.markCoinAsUnspent = function(txId, outIndex) {
  * @param {number} outIndex
  * @return {boolean}
  */
-CoinStorage.prototype.isSpent = function(txId, outIndex) {
+CoinStorage.prototype.isSpent = function (txId, outIndex) {
   verify.txId(txId)
   verify.number(outIndex)
 
@@ -252,7 +258,7 @@ CoinStorage.prototype.isSpent = function(txId, outIndex) {
 
 /**
  */
-CoinStorage.prototype.clear = function() {
+CoinStorage.prototype.clear = function () {
   this.store.remove(this.coinsDbKey)
   this.store.remove(this.coinsDbKey + '_version')
   this.store.remove(this.spendsDbKey)

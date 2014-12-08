@@ -32,12 +32,13 @@ function derive(rootNode, account, chain, index) {
   var node = rootNode
   var path = account + '\'/' + chain + '\'/' + index
 
-  path.split('/').forEach(function(value) {
+  path.split('/').forEach(function (value) {
     var usePrivate = (value.length > 1) && (value[value.length - 1] === '\'')
     var childIndex = parseInt(usePrivate ? value.slice(0, value.length - 1) : value) & 0x7fffffff
 
-    if (usePrivate)
+    if (usePrivate) {
       childIndex += 0x80000000
+    }
 
     node = node.derive(childIndex)
   })
@@ -53,25 +54,26 @@ function derive(rootNode, account, chain, index) {
 function selectChain(definition) {
   if (definition instanceof AssetDefinition) {
     var colordefs = definition.getColorSet().getColorDefinitions()
-    if (colordefs.length !== 1)
+    if (colordefs.length !== 1) {
       throw new Error('Currently only single-color assets are supported')
+    }
 
     definition = colordefs[0]
   }
 
-  if (definition instanceof cclib.ColorDefinition)
+  if (definition instanceof cclib.ColorDefinition) {
     definition = definition.constructor
-
-  switch (definition) {
-    case cclib.UncoloredColorDefinition:
-      return UNCOLORED_CHAIN
-
-    case cclib.EPOBCColorDefinition:
-      return EPOBC_CHAIN
-
-    default:
-      throw new Error('Unknow ColorDefinition')
   }
+
+  if (definition === cclib.UncoloredColorDefinition) {
+    return UNCOLORED_CHAIN
+  }
+
+  if (definition === cclib.EPOBCColorDefinition) {
+    return EPOBC_CHAIN
+  }
+
+  throw new Error('Unknow ColorDefinition')
 }
 
 
@@ -102,7 +104,7 @@ inherits(AddressManager, events.EventEmitter)
  * @param {string} seedHex
  * @return {bitcoinjs-lib.HDNode}
  */
-AddressManager.prototype.HDNodeFromSeed = function(seedHex) {
+AddressManager.prototype.HDNodeFromSeed = function (seedHex) {
   verify.hexString(seedHex)
   return HDNode.fromSeedHex(seedHex, this.network)
 }
@@ -111,10 +113,11 @@ AddressManager.prototype.HDNodeFromSeed = function(seedHex) {
  * @param {string} seedHex
  * @return {boolean}
  */
-AddressManager.prototype.isCurrentSeed = function(seedHex) {
+AddressManager.prototype.isCurrentSeed = function (seedHex) {
   var oldZeroPubKeys = _.sortBy(this.storage.getAll(UNCOLORED_CHAIN), 'index')
-  if (oldZeroPubKeys.length === 0)
+  if (oldZeroPubKeys.length === 0) {
     return this.storage.getAll().length === 0
+  }
 
   var rootNode = this.HDNodeFromSeed(seedHex)
   var newZeroPubKey = derive(rootNode, 0, UNCOLORED_CHAIN, 0).pubKey.toHex()
@@ -126,9 +129,10 @@ AddressManager.prototype.isCurrentSeed = function(seedHex) {
  * @param {string} seedHex
  * @throws {Error} If not currently seedHex
  */
-AddressManager.prototype.isCurrentSeedCheck = function(seedHex) {
-  if (!this.isCurrentSeed(seedHex))
+AddressManager.prototype.isCurrentSeedCheck = function (seedHex) {
+  if (!this.isCurrentSeed(seedHex)) {
     throw new Error('Given seedHex is not currently used')
+  }
 }
 
 /**
@@ -139,15 +143,14 @@ AddressManager.prototype.isCurrentSeedCheck = function(seedHex) {
  * @return {Address}
  * @throws {Error} If not currently seedHex or unknow chain
  */
-AddressManager.prototype.getNewAddress = function(definition, seedHex) {
+AddressManager.prototype.getNewAddress = function (definition, seedHex) {
   this.isCurrentSeedCheck(seedHex)
 
   var chain = selectChain(definition)
 
   var newIndex = 0
-  this.storage.getAll(chain).forEach(function(record) {
-    if (record.index >= newIndex)
-      newIndex = record.index + 1
+  this.storage.getAll(chain).forEach(function (record) {
+    if (record.index >= newIndex) { newIndex = record.index + 1 }
   })
 
   var rootNode = this.HDNodeFromSeed(seedHex)
@@ -160,8 +163,9 @@ AddressManager.prototype.getNewAddress = function(definition, seedHex) {
   })
 
   var assetDefinition
-  if (definition instanceof AssetDefinition)
+  if (definition instanceof AssetDefinition) {
     assetDefinition = definition
+  }
 
   var address = new Address(this, record, this.network, assetDefinition)
   this.emit('newAddress', address)
@@ -176,14 +180,15 @@ AddressManager.prototype.getNewAddress = function(definition, seedHex) {
  * @return {Address[]}
  * @throws {Error} If unknow chain
  */
-AddressManager.prototype.getAllAddresses = function(definition) {
+AddressManager.prototype.getAllAddresses = function (definition) {
   var chain = selectChain(definition)
 
   var assetDefinition
-  if (definition instanceof AssetDefinition)
+  if (definition instanceof AssetDefinition) {
     assetDefinition = definition
+  }
 
-  var addresses = this.storage.getAll(chain).map(function(record) {
+  var addresses = this.storage.getAll(chain).map(function (record) {
     return new Address(this, record, this.network, assetDefinition)
   }.bind(this))
 
@@ -194,16 +199,17 @@ AddressManager.prototype.getAllAddresses = function(definition) {
  * @param {string} address
  * @return {?bitcoinjs-lib.ECPubKey}
  */
-AddressManager.prototype.getPubKeyByAddress = function(address) {
+AddressManager.prototype.getPubKeyByAddress = function (address) {
   verify.string(address)
 
-  var records = this.storage.getAll().filter(function(record) {
+  var records = this.storage.getAll().filter(function (record) {
     var recordAddress = new Address(this, record, this.network).getAddress()
     return recordAddress === address
   }.bind(this))
 
-  if (records.length === 0)
+  if (records.length === 0) {
     return null
+  }
 
   return ECPubKey.fromHex(records[0].pubKey)
 }
@@ -213,17 +219,18 @@ AddressManager.prototype.getPubKeyByAddress = function(address) {
  * @param {string} seedHex
  * @return {?bitcoinjs-lib.ECKey}
  */
-AddressManager.prototype.getPrivKeyByAddress = function(address, seedHex) {
+AddressManager.prototype.getPrivKeyByAddress = function (address, seedHex) {
   verify.string(address)
   this.isCurrentSeedCheck(seedHex)
 
-  var records = this.storage.getAll().filter(function(record) {
+  var records = this.storage.getAll().filter(function (record) {
     var recordAddress = new Address(this, record, this.network).getAddress()
     return recordAddress === address
   }.bind(this))
 
-  if (records.length === 0)
+  if (records.length === 0) {
     return null
+  }
 
   var rootNode = this.HDNodeFromSeed(seedHex)
   var node = derive(rootNode, records[0].account, records[0].chain, records[0].index)

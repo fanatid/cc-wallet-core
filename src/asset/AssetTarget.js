@@ -20,28 +20,28 @@ function AssetTarget(script, assetValue) {
 /**
  * @return {Buffer}
  */
-AssetTarget.prototype.getScript = function() {
+AssetTarget.prototype.getScript = function () {
   return this.script
 }
 
 /**
  * @return {AssetValue}
  */
-AssetTarget.prototype.getAssetValue = function() {
+AssetTarget.prototype.getAssetValue = function () {
   return this.assetValue
 }
 
 /**
  * @return {AssetDefinition}
  */
-AssetTarget.prototype.getAsset = function() {
+AssetTarget.prototype.getAsset = function () {
   return this.getAssetValue().getAsset()
 }
 
 /**
  * @return {number}
  */
-AssetTarget.prototype.getValue = function() {
+AssetTarget.prototype.getValue = function () {
   return this.getAssetValue().getValue()
 }
 

@@ -44,26 +44,29 @@ inherits(AssetDefinitionManager, events.EventEmitter)
  * @param {boolean} [autoAdd=true]
  * @return {?AssetDefinition}
  */
-AssetDefinitionManager.prototype.resolveAssetDefinition = function(data, autoAdd) {
+AssetDefinitionManager.prototype.resolveAssetDefinition = function (data, autoAdd) {
   verify.object(data)
   verify.array(data.monikers)
   data.monikers.forEach(verify.string)
   verify.array(data.colorDescs)
   data.colorDescs.forEach(verify.string)
 
-  if (_.isUndefined(autoAdd)) autoAdd = true
+  if (_.isUndefined(autoAdd)) { autoAdd = true }
   verify.boolean(autoAdd)
 
   var assetdefs = _.filter(data.monikers.map(this.getByMoniker.bind(this)))
-  if (assetdefs.length > 0)
+  if (assetdefs.length > 0) {
     return assetdefs[0]
+  }
 
   assetdefs = _.filter(data.colorDescs.map(this.getByDesc.bind(this)))
-  if (assetdefs.length > 0)
+  if (assetdefs.length > 0) {
     return assetdefs[0]
+  }
 
-  if (autoAdd === false)
+  if (autoAdd === false) {
     return null
+  }
 
   var assetdef = new AssetDefinition(this.cdManager, data)
   this.storage.add({
@@ -81,13 +84,14 @@ AssetDefinitionManager.prototype.resolveAssetDefinition = function(data, autoAdd
  * @param {string} moniker
  * @return {?AssetDefinition}
  */
-AssetDefinitionManager.prototype.getByMoniker = function(moniker) {
+AssetDefinitionManager.prototype.getByMoniker = function (moniker) {
   verify.string(moniker)
 
   var result = this.storage.getByMoniker(moniker)
 
-  if (result !== null)
+  if (result !== null) {
     result = new AssetDefinition(this.cdManager, result)
+  }
 
   return result
 }
@@ -96,13 +100,14 @@ AssetDefinitionManager.prototype.getByMoniker = function(moniker) {
  * @param {string} desc
  * @return {?AssetDefinition}
  */
-AssetDefinitionManager.prototype.getByDesc = function(desc) {
+AssetDefinitionManager.prototype.getByDesc = function (desc) {
   verify.string(desc)
 
   var result = this.storage.getByDesc(desc)
 
-  if (result !== null)
+  if (result !== null) {
     result = new AssetDefinition(this.cdManager, result)
+  }
 
   return result
 }
@@ -110,9 +115,9 @@ AssetDefinitionManager.prototype.getByDesc = function(desc) {
 /**
  * @return {AssetDefinition[]}
  */
-AssetDefinitionManager.prototype.getAllAssets = function() {
+AssetDefinitionManager.prototype.getAllAssets = function () {
   var cdManager = this.cdManager
-  var assetdefs = this.storage.getAll().map(function(record) {
+  var assetdefs = this.storage.getAll().map(function (record) {
     return new AssetDefinition(cdManager, record)
   })
 

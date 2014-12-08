@@ -19,8 +19,9 @@ var verify = require('../verify')
  * @throws {Error} If data.unit not power of 10
  */
 function AssetDefinition(colorDefinitionManager, data) {
-  if (!data.colorDescs)
+  if (!data.colorDescs) {
     data.colorDescs = data.colorSchemes // upgrade from old version
+  }
 
   verify.ColorDefinitionManager(colorDefinitionManager)
   verify.object(data)
@@ -28,14 +29,16 @@ function AssetDefinition(colorDefinitionManager, data) {
   data.monikers.forEach(verify.string)
   verify.array(data.colorDescs)
   data.colorDescs.forEach(verify.string)
-  if (data.unit) verify.number(data.unit)
+  if (data.unit) { verify.number(data.unit) }
 
-  if (data.colorDescs.length !== 1)
+  if (data.colorDescs.length !== 1) {
     throw new Error('Currently only single-color assets are supported')
+  }
 
   data.unit = _.isUndefined(data.unit) ? 1 : data.unit
-  if (Math.log(data.unit) / Math.LN10 % 1 !== 0)
+  if (Math.log(data.unit) / Math.LN10 % 1 !== 0) {
     throw new Error('data.unit must be power of 10 and greater than 0')
+  }
 
   this.monikers = data.monikers
   this.colorSet = new cclib.ColorSet(colorDefinitionManager, data.colorDescs)
@@ -45,7 +48,7 @@ function AssetDefinition(colorDefinitionManager, data) {
 /**
  * @return {AssetDefinitionDesc}
  */
-AssetDefinition.prototype.getData = function() {
+AssetDefinition.prototype.getData = function () {
   return {
     monikers: this.monikers,
     colorDescs: this.colorSet.getColorDescs(),
@@ -56,28 +59,28 @@ AssetDefinition.prototype.getData = function() {
 /**
  * @return {string[]}
  */
-AssetDefinition.prototype.getMonikers = function() {
+AssetDefinition.prototype.getMonikers = function () {
   return this.monikers
 }
 
 /**
  * @return {ColorSet}
  */
-AssetDefinition.prototype.getColorSet = function() {
+AssetDefinition.prototype.getColorSet = function () {
   return this.colorSet
 }
 
 /**
  * @return {string}
  */
-AssetDefinition.prototype.getId = function() {
+AssetDefinition.prototype.getId = function () {
   return this.getColorSet().getColorHash()
 }
 
 /**
  * @return {ColorDefinition[]}
  */
-AssetDefinition.prototype.getColorDefinitions = function() {
+AssetDefinition.prototype.getColorDefinitions = function () {
   return this.getColorSet().getColorDefinitions()
 }
 
@@ -85,7 +88,7 @@ AssetDefinition.prototype.getColorDefinitions = function() {
  * @param {string} portion
  * @return {number}
  */
-AssetDefinition.prototype.parseValue = function(portion) {
+AssetDefinition.prototype.parseValue = function (portion) {
   verify.string(portion)
 
   var items = portion.split('.')
@@ -94,10 +97,11 @@ AssetDefinition.prototype.parseValue = function(portion) {
 
   if (!_.isUndefined(items[1])) {
     var centString = items[1] + Array(this.unit.toString().length).join('0')
-    var centValue = parseInt(centString.slice(0, this.unit.toString().length-1))
+    var centValue = parseInt(centString.slice(0, this.unit.toString().length - 1))
 
-    if (!isNaN(centValue))
+    if (!isNaN(centValue)) {
       value = value + (parseFloat(portion) >= 0 ? centValue : -centValue)
+    }
   }
 
   return value
@@ -107,17 +111,19 @@ AssetDefinition.prototype.parseValue = function(portion) {
  * @param {number} value
  * @return {string}
  */
-AssetDefinition.prototype.formatValue = function(value) {
+AssetDefinition.prototype.formatValue = function (value) {
   verify.number(value)
 
-  var coinString = (~~(value/this.unit)).toString()
-  if (coinString === '0' && value < 0)
+  var coinString = (~~(value / this.unit)).toString()
+  if (coinString === '0' && value < 0) {
     coinString = '-' + coinString
+  }
 
   var centString = Math.abs(value % this.unit).toString()
   var centLength = this.unit.toString().length - 1
-  while (centString.length < centLength)
+  while (centString.length < centLength) {
     centString = '0' + centString
+  }
 
   return coinString + '.' + centString
 }

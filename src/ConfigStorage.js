@@ -29,14 +29,14 @@ inherits(ConfigStorage, SyncStorage)
 /**
  * @return {*[]}
  */
-ConfigStorage.prototype._getRecords = function() {
+ConfigStorage.prototype._getRecords = function () {
   return this.configRecords
 }
 
 /**
  * @param {*[]} records
  */
-ConfigStorage.prototype._saveRecords = function(records) {
+ConfigStorage.prototype._saveRecords = function (records) {
   this.store.set(this.configDbKey, records)
   this.configRecords = records
 }
@@ -45,7 +45,7 @@ ConfigStorage.prototype._saveRecords = function(records) {
  * @param {string} key
  * @param {*} value
  */
-ConfigStorage.prototype.set = function(key, value) {
+ConfigStorage.prototype.set = function (key, value) {
   var config = this._getRecords()
   config[key] = value
   this._saveRecords(config)
@@ -56,14 +56,14 @@ ConfigStorage.prototype.set = function(key, value) {
  * @param {*} [defaultValue=undefined]
  * @return {*}
  */
-ConfigStorage.prototype.get = function(key, defaultValue) {
+ConfigStorage.prototype.get = function (key, defaultValue) {
   var config = this._getRecords()
   return _.isUndefined(config[key]) ? defaultValue : config[key]
 }
 
 /**
  */
-ConfigStorage.prototype.clear = function() {
+ConfigStorage.prototype.clear = function () {
   this.store.remove(this.configDbKey)
   this.store.remove(this.configDbKey + '_version')
 }

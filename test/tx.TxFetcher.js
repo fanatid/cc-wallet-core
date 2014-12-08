@@ -1,10 +1,12 @@
 var Wallet = require('../src/index').Wallet
 
 
-describe('tx.TxFetcher', function() {
-  var wallet, txFetcher, addresses
+describe('tx.TxFetcher', function () {
+  var wallet
+  var txFetcher
+  var addresses
 
-  beforeEach(function() {
+  beforeEach(function () {
     wallet = new Wallet({
       testnet: true,
       blockchain: 'NaiveBlockchain',
@@ -17,7 +19,7 @@ describe('tx.TxFetcher', function() {
     addresses = wallet.getAllAddresses(wallet.getAssetDefinitionByMoniker('bitcoin'))
   })
 
-  afterEach(function() {
+  afterEach(function () {
     wallet.removeListeners()
     wallet.clearStorage()
   })

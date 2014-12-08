@@ -16,7 +16,7 @@ txStatus.valid = [txStatus.unconfirmed, txStatus.confirmed, txStatus.pending, tx
  * @param {number} status
  * @return {boolean}
  */
-txStatus.isValid = function(status) {
+txStatus.isValid = function (status) {
   return txStatus.valid.indexOf(status) !== -1
 }
 
@@ -25,7 +25,7 @@ txStatus.available = [txStatus.confirmed, txStatus.pending, txStatus.dispatch]
  * @param {number} status
  * @return {boolean}
  */
-txStatus.isAvailable = function(status) {
+txStatus.isAvailable = function (status) {
   return txStatus.available.indexOf(status) !== -1
 }
 

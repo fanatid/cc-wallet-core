@@ -1,4 +1,4 @@
-module.exports = function(grunt) {
+module.exports = function (grunt) {
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
     browserify: {
@@ -84,9 +84,10 @@ module.exports = function(grunt) {
   })
 
   grunt.event.on('coverage', function (lcov, done) {
-    require('coveralls').handleInput(lcov, function(error) {
-      if (error && !(error instanceof Error))
+    require('coveralls').handleInput(lcov, function (error) {
+      if (error && !(error instanceof Error)) {
         error = new Error(error)
+      }
 
       done(error)
     })

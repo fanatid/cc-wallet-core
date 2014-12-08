@@ -14,8 +14,9 @@ var verify = require('../verify')
  * @param {AssetTarget[]} [assetTargets]
  */
 function AssetTx(wallet, assetTargets) {
-  if (_.isUndefined(assetTargets))
+  if (_.isUndefined(assetTargets)) {
     assetTargets = []
+  }
 
   verify.Wallet(wallet)
   verify.array(assetTargets)
@@ -31,7 +32,7 @@ function AssetTx(wallet, assetTargets) {
  *
  * @param {AssetTarget} target
  */
-AssetTx.prototype.addTarget = function(target) {
+AssetTx.prototype.addTarget = function (target) {
   verify.AssetTarget(target)
   this.targets.push(target)
 }
@@ -41,7 +42,7 @@ AssetTx.prototype.addTarget = function(target) {
  *
  * @param {AssetTarget[]} targets
  */
-AssetTx.prototype.addTargets = function(targets) {
+AssetTx.prototype.addTargets = function (targets) {
   targets.forEach(this.addTarget.bind(this))
 }
 
@@ -51,12 +52,13 @@ AssetTx.prototype.addTargets = function(targets) {
  * @return {boolean}
  * @throws {Error} Will throw an error if current transaction don't have targets
  */
-AssetTx.prototype.isMonoAsset = function() {
-  if (this.targets.length === 0)
+AssetTx.prototype.isMonoAsset = function () {
+  if (this.targets.length === 0) {
     throw new Error('asset targets not found')
+  }
 
   var assetId = this.targets[0].getAsset().getId()
-  var isMonoAsset = this.targets.every(function(target) {
+  var isMonoAsset = this.targets.every(function (target) {
     return target.getAsset().getId() === assetId
   })
 
@@ -69,9 +71,10 @@ AssetTx.prototype.isMonoAsset = function() {
  * @return {boolean}
  * @throws {Error} Will throw an error if current transaction don't have targets
  */
-AssetTx.prototype.isMonoColor = function() {
-  if (!this.isMonoAsset)
+AssetTx.prototype.isMonoColor = function () {
+  if (!this.isMonoAsset) {
     return false
+  }
 
   var colorIds = this.targets[0].getAsset().getColorSet().getColorIds()
   var isMonoColor = colorIds.length === 1
@@ -83,15 +86,16 @@ AssetTx.prototype.isMonoColor = function() {
  * @return {OperationalTx}
  * @throws {Error} Will throw an error if current transaction don't have targets or multi color
  */
-AssetTx.prototype.makeOperationalTx = function() {
+AssetTx.prototype.makeOperationalTx = function () {
   // don't forget check targets.length > 0 if mono color check will be removed
-  if (!this.isMonoColor())
+  if (!this.isMonoColor()) {
     throw new Error('not supported multi color OperationalTx')
+  }
 
   var assetdef = this.targets[0].getAsset()
   var colordef = this.wallet.cdManager.getByColorId(assetdef.getColorSet().getColorIds()[0])
 
-  var colorTargets = this.targets.map(function(target) {
+  var colorTargets = this.targets.map(function (target) {
     var colorValue = new cclib.ColorValue(colordef, target.getValue())
     return new cclib.ColorTarget(target.getScript(), colorValue)
   })

@@ -18,7 +18,7 @@ function Address(addressManager, record, network, assetDefinition) {
   verify.object(record)
   verify.hexString(record.pubKey)
   verify.bitcoinNetwork(network)
-  if (assetDefinition) verify.AssetDefinition(assetDefinition)
+  if (assetDefinition) { verify.AssetDefinition(assetDefinition) }
 
   this.addressManager = addressManager
 
@@ -35,17 +35,19 @@ function Address(addressManager, record, network, assetDefinition) {
  * @param {string} address
  * @return {?string}
  */
-Address.getBitcoinAddress = function(assetdef, address) {
+Address.getBitcoinAddress = function (assetdef, address) {
   verify.AssetDefinition(assetdef)
   verify.string(address)
 
   var colordefs = assetdef.getColorDefinitions()
   var isBitcoinAsset = colordefs.length === 1 && colordefs[0].getColorType() === 'uncolored'
-  if (isBitcoinAsset)
+  if (isBitcoinAsset) {
     return address
+  }
 
-  if (assetdef.getId() !== address.split('@')[0])
+  if (assetdef.getId() !== address.split('@')[0]) {
     return null
+  }
 
   return address.split('@')[1]
 }
@@ -54,13 +56,14 @@ Address.getBitcoinAddress = function(assetdef, address) {
  * @param {string} address
  * @return {boolean}
  */
-Address.checkAddress = function(address) {
+Address.checkAddress = function (address) {
   verify.string(address)
 
   var buffer = new Buffer(base58.decode(address))
   // 1 byte version, 20 hash, 4 checksum
-  if (buffer.length !== 25)
+  if (buffer.length !== 25) {
     return false
+  }
 
   var checksum = bitcoin.crypto.hash256(buffer.slice(0, -4)).slice(0, 4)
   return bufferEqual(checksum, buffer.slice(-4))
@@ -71,13 +74,14 @@ Address.checkAddress = function(address) {
  * @param {string} address
  * @return {boolean}
  */
-Address.checkColorAddress = function(assetdef, address) {
+Address.checkColorAddress = function (assetdef, address) {
   verify.AssetDefinition(assetdef)
   verify.string(address)
 
   address = Address.getBitcoinAddress(assetdef, address)
-  if (address === null)
+  if (address === null) {
     return false
+  }
 
   return Address.checkAddress(address)
 }
@@ -85,7 +89,7 @@ Address.checkColorAddress = function(assetdef, address) {
 /**
  * @return {bitcoinjs-lib.ECPubKey}
  */
-Address.prototype.getPubKey = function() {
+Address.prototype.getPubKey = function () {
   return this.pubKey
 }
 
@@ -93,7 +97,7 @@ Address.prototype.getPubKey = function() {
  * @param {string} seedHex
  * @return {bitcoinjs-lib.ECKey}
  */
-Address.prototype.getPrivKey = function(seedHex) {
+Address.prototype.getPrivKey = function (seedHex) {
   verify.hexString(seedHex)
   return this.addressManager.getPrivKeyByAddress(this.getAddress(), seedHex)
 }
@@ -101,14 +105,14 @@ Address.prototype.getPrivKey = function(seedHex) {
 /**
  * @return {?AssetDefinition}
  */
-Address.prototype.getAssetDefinition = function() {
+Address.prototype.getAssetDefinition = function () {
   return this.assetDefinition
 }
 
 /**
  * @return {string}
  */
-Address.prototype.getAddress = function() {
+Address.prototype.getAddress = function () {
   var payload = new Buffer(21)
   payload.writeUInt8(this.network.pubKeyHash, 0)
   this.hash.copy(payload, 1)
@@ -121,9 +125,10 @@ Address.prototype.getAddress = function() {
 /**
  * @return {string}
  */
-Address.prototype.getColorAddress = function() {
-  if (this.getAssetDefinition() === null)
+Address.prototype.getColorAddress = function () {
+  if (this.getAssetDefinition() === null) {
     return this.getAddress()
+  }
 
   return this.getAssetDefinition().getId() + '@' + this.getAddress()
 }

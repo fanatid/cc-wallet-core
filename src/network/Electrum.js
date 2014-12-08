@@ -20,7 +20,7 @@ var Network = require('./Network')
  */
 function Electrum(wallet, opts) {
   verify.Wallet(wallet)
-  opts = _.extend({ testnet: false }, opts)
+  opts = _.extend({testnet: false}, opts)
   opts = _.extend({
     url: 'ws://devel.hz.udoidio.info:' + (opts.testnet ? '8784' : '8783')
   }, opts)
@@ -36,16 +36,16 @@ function Electrum(wallet, opts) {
   self._requests = {}
 
   // Todo: resubscribe on reconnect?
-  self._socket = socket(opts.url, { forceNew: true })
-  self._socket.on('connect_error', function(error) { self.emit('error', error) })
-  self._socket.on('connect', function() { self.emit('connect') })
-  self._socket.on('disconnect', function() { self.emit('disconnect') })
+  self._socket = socket(opts.url, {forceNew: true})
+  self._socket.on('connect_error', function (error) { self.emit('error', error) })
+  self._socket.on('connect', function () { self.emit('connect') })
+  self._socket.on('disconnect', function () { self.emit('disconnect') })
 
-  self._socket.on('message', function(response) {
+  self._socket.on('message', function (response) {
     try {
       response = JSON.parse(response)
 
-    } catch(error) {
+    } catch (error) {
       return
 
     }
@@ -53,32 +53,38 @@ function Electrum(wallet, opts) {
     if (response.id === null) {
       var isMethod = response.method === 'blockchain.numblocks.subscribe'
       var isArgs = _.isArray(response.params) && _.isNumber(response.params[0])
-      if (isMethod && isArgs)
+      if (isMethod && isArgs) {
         return self._setCurrentHeight(response.params[0])
+      }
 
       isMethod = response.method === 'blockchain.address.subscribe'
       isArgs = _.isArray(response.params) && _.isString(response.params[0])
-      if (isMethod && isArgs)
+      if (isMethod && isArgs) {
         return self.emit('touchAddress', response.params[0])
+      }
     }
 
     var deferred = self._requests[response.id]
-    if (_.isUndefined(deferred))
+    if (_.isUndefined(deferred)) {
       return
+    }
 
-    if (_.isUndefined(response.error))
+    if (_.isUndefined(response.error)) {
       deferred.resolve(response.result)
-    else
+
+    } else {
       deferred.reject(new Error(response.error))
+
+    }
 
     delete self._requests[response.id]
   })
 
-  self._request('blockchain.numblocks.subscribe').then(function(height) {
+  self._request('blockchain.numblocks.subscribe').then(function (height) {
     verify.number(height)
     self._setCurrentHeight(height)
 
-  }).catch(function(error) { self.emit('error', error) })
+  }).catch(function (error) { self.emit('error', error) })
 }
 
 inherits(Electrum, Network)
@@ -86,7 +92,7 @@ inherits(Electrum, Network)
 /**
  * @return {boolean}
  */
-Electrum.prototype.supportVerificationMethods = function() {
+Electrum.prototype.supportVerificationMethods = function () {
   return true
 }
 
@@ -95,14 +101,14 @@ Electrum.prototype.supportVerificationMethods = function() {
  * @param {*[]} [params]
  * @return {Q.Promise}
  */
-Electrum.prototype._request = function(method, params) {
+Electrum.prototype._request = function (method, params) {
   verify.string(method)
-  if (_.isUndefined(params)) params = []
+  if (_.isUndefined(params)) { params = [] }
   verify.array(params)
 
   var deferred = Q.defer()
 
-  var request = { id: this._requestId++, method: method, params: params }
+  var request = {id: this._requestId++, method: method, params: params}
   this._requests[request.id] = deferred
 
   this._socket.send(JSON.stringify(request))
@@ -113,11 +119,11 @@ Electrum.prototype._request = function(method, params) {
 /**
  * {@link Network~getHeader}
  */
-Electrum.prototype.getHeader = function(height, cb) {
+Electrum.prototype.getHeader = function (height, cb) {
   verify.number(height)
   verify.function(cb)
 
-  this._request('blockchain.block.get_header', [height]).then(function(response) {
+  this._request('blockchain.block.get_header', [height]).then(function (response) {
     verify.number(response.version)
     if (height === 0) {
       verify.null(response.prev_block_hash)
@@ -140,59 +146,61 @@ Electrum.prototype.getHeader = function(height, cb) {
       nonce: response.nonce
     }
 
-  }).done(function(data) { cb(null, data) }, function(error) { cb(error) })
+  }).done(function (data) { cb(null, data) }, function (error) { cb(error) })
 }
 
 /**
  * {@link Network~getChunk}
  */
-Electrum.prototype.getChunk = function(index, cb) {
+Electrum.prototype.getChunk = function (index, cb) {
   verify.number(index)
   verify.function(cb)
 
-  this._request('blockchain.block.get_chunk', [index]).then(function(chunkHex) {
+  this._request('blockchain.block.get_chunk', [index]).then(function (chunkHex) {
     verify.blockchainChunk(chunkHex)
 
     return chunkHex
 
-  }).done(function(chunkHex) { cb(null, chunkHex) }, function(error) { cb(error) })
+  }).done(function (chunkHex) { cb(null, chunkHex) }, function (error) { cb(error) })
 }
 
 /**
  * {@link Network~getTx}
  */
-Electrum.prototype.getTx = function(txId, cb) {
+Electrum.prototype.getTx = function (txId, cb) {
   verify.txId(txId)
   verify.function(cb)
 
   var tx = this._wallet.getTxDb().getTx(txId)
-  if (tx !== null)
-    return process.nextTick(function() { cb(null, tx) })
+  if (tx !== null) {
+    return process.nextTick(function () { cb(null, tx) })
+  }
 
-  this._request('blockchain.transaction.get', [txId]).then(function(rawTx) {
+  this._request('blockchain.transaction.get', [txId]).then(function (rawTx) {
     tx = bitcoin.Transaction.fromHex(rawTx)
-    if (tx.getId() !== txId)
-      throw new Error('Received tx is incorrect')
+    if (tx.getId() === txId) {
+      return tx
+    }
 
-    return tx
+    throw new Error('Received tx is incorrect')
 
-  }).done(function(tx) { cb(null, tx) }, function(error) { cb(error) })
+  }).done(function (tx) { cb(null, tx) }, function (error) { cb(error) })
 }
 
 /**
  * {@link Network~getMerkle}
  */
-Electrum.prototype.getMerkle = function(txId, height, cb) {
+Electrum.prototype.getMerkle = function (txId, height, cb) {
   if (_.isFunction(height) && _.isUndefined(cb)) {
     cb = height
     height = undefined
   }
 
   verify.txId(txId)
-  if (!_.isUndefined(height)) verify.number(height)
+  if (!_.isUndefined(height)) { verify.number(height) }
   verify.function(cb)
 
-  this._request('blockchain.transaction.get_merkle', [txId, height]).then(function(response) {
+  this._request('blockchain.transaction.get_merkle', [txId, height]).then(function (response) {
     verify.number(response.block_height)
     verify.array(response.merkle)
     response.merkle.forEach(verify.txId)
@@ -206,76 +214,77 @@ Electrum.prototype.getMerkle = function(txId, height, cb) {
 
     return result
 
-  }).done(function(data) { cb(null, data) }, function(error) { cb(error) })
+  }).done(function (data) { cb(null, data) }, function (error) { cb(error) })
 }
 
 /**
  * {@link Network~sendTx}
  */
-Electrum.prototype.sendTx = function(tx, cb) {
+Electrum.prototype.sendTx = function (tx, cb) {
   verify.Transaction(tx)
   verify.function(cb)
 
-  this._request('blockchain.transaction.broadcast', [tx.toHex()]).then(function(txId) {
-    if (txId !== tx.getId())
-      throw new Error('Received txId is incorrect')
+  this._request('blockchain.transaction.broadcast', [tx.toHex()]).then(function (txId) {
+    if (txId === tx.getId()) {
+      return txId
+    }
 
-    return txId
+    throw new Error('Received txId is incorrect')
 
-  }).done(function(txId) { cb(null, txId) }, function(error) { cb(error) })
+  }).done(function (txId) { cb(null, txId) }, function (error) { cb(error) })
 }
 
 /**
  * {@link Network~getHistory}
  */
-Electrum.prototype.getHistory = function(address, cb) {
+Electrum.prototype.getHistory = function (address, cb) {
   verify.string(address)
   verify.function(cb)
 
-  this._request('blockchain.address.get_history', [address]).then(function(entries) {
+  this._request('blockchain.address.get_history', [address]).then(function (entries) {
     verify.array(entries)
 
-    return entries.map(function(entry) {
+    return entries.map(function (entry) {
       verify.txId(entry.tx_hash)
       verify.number(entry.height)
 
-      return { txId: entry.tx_hash, height: entry.height }
+      return {txId: entry.tx_hash, height: entry.height}
     })
 
-  }).done(function(entries) { cb(null, entries) }, function(error) { cb(error) })
+  }).done(function (entries) { cb(null, entries) }, function (error) { cb(error) })
 }
 
 /**
  * {@link Network~getHistory}
  */
-Electrum.prototype.getUnspent = function(address, cb) {
+Electrum.prototype.getUnspent = function (address, cb) {
   verify.string(address)
   verify.function(cb)
 
-  this._request('blockchain.address.listunspent', [address]).then(function(unspent) {
+  this._request('blockchain.address.listunspent', [address]).then(function (unspent) {
     verify.array(unspent)
 
-    return unspent.map(function(entry) {
+    return unspent.map(function (entry) {
       verify.txId(entry.tx_hash)
       verify.number(entry.tx_pos)
       verify.number(entry.value)
       verify.number(entry.height)
 
-      return { txId: entry.tx_hash, outIndex: entry.tx_pos, value: entry.value, height: entry.height }
+      return {txId: entry.tx_hash, outIndex: entry.tx_pos, value: entry.value, height: entry.height}
     })
 
-  }).done(function(unspent) { cb(null, unspent) }, function(error) { cb(error) })
+  }).done(function (unspent) { cb(null, unspent) }, function (error) { cb(error) })
 }
 
 /**
  * {@link Network~subscribeAddress}
  */
-Electrum.prototype.subscribeAddress = function(address, cb) {
+Electrum.prototype.subscribeAddress = function (address, cb) {
   verify.string(address)
   verify.function(cb)
 
   this._request('blockchain.address.subscribe', [address])
-    .done(function() { cb(null) }, function(error) { cb(error) })
+    .done(function () { cb(null) }, function (error) { cb(error) })
 }
 
 

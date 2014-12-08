@@ -23,35 +23,35 @@ function HistoryTarget(assetValue, script, network) {
 /**
  * @return {AssetValue}
  */
-HistoryTarget.prototype.getAssetValue = function() {
+HistoryTarget.prototype.getAssetValue = function () {
   return this.assetValue
 }
 
 /**
  * @return {AssetDefinition}
  */
-HistoryTarget.prototype.getAsset = function() {
+HistoryTarget.prototype.getAsset = function () {
   return this.getAssetValue().getAsset()
 }
 
 /**
  * @return {number}
  */
-HistoryTarget.prototype.getValue = function() {
+HistoryTarget.prototype.getValue = function () {
   return this.getAssetValue().getValue()
 }
 
 /**
  * @return {Buffer}
  */
-HistoryTarget.prototype.getScript = function() {
+HistoryTarget.prototype.getScript = function () {
   return this.script
 }
 
 /**
  * @return {string[]}
  */
-HistoryTarget.prototype.getAddresses = function() {
+HistoryTarget.prototype.getAddresses = function () {
   return this.addresses
 }
 

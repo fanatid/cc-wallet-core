@@ -7,14 +7,14 @@ var verify = require('../verify')
 /**
  * @class CoinList
  *
- * @param {Coin[]}
+ * @param {Coin[]} coins
  */
 function CoinList(coins) {
   verify.array(coins)
   coins.forEach(verify.Coin)
 
   this.coins = coins
-  this.coins.forEach(function(coin, index) { this[index] = coin }.bind(this))
+  this.coins.forEach(function (coin, index) { this[index] = coin }.bind(this))
 
   this.length = this.coins.length
 
@@ -25,7 +25,7 @@ function CoinList(coins) {
 /**
  * @return {Coin[]}
  */
-CoinList.prototype.getCoins = function() {
+CoinList.prototype.getCoins = function () {
   return this.coins
 }
 
@@ -41,18 +41,19 @@ CoinList.prototype.getCoins = function() {
 /**
  * @param {CoinList~getValues} cb
  */
-CoinList.prototype.getValues = function(cb) {
+CoinList.prototype.getValues = function (cb) {
   verify.function(cb)
 
   var self = this
-  if (self._getValuesCache !== null)
-    return process.nextTick(function() { cb(null, self._getValuesCache) })
+  if (self._getValuesCache !== null) {
+    return process.nextTick(function () { cb(null, self._getValuesCache) })
+  }
 
   if (self._getValuesPromise === null) {
     var values = {total: {}, available: {}, unconfirmed: {}}
 
-    var promises = self.coins.map(function(coin) {
-      return Q.ninvoke(coin, 'getMainColorValue').then(function(colorValue) {
+    var promises = self.coins.map(function (coin) {
+      return Q.ninvoke(coin, 'getMainColorValue').then(function (colorValue) {
         var colorId = colorValue.getColorId()
 
         if (_.isUndefined(values.total[colorId])) {
@@ -64,14 +65,17 @@ CoinList.prototype.getValues = function(cb) {
 
         values.total[colorId] = values.total[colorId].plus(colorValue)
 
-        if (coin.isAvailable())
+        if (coin.isAvailable()) {
           values.available[colorId] = values.available[colorId].plus(colorValue)
-        else
+
+        } else {
           values.unconfirmed[colorId] = values.unconfirmed[colorId].plus(colorValue)
+
+        }
       })
     })
 
-    self._getValuesPromise = Q.all(promises).then(function() {
+    self._getValuesPromise = Q.all(promises).then(function () {
       self._getValuesCache = {
         total: _.values(values.total),
         available: _.values(values.available),
@@ -80,11 +84,11 @@ CoinList.prototype.getValues = function(cb) {
 
       return self._getValuesCache
 
-    }).finally(function() { self._getValuesPromise = null })
+    }).finally(function () { self._getValuesPromise = null })
   }
 
   self._getValuesPromise
-    .done(function(values) { cb(null, values) }, function(error) { cb(error) })
+    .done(function (values) { cb(null, values) }, function (error) { cb(error) })
 }
 
 /**
@@ -96,11 +100,11 @@ CoinList.prototype.getValues = function(cb) {
 /**
  * @param {CoinList~getTotalValue} cb
  */
-CoinList.prototype.getTotalValue = function(cb) {
+CoinList.prototype.getTotalValue = function (cb) {
   verify.function(cb)
 
   Q.ninvoke(this, 'getValues')
-    .done(function(values) { cb(null, values.total) }, function(error) { cb(error) })
+    .done(function (values) { cb(null, values.total) }, function (error) { cb(error) })
 }
 
 
