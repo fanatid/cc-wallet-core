@@ -71,8 +71,7 @@ function TxDb(wallet, txStorage) {
   self._wallet = wallet
   self._txStorage = txStorage
 
-  self._addTxSync = {}
-  self._addTxQueue = {}
+  self._addTxQueue = []
 
   self._txStorage.getAllTxIds().forEach(function (txId) {
     var record = self._txStorage.get(txId)
@@ -125,11 +124,6 @@ TxDb.prototype._attemptSendTx = function (txId, attempt) {
 }
 
 /**
- * @callback TxDb~errorCallback
- * @param {?Error} error
- */
-
-/**
  * @param {string} txId
  * @param {Object} data
  * @param {number} data.height
@@ -137,9 +131,10 @@ TxDb.prototype._attemptSendTx = function (txId, attempt) {
  * @param {number} [data.status=txStatus.unknown]
  * @param {number} [data.timestamp]
  * @param {string[]} [data.tAddresses]
- * @param {TxDb~errorCallback} cb
+ * @return {Q.Promise}
  */
-TxDb.prototype._addTx = function (txId, data, cb) {
+TxDb.prototype._addTx = function (txId, data) {
+  // We can't use util.makeSerial because in this case we can get bounce of isSyncing
   verify.txId(txId)
   verify.object(data)
   verify.number(data.height)
@@ -147,33 +142,19 @@ TxDb.prototype._addTx = function (txId, data, cb) {
   if (data.timestamp) { verify.number(data.timestamp) }
   if (data.tAddresses) { verify.array(data.tAddresses) }
   if (data.tAddresses) { data.tAddresses.forEach(verify.string) }
-  verify.function(cb)
 
   if (data.tx) { data.rawTx = data.tx.toHex() }
 
   var self = this
 
-  self._syncEnter()
-
-  var deferred = Q.defer()
-  deferred.promise.finally(function () {
-    self._syncExit()
-
-  }).done(function () { cb(null) }, function (error) { cb(error) })
-
-  if (_.isUndefined(self._addTxQueue[txId])) {
-    self._addTxQueue[txId] = []
+  self._addTxQueue.push(Q.defer())
+  if (self._addTxQueue.length === 1) {
+    self._addTxQueue[0].resolve()
+    self._syncEnter()
   }
-
-  var promise = Q()
-  if (!_.isUndefined(self._addTxSync[txId])) {
-    self._addTxQueue[txId].push(Q.defer())
-    promise = _.last(self._addTxQueue[txId]).promise
-  }
-  self._addTxSync[txId] = true
 
   var record
-  promise.then(function () {
+  return _.last(self._addTxQueue).promise.then(function () {
     record = self._txStorage.get(txId)
 
     if (_.isUndefined(data.rawTx)) {
@@ -235,23 +216,14 @@ TxDb.prototype._addTx = function (txId, data, cb) {
     self._txStorage.add(txId, data.rawTx, opts)
     self.emit('addTx', Transaction.fromHex(data.rawTx))
 
-  }).then(function () {
-    deferred.resolve()
-
-  }).catch(function (error) {
-    deferred.reject(error)
-
   }).finally(function () {
-    if (self._addTxQueue[txId].length === 0) {
-      delete self._addTxQueue[txId]
-      delete self._addTxSync[txId]
-
-    } else {
-      self._addTxQueue[txId].shift().resolve()
-
+    self._addTxQueue.shift()
+    if (self._addTxQueue.length > 0) {
+      return self._addTxQueue[0].resolve()
     }
 
-  }).done()
+    self._syncExit()
+  })
 }
 
 /**
@@ -274,7 +246,7 @@ TxDb.prototype.sendTx = function (tx, cb) {
     tAddresses: []
   }
 
-  Q.ninvoke(self, '_addTx', txId, addTxOpts).then(function () {
+  self._addTx(txId, addTxOpts).then(function () {
     process.nextTick(function () { self._attemptSendTx(txId) })
 
   }).done(function () { cb(null) }, function (error) { cb(error) })
@@ -338,7 +310,7 @@ TxDb.prototype.historySync = function (address, entries, cb) {
     // On block #zzz+2 network make revert to #zzz-1 and not include tx with txId1 (can this happen?)
     // Re-create tx with txId1
     // In our db txId1 alrady marked as invalid...
-    return Q.ninvoke(self, '_addTx', entry.txId, addTxOpts)
+    return self._addTx(entry.txId, addTxOpts)
   })
 
   Q.all(promises).done(function () { cb(null) }, function (error) { cb(error) })

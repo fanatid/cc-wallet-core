@@ -1,9 +1,9 @@
 var inherits = require('util').inherits
 
 var _ = require('lodash')
-var delayed = require('delayed')
 
 var SyncStorage = require('../SyncStorage')
+var util = require('../util')
 var verify = require('../verify')
 
 
@@ -37,7 +37,7 @@ function TxStorage(opts) {
 
   SyncStorage.apply(this, Array.prototype.slice.call(arguments))
 
-  this._save2store = delayed.debounce(this._save2store, opts.saveTimeout, this)
+  this._save2store = util.debounce(this._save2store, opts.saveTimeout, this)
 
   this.txDbKey = this.globalPrefix + 'tx'
   this.txRecords = this.store.get(this.txDbKey) || {}

@@ -1,6 +1,8 @@
 module.exports = {
   bitcoin: require('./bitcoin'),
   cclib: require('./cclib'),
+  errors: require('./errors'),
+  util: require('./util'),
   verify: require('./verify'),
 
   SyncMixin: require('./SyncMixin'),

@@ -2,12 +2,12 @@ var events = require('events')
 var inherits = require('util').inherits
 
 var Q = require('q')
-var _ = require('lodash')
 var zfill = require('zfill')
 
 var bitcoin = require('../bitcoin')
 var errors = require('../errors')
 var verify = require('../verify')
+var util = require('../util')
 
 
 /**
@@ -48,9 +48,6 @@ function Network() {
 
   self._currentHeight = -1
   self._currentBlockHash = new Buffer(zfill('', 64), 'hex')
-
-  self._setCurrentHeightRunning = false
-  self._setCurrentHeightQueue = []
 }
 
 inherits(Network, events.EventEmitter)
@@ -70,25 +67,19 @@ Network.prototype.isConnected = function () {
 }
 
 /**
- * @param {number} newHeight
- * @return {Q.Promise}
+ * @callback Network~_setCurrentHeight
  */
-Network.prototype._setCurrentHeight = function (newHeight) {
+
+/**
+ * @param {number} newHeight
+ * @param {Network~_setCurrentHeight} cb
+ */
+Network.prototype._setCurrentHeight = util.makeSerial(function (newHeight, cb) {
   verify.number(newHeight)
 
   var self = this
 
-  var promise = Q()
-  if (self._setCurrentHeightRunning === true) {
-    self._setCurrentHeightQueue.push(Q.defer())
-    promise = _.last(self._setCurrentHeightQueue).promise
-  }
-  self._setCurrentHeightRunning = true
-
-  return promise.then(function () {
-    return Q.ninvoke(self, 'getHeader', newHeight)
-
-  }).then(function (header) {
+  Q.ninvoke(self, 'getHeader', newHeight).then(function (header) {
     header = bitcoin.header2buffer(header)
     self._currentBlockHash = bitcoin.headerHash(header)
     self._currentHeight = newHeight
@@ -97,17 +88,8 @@ Network.prototype._setCurrentHeight = function (newHeight) {
   }).catch(function (error) {
     self.emit('error', error)
 
-  }).finally(function () {
-    if (self._setCurrentHeightQueue.length === 0) {
-      self._setCurrentHeightRunning = false
-
-    } else {
-      self._setCurrentHeightQueue.shift().resolve()
-
-    }
-
-  }).done()
-}
+  }).done(cb, cb)
+})
 
 /**
  * @return {number}

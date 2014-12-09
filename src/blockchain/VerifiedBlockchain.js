@@ -9,10 +9,11 @@ var LRU = require('lru-cache')
 var Q = require('q')
 var zfill = require('zfill')
 
-var bitcoin = require('../bitcoin')
-var verify = require('../verify')
 var Blockchain = require('./Blockchain')
 var VerifiedBlockchainStorage = require('./VerifiedBlockchainStorage')
+var bitcoin = require('../bitcoin')
+var verify = require('../verify')
+var util = require('../util')
 
 
 var BlockNotFoundError = createError('BlockNotFoundError')
@@ -67,35 +68,9 @@ function VerifiedBlockchain(network, opts) {
     self._currentBlockHash = self._storage.getLastHash()
   }
 
-  var running = false
-  var queue = []
-  function onNewHeight() {
-    var promise = Q()
-
-    if (running) {
-      queue.push(Q.defer())
-      promise = _.last(queue).promise
-    }
-    running = true
-
-    promise.then(function () {
-      return self._sync()
-
-    }).catch(function (error) {
-      self.emit('error', error)
-
-    }).finally(function () {
-      if (queue.length === 0) {
-        running = false
-
-      } else {
-        queue.shift().resolve()
-
-      }
-
-    }).done()
-  }
-
+  var onNewHeight = util.makeSerial(function (cb) {
+    self._sync().catch(function (error) { self.emit('error', error) }).done(cb, cb)
+  })
   self._network.on('newHeight', onNewHeight)
   onNewHeight()
 
