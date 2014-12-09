@@ -5,6 +5,7 @@ var Q = require('q')
 var socket = require('socket.io-client')
 
 var bitcoin = require('../bitcoin')
+var util = require('../util')
 var verify = require('../verify')
 var Network = require('./Network')
 
@@ -34,11 +35,13 @@ function Electrum(wallet, opts) {
 
   self._requestId = 0
   self._requests = {}
+  self._subscribedAddresses = []
 
-  // Todo: resubscribe on reconnect?
   self._socket = socket(opts.url, {forceNew: true})
   self._socket.on('connect_error', function (error) { self.emit('error', error) })
+  self._socket.on('reconnect_error', function (error) { self.emit('error', error) })
   self._socket.on('connect', function () { self.emit('connect') })
+  self._socket.on('reconnect', function () { self.emit('connect') })
   self._socket.on('disconnect', function () { self.emit('disconnect') })
 
   self._socket.on('message', function (response) {
@@ -80,11 +83,17 @@ function Electrum(wallet, opts) {
     delete self._requests[response.id]
   })
 
-  self._request('blockchain.numblocks.subscribe').then(function (height) {
-    verify.number(height)
-    self._setCurrentHeight(height)
+  self.on('connect', function () {
+    self._request('blockchain.numblocks.subscribe').then(function (height) {
+      verify.number(height)
+      self._setCurrentHeight(height)
 
-  }).catch(function (error) { self.emit('error', error) })
+    }).catch(function (error) { self.emit('error', error) })
+
+    var addresses = self._subscribedAddresses
+    self._subscribedAddresses = []
+    addresses.forEach(self.subscribeAddress.bind(self))
+  })
 }
 
 inherits(Electrum, Network)
@@ -279,13 +288,21 @@ Electrum.prototype.getUnspent = function (address, cb) {
 /**
  * {@link Network~subscribeAddress}
  */
-Electrum.prototype.subscribeAddress = function (address, cb) {
+Electrum.prototype.subscribeAddress = util.makeSerial(function (address, cb) {
   verify.string(address)
   verify.function(cb)
 
-  this._request('blockchain.address.subscribe', [address])
-    .done(function () { cb(null) }, function (error) { cb(error) })
-}
+  var self = this
+  var promise = Q()
+
+  if (self._subscribedAddresses.indexOf(address) === -1) {
+    promise = self._request('blockchain.address.subscribe', [address]).then(function () {
+      self._subscribedAddresses.push(address)
+    })
+  }
+
+  promise.done(function () { cb(null) }, function (error) { cb(error) })
+})
 
 
 module.exports = Electrum

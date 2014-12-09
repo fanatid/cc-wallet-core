@@ -67,7 +67,7 @@ function Chain(wallet, opts) {
    * @return {Q.Promise}
    */
   function testSubscribedAddresses() {
-    return Q.all(Object.keys(self._subscribedAddresses).map(function (address) {
+    return Q.all(_.keys(self._subscribedAddresses).map(function (address) {
       return Q.ninvoke(self, 'getUnspent', address).then(function (entries) {
         var isTouched = false
         var addressEntries = self._subscribedAddresses[address]
