@@ -9,14 +9,15 @@ var asset = require('./asset')
 var blockchain = require('./blockchain')
 var coin = require('./coin')
 var ConfigStorage = require('./ConfigStorage')
-var HistoryManager = require('./history').HistoryManager
+var walletHistory = require('./history')
 var network = require('./network')
 var tx = require('./tx')
+var WalletStateManager = require('./WalletStateManager')
 
 var cclib = require('./cclib')
 var bitcoin = require('./bitcoin')
+var util = require('./util')
 var verify = require('./verify')
-var SyncMixin = require('./SyncMixin')
 
 
 /**
@@ -109,7 +110,7 @@ function Wallet(opts) {
 
   var self = this
   events.EventEmitter.call(self)
-  SyncMixin.call(self)
+  util.SyncMixin.call(self)
 
   verify.boolean(opts.testnet)
   verify.string(opts.network)
@@ -151,7 +152,10 @@ function Wallet(opts) {
   self.coinStorage = new coin.CoinStorage({saveTimeout: opts.storageSaveTimeout})
   self.coinManager = new coin.CoinManager(self, self.coinStorage)
 
-  self.historyManager = new HistoryManager(self)
+  self.historyStorage = new walletHistory.HistoryStorage({saveTimeout: opts.storageSaveTimeout})
+  self.historyManager = new walletHistory.HistoryManager(self, self.historyStorage)
+
+  self.walletStateManager = new WalletStateManager(self)
 
   // events
   self.network.on('error', function (error) { self.emit('error', error) })
@@ -181,6 +185,8 @@ function Wallet(opts) {
   self.coinManager.on('syncStop', function () { self._syncExit() })
   self.historyManager.on('syncStart', function () { self._syncEnter() })
   self.historyManager.on('syncStop', function () { self._syncExit() })
+//  self.walletStateManager.on('syncStart', function () { self._syncEnter() })
+//  self.walletStateManager.on('syncStop', function () { self._syncExit() })
 }
 
 inherits(Wallet, events.EventEmitter)
@@ -321,6 +327,7 @@ Wallet.prototype.getNewAddress = function (seedHex, assetdef, asColorAddress) {
  * @throws {Error} If wallet not initialized
  */
 Wallet.prototype.getAllAddresses = function (assetdef, asColorAddress) {
+  // @todo Add cache (drop by event newAddress)
   var self = this
   self.isInitializedCheck()
 

@@ -8,8 +8,8 @@ var cclib = require('../cclib')
 var txStatus = require('../const').txStatus
 var bitcoin = require('../bitcoin')
 var Coin = require('./Coin')
+var util = require('../util')
 var verify = require('../verify')
-var SyncMixin = require('../SyncMixin')
 
 
 /**
@@ -48,15 +48,14 @@ function CoinManager(wallet, storage) {
 
   var self = this
   events.EventEmitter.call(self)
-  SyncMixin.call(self)
+  util.SyncMixin.call(self)
 
   self._wallet = wallet
   self._storage = storage
 
-  self._wallet.getTxDb().on('addTx', self._addTx.bind(self))
-  self._wallet.getTxDb().on('revertTx', self._revertTx.bind(self))
-
   var txdb = self._wallet.getTxDb()
+  txdb.on('addTx', self._addTx.bind(self))
+  txdb.on('revertTx', self._revertTx.bind(self))
   _.chain(txdb.getAllTxIds())
     .filter(function (txId) { return txStatus.isValid(txdb.getTxStatus(txId)) })
     .map(txdb.getTx.bind(txdb))

@@ -5,7 +5,7 @@ module.exports = {
   util: require('./util'),
   verify: require('./verify'),
 
-  SyncMixin: require('./SyncMixin'),
+  SyncMixin: require('./util').SyncMixin,
   SyncStorage: require('./SyncStorage'),
 
   address: require('./address'),

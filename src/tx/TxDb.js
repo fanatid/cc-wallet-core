@@ -5,9 +5,9 @@ var _ = require('lodash')
 var Q = require('q')
 
 var Transaction = require('../bitcoin').Transaction
+var util = require('../util')
 var verify = require('../verify')
 var txStatus = require('../const').txStatus
-var SyncMixin = require('../SyncMixin')
 
 
 /**
@@ -66,7 +66,7 @@ function TxDb(wallet, txStorage) {
   var self = this
 
   events.EventEmitter.call(self)
-  SyncMixin.call(self)
+  util.SyncMixin.call(self)
 
   self._wallet = wallet
   self._txStorage = txStorage

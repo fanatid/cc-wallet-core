@@ -10,12 +10,12 @@ var verify = require('../verify')
  * @param {Object} network
  */
 function HistoryTarget(assetValue, script, network) {
-  verify.hexString(script)
   verify.AssetValue(assetValue)
+  verify.hexString(script)
   verify.bitcoinNetwork(network)
 
-  this.script = script
   this.assetValue = assetValue
+  this.script = script
   script = bitcoin.Script.fromHex(script)
   this.addresses = bitcoin.getAddressesFromOutputScript(script, network)
 }

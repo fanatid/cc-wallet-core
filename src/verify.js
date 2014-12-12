@@ -62,6 +62,7 @@ var functions = {
 
   HistoryEntry: createInstanceCheck(function () { return require('./history').HistoryEntry }),
   HistoryTarget: createInstanceCheck(function () { return require('./history').HistoryTarget }),
+  HistoryStorage: createInstanceCheck(function () { return require('./history').HistoryStorage }),
   HistoryManager: createInstanceCheck(function () { return require('./history').HistoryManager }),
 
   Network: createInstanceCheck(function () { return require('./network').Network }),

@@ -10,47 +10,11 @@ var AssetValue = require('../asset').AssetValue
 var HistoryTarget = require('./HistoryTarget')
 var Coin = require('../coin').Coin
 var HistoryEntry = require('./HistoryEntry')
+var util = require('../util')
 var verify = require('../verify')
 var txStatus = require('../const').txStatus
 var historyEntryType = require('../const').historyEntryType
-var SyncMixin = require('../SyncMixin')
 
-
-/**
- * @param {HistoryEntry[]} entries
- * @return {HistoryEntry[]}
- */
-function toposort(entries) {
-  var entriesIds = _.zipObject(entries.map(function (entry) { return [entry.getTxId(), entry] }))
-  var result = []
-  var resultIds = {}
-
-  function sort(entry, topEntry) {
-    if (resultIds[entry.getTxId()] === true) {
-      return
-    }
-
-    entry.getTx().ins.forEach(function (input) {
-      var inputId = Array.prototype.reverse.call(new Buffer(input.hash)).toString('hex')
-      if (_.isUndefined(entriesIds[inputId])) {
-        return
-      }
-
-      if (entriesIds[inputId].getTxId() === topEntry.getTxId()) {
-        throw new Error('graph is cyclical')
-      }
-
-      sort(entriesIds[inputId], topEntry)
-    })
-
-    resultIds[entry.getTxId()] = true
-    result.push(entry)
-  }
-
-  entries.forEach(function (entry) { sort(entry, entry) })
-
-  return result
-}
 
 /**
  * @event HistoryManager#error
@@ -76,52 +40,42 @@ function toposort(entries) {
  * @param {Wallet} wallet
  * @param {HistoryStorage} storage
  */
-function HistoryManager(wallet) {
+function HistoryManager(wallet, storage) {
   verify.Wallet(wallet)
+  verify.HistoryStorage(storage)
 
   var self = this
   events.EventEmitter.call(self)
-  SyncMixin.call(self)
+  util.SyncMixin.call(self)
 
   self._wallet = wallet
+  self._storage = storage
+
+  self._historyEntriesCache = {}
 
   var txdb = self._wallet.getTxDb()
-
   txdb.on('addTx', self._addTx.bind(self))
   txdb.on('updateTx', self._updateTx.bind(self))
   txdb.on('revertTx', self._revertTx.bind(self))
-
   _.chain(txdb.getAllTxIds())
     .filter(function (txId) { return txStatus.isValid(txdb.getTxStatus(txId)) })
     .map(txdb.getTx.bind(txdb))
-    .forEach(self._addTx.bind(self))
-
-  self._historyEntries = []
+    .map(self._addTx.bind(self))
 }
 
 inherits(HistoryManager, events.EventEmitter)
-
-/**
- */
-HistoryManager.prototype._resortHistoryEntries = function () {
-  this._historyEntries = _.sortBy(this._historyEntries, function (entry) {
-    if (entry.getBlockHeight() === 0) {
-      return entry.getTimestamp()
-    }
-
-    return entry.getBlockHeight() + entry.getTimestamp() / 10000000000
-  })
-
-  this._historyEntries = toposort(this._historyEntries)
-}
 
 /**
  * @param {Transaction} tx
  */
 HistoryManager.prototype._addTx = function (tx) {
   verify.Transaction(tx)
+  var txId = tx.getId()
 
   var self = this
+  if (self._storage.has(txId)) {
+    return
+  }
 
   self._syncEnter()
 
@@ -174,7 +128,7 @@ HistoryManager.prototype._addTx = function (tx) {
         output.script, self._wallet.getBitcoinNetwork())[0]
 
       var coin = new Coin(coinManager, {
-        txId: tx.getId(),
+        txId: txId,
         outIndex: index,
         value: output.value,
         script: output.script.toHex(),
@@ -203,60 +157,34 @@ HistoryManager.prototype._addTx = function (tx) {
     }))
 
   }).then(function () {
-    var assetValues = {}
-    _.values(colorValues).forEach(function (cv) {
-      var desc = cv.getColorDefinition().getDesc()
-      var assetdef = self._wallet.getAssetDefinitionManager().getByDesc(desc)
-      if (assetdef === null) {
-        throw new Error('asset for ColorValue ' + cv + ' not found')
-      }
-
-      if (!_.isUndefined(assetValues[assetdef.getId()])) {
-        throw new Error('multi asset not supported')
-      }
-
-      assetValues[assetdef.getId()] = new AssetValue(assetdef, cv.getValue())
+    colorValues = _.values(colorValues).map(function (cv) {
+      return {desc: cv.getColorDefinition().getDesc(), value: cv.getValue()}
     })
 
-    function generateHistoryTargets(colorTargets) {
-      return colorTargets.map(function (ct) {
-        var desc = ct.getColorDefinition().getDesc()
-        var assetdef = self._wallet.getAssetDefinitionManager().getByDesc(desc)
-        if (assetdef === null) {
-          throw new Error('asset for ColorValue ' + ct.getColorValue() + ' not found')
-        }
+    var historyTargets = (myInsCount === 0 ? myColorTargets : otherColorTargets).map(function (ct) {
+      return {desc: ct.getColorDefinition().getDesc(), value: ct.getValue(), script: ct.getScript()}
+    })
 
-        var assetValue = new AssetValue(assetdef, ct.getValue())
-        return new HistoryTarget(assetValue, ct.getScript(), self._wallet.getBitcoinNetwork())
-      })
-    }
-
-    var historyTargets
-    var entryType
+    var entryType = historyEntryType.send
     if (myInsCount === 0) {
       entryType = historyEntryType.receive
-      historyTargets = generateHistoryTargets(myColorTargets)
-    } else {
-      entryType = historyEntryType.send
-      historyTargets = generateHistoryTargets(otherColorTargets)
 
-    }
-
-    if (myInsCount === tx.ins.length && myOutsCount === tx.outs.length) {
+    } else if (myInsCount === tx.ins.length && myOutsCount === tx.outs.length) {
       entryType = historyEntryType.payment2yourself
+
     }
 
-    var txId = tx.getId()
-    self._historyEntries.push(new HistoryEntry({
-      tx: tx,
+    self._storage.add({
+      txId: txId,
+      tx: tx.toHex(),
       height: txdb.getTxHeight(txId),
       timestamp: txdb.getTxTimestamp(txId),
       isBlockTimestamp: txdb.isBlockTimestamp(txId),
-      values: _.values(assetValues),
+      values: colorValues,
       targets: historyTargets,
       entryType: entryType
-    }))
-    self._resortHistoryEntries()
+    })
+
     self.emit('update')
 
   }).catch(function (error) {
@@ -276,22 +204,12 @@ HistoryManager.prototype._updateTx = function (tx) {
 
   var txId = tx.getId()
   var txdb = this._wallet.getTxDb()
-  this._historyEntries = this._historyEntries.map(function (entry) {
-    if (entry.getTxId() !== txId) {
-      return entry
-    }
-
-    return new HistoryEntry({
-      tx: entry.getTx(),
-      height: txdb.getTxHeight(txId),
-      timestamp: txdb.getTxTimestamp(txId),
-      isBlockTimestamp: txdb.isBlockTimestamp(txId),
-      values: entry.getValues(),
-      targets: entry.getTargets(),
-      entryType: entry.getEntryType()
-    })
+  this._storage.update(txId, {
+    height: txdb.getTxHeight(txId),
+    timestamp: txdb.getTxTimestamp(txId),
+    isBlockTimestamp: txdb.isBlockTimestamp(txId),
   })
-  this._resortHistoryEntries()
+  delete this._historyEntriesCache[txId]
   this.emit('update')
 }
 
@@ -302,27 +220,74 @@ HistoryManager.prototype._revertTx = function (tx) {
   verify.Transaction(tx)
 
   var txId = tx.getId()
-  this._historyEntries = this._historyEntries.filter(function (entry) {
-    return entry.getTxId() !== txId
-  })
+  this._storage.remove(txId)
+  delete this._historyEntriesCache[txId]
   this.emit('update')
 }
 
 /**
  * @param {AssetDefinition} [assetdef]
+ * @throws {Error}
  */
 HistoryManager.prototype.getEntries = function (assetdef) {
-  if (_.isUndefined(assetdef)) {
-    return this._historyEntries
+  var assetDefinitionManager = this._wallet.getAssetDefinitionManager()
+  var bitcoinNetwork = this._wallet.getBitcoinNetwork()
+  var entriesCache = this._historyEntriesCache
+  var storage = this._storage
+
+  var assetId = null
+  if (!_.isUndefined(assetdef)) {
+    verify.AssetDefinition(assetdef)
+    assetId = assetdef.getId()
   }
 
-  verify.AssetDefinition(assetdef)
+  var entries = storage.getAllTxIds().map(function (txId) {
+    if (_.isUndefined(entriesCache[txId])) {
+      var record = storage.get(txId)
 
-  var assetId = assetdef.getId()
-  return this._historyEntries.filter(function (entry) {
-    var assetIds = entry.getTargets().map(function (at) { return at.getAsset().getId() })
-    return assetIds.indexOf(assetId) !== -1
+      var assetValues = {}
+      record.values.forEach(function (rv) {
+        var assetdef = assetDefinitionManager.getByDesc(rv.desc)
+        if (assetdef === null) {
+          throw new Error('asset for color description: ' + rv.desc + ' not found')
+        }
+
+        if (!_.isUndefined(assetValues[assetdef.getId()])) {
+          throw new Error('multi asset transactions not supported')
+        }
+
+        assetValues[assetdef.getId()] = new AssetValue(assetdef, rv.value)
+      })
+
+      var historyTargets = record.targets.map(function (rt) {
+        var assetdef = assetDefinitionManager.getByDesc(rt.desc)
+        if (assetdef === null) {
+          throw new Error('asset for color description ' + rt.desc + ' not found')
+        }
+
+        var assetValue = new AssetValue(assetdef, rt.value)
+        return new HistoryTarget(assetValue, rt.script, bitcoinNetwork)
+      })
+
+      var entry = new HistoryEntry({
+        tx: bitcoin.Transaction.fromHex(record.tx),
+        height: record.height,
+        timestamp: record.timestamp,
+        isBlockTimestamp: record.isBlockTimestamp,
+        values: _.values(assetValues),
+        targets: historyTargets,
+        entryType: record.entryType
+      })
+
+      entriesCache[txId] = {entry: entry, assetIds: _.keys(assetValues)}
+    }
+
+    if (assetId === null || entriesCache[txId].assetIds.indexOf(assetId) !== -1) {
+      return entriesCache[txId].entry
+    }
   })
+
+  return _.filter(entries)
 }
 
 
