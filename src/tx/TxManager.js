@@ -96,7 +96,9 @@ TxManager.prototype.addTx = function (tx, data) {
   return Q.fcall(function () {
     // Approximate unconfirmed transaction timestamp
     if (record.height === 0) {
-      return (record.timestamp = getCurrentTimestamp())
+      record.timestamp = getCurrentTimestamp()
+      record.isBlockTimestamp = false
+      return
     }
 
     return Q.ninvoke(self._wallet.getBlockchain(), 'getBlockTime', record.height).then(function (ts) {

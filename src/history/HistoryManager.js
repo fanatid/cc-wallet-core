@@ -15,6 +15,44 @@ var historyEntryType = require('../const').historyEntryType
 
 
 /**
+ * @param {{txId1: string, txIdN:string}[]} entries
+ * @param {function} getTxFn
+ * @return {{txId1: string, txIdN:string}[]}
+ */
+function toposort(entries, getTxFn) {
+  var entriesTxIds = _.zipObject(entries.map(function (entry) { return [entry.txId, entry] }))
+  var result = []
+  var resultTxIds = {}
+
+  function sort(entry, topEntry) {
+    if (resultTxIds[entry.txId] === true) {
+      return
+    }
+
+    getTxFn(entry.txId).ins.forEach(function (input) {
+      var inputId = Array.prototype.reverse.call(new Buffer(input.hash)).toString('hex')
+      if (_.isUndefined(entriesTxIds[inputId])) {
+        return
+      }
+
+      if (entriesTxIds[inputId].txId === topEntry.txId) {
+        throw new Error('graph is cyclical')
+      }
+
+      sort(entriesTxIds[inputId], topEntry)
+    })
+
+    resultTxIds[entry.txId] = true
+    result.push(entry)
+  }
+
+  entries.forEach(function (entry) { sort(entry, entry) })
+
+  return result
+}
+
+
+/**
  * @event HistoryManager#update
  */
 
@@ -42,6 +80,26 @@ function HistoryManager(wallet, txManager, coinManager, rawStorage) {
 }
 
 inherits(HistoryManager, events.EventEmitter)
+
+/**
+ */
+HistoryManager.prototype._resortHistoryRecords = function () {
+  var self = this
+
+  var orderedRecords = _.sortBy(self._historyRecords, function (record) {
+    var txData = self._txManager.getTxData(record.txId)
+    if (txData.height === 0) {
+      return txData.timestamp
+    }
+
+    return txData.height + txData.timestamp / 10000000000
+  })
+
+  var getTxFn = self._txManager.getTx.bind(self._txManager)
+  toposort(orderedRecords, getTxFn).forEach(function (record, index) {
+    self._historyRecords[index] = record
+  })
+}
 
 /**
  * @param {Transaction} tx
@@ -144,6 +202,8 @@ HistoryManager.prototype.addTx = function (tx) {
       entryType: entryType
     })
 
+    self._resortHistoryRecords()
+
     self.emit('update')
   })
 }
@@ -152,7 +212,10 @@ HistoryManager.prototype.addTx = function (tx) {
  * @param {Transaction} tx
  * @return {Q.Promise}
  */
-HistoryManager.prototype.updateTx = function () { return Q() }
+HistoryManager.prototype.updateTx = function () {
+  this._resortHistoryRecords()
+  return Q()
+}
 
 /**
  * @param {Transaction} tx

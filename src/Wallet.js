@@ -567,7 +567,7 @@ Wallet.prototype.createIssuanceTx = function (moniker, pck, units, atoms, seedHe
   var self = this
 
   Q.fcall(function () {
-    var colorDefinitionCls = self.getColorDefinitionManager().getColorDefenitionClsForType(pck)
+    var colorDefinitionCls = cclib.ColorDefinitionManager.getColorDefenitionClsForType(pck)
     if (colorDefinitionCls === null) {
       throw new Error('color desc ' + pck + ' not recognized')
     }
