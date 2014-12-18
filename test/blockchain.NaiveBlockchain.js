@@ -18,8 +18,8 @@ describe('blockchain.NaiveBlockchain', function () {
   })
 
   afterEach(function () {
-    //wallet.clearStorage()
-    localStorage.clear()
+    wallet.removeListeners()
+    wallet.clearStorage()
     wallet = undefined
   })
 
@@ -101,13 +101,11 @@ describe('blockchain.NaiveBlockchain', function () {
         wallet.transformTx(tx, 'signed', seed, function (error, tx) {
           expect(error).to.be.null
 
-          function onTouchAddress(address) {
+          wallet.getBlockchain().on('touchAddress', function (address) {
             if (address === myBitcoinAddress) {
-              wallet.getBlockchain().removeListener('touchAddress', onTouchAddress)
               done()
             }
-          }
-          wallet.getBlockchain().on('touchAddress', onTouchAddress)
+          })
 
           wallet.sendTx(tx, function (error) {
             expect(error).to.be.null

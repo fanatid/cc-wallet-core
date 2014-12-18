@@ -8,14 +8,8 @@ var cclib = require('../cclib')
 var txStatus = require('../const').txStatus
 var bitcoin = require('../bitcoin')
 var Coin = require('./Coin')
-var util = require('../util')
 var verify = require('../verify')
 
-
-/**
- * @event CoinManager#error
- * @param {Error} error
- */
 
 /**
  * @event CoinManager#touchAddress
@@ -28,189 +22,184 @@ var verify = require('../verify')
  */
 
 /**
- * @event CoinManager#syncStart
- */
-
-/**
- * @event CoinManager#syncStop
- */
-
-/**
  * @class CoinManager
  * @extends events.EventEmitter
- * @mixes SyncMixin
  * @param {Wallet} wallet
- * @param {CoinStorage} storage
+ * @param {TxManager} txManager
+ * @param {Object} rawStorage
  */
-function CoinManager(wallet, storage) {
+function CoinManager(wallet, txManager, rawStorage) {
   verify.Wallet(wallet)
-  verify.CoinStorage(storage)
+  verify.TxManager(txManager)
+  verify.object(rawStorage)
+  rawStorage = _.defaults(rawStorage, {'coins': [], 'spend': {}})
 
-  var self = this
-  events.EventEmitter.call(self)
-  util.SyncMixin.call(self)
+  events.EventEmitter.call(this)
 
-  self._wallet = wallet
-  self._storage = storage
-
-  var txdb = self._wallet.getTxDb()
-  txdb.on('addTx', self._addTx.bind(self))
-  txdb.on('revertTx', self._revertTx.bind(self))
-  _.chain(txdb.getAllTxIds())
-    .filter(function (txId) { return txStatus.isValid(txdb.getTxStatus(txId)) })
-    .map(txdb.getTx.bind(txdb))
-    .forEach(self._addTx.bind(self))
+  this._wallet = wallet
+  this._txManager = txManager
+  this._coins = rawStorage.coins
+  this._spend = rawStorage.spend
 }
 
 inherits(CoinManager, events.EventEmitter)
 
 /**
- * @param {CoinStorageRecord} record
+ * @param {?} record
  * @return {Coin}
  */
 CoinManager.prototype._record2Coin = function (record) {
-  var rawCoin = {
-    txId: record.txId,
-    outIndex: record.outIndex,
-    value: record.value,
-    script: record.script,
-    address: record.address
-  }
-  var coinTxStatus = this._wallet.getTxDb().getTxStatus(rawCoin.txId)
-  if (coinTxStatus === null) {
-    throw new Error('Can\'t find tx for coin: ' + record.txId + ':' + record.outIndex)
+  var txData = this._txManager.getTxData(record.txId)
+  if (txData === null) {
+    // @todo Throw custom error
+    throw new Error('TxNotFound: ' + record.txId)
   }
 
   var opts = {
-    isSpent: this._storage.isSpent(rawCoin.txId, rawCoin.outIndex),
-    isValid: txStatus.isValid(coinTxStatus),
-    isAvailable: txStatus.isAvailable(coinTxStatus)
+    isSpent: (this._spend[record.txId] || []).indexOf(record.outIndex) !== -1,
+    isValid: txStatus.isValid(txData.status),
+    isAvailable: txStatus.isAvailable(txData.status)
   }
 
-  return new Coin(this, rawCoin, opts)
+  return new Coin(this, record, opts)
 }
 
 /**
  * @param {Transaction} tx
+ * @return {Q.Promise}
  */
-CoinManager.prototype._addTx = function (tx) {
+CoinManager.prototype.addTx = function (tx) {
   verify.Transaction(tx)
 
   var self = this
-
-  self._syncEnter()
-
   var txId = tx.getId()
-  var allAddresses = self._wallet.getAllAddresses()
 
   tx.ins.forEach(function (input) {
     var txId = Array.prototype.reverse.call(new Buffer(input.hash)).toString('hex')
-    self._storage.markCoinAsSpent(txId, input.index)
+    self._spend[txId] = _.union(self._spend[txId], [input.index]).sort()
   })
 
-  var promises = tx.outs.map(function (output, index) {
-    if (self._storage.isCoinExists(txId, index)) {
-      return
-    }
+  var network = self._wallet.getBitcoinNetwork()
+  var walletAddresses = self._wallet.getAllAddresses()
 
-    var outputAddresses = bitcoin.getAddressesFromOutputScript(
-      output.script, self._wallet.getBitcoinNetwork())
-    var walletAddresses = _.intersection(allAddresses, outputAddresses)
-    if (walletAddresses.length === 0) {
-      return
-    }
+  _.chain(tx.outs)
+    .map(function (output, index) {
+      var outputAddresses = bitcoin.getAddressesFromOutputScript(output.script, network)
+      var touchedAddresses = _.intersection(outputAddresses, walletAddresses)
+      if (touchedAddresses.length > 0) {
+        self._coins.push({
+          txId: txId,
+          outIndex: index,
+          value: output.value,
+          script: output.script.toHex(),
+          addresses: touchedAddresses
+        })
 
-    self._storage.addCoin(txId, index, {
-      value: output.value,
-      script: output.script.toHex(),
-      addresses: outputAddresses
+        return touchedAddresses
+      }
+    })
+    .filter()
+    .flatten()
+    .uniq()
+    .forEach(function (address) {
+      self.emit('touchAddress', address)
     })
 
-    var coin = self._record2Coin({
-      txId: txId,
-      outIndex: index,
-      value: output.value,
-      script: output.script.toHex(),
-      address: walletAddresses[0]
-    })
-
-    return Q.ninvoke(coin, 'getMainColorValue').then(function (colorValue) {
-      var colorDesc = colorValue.getColorDefinition().getDesc()
-      var assetdef = self._wallet.getAssetDefinitionManager().getByDesc(colorDesc)
-      self.emit('touchAsset', assetdef)
-
-      walletAddresses.forEach(function (address) {
-        self.emit('touchAddress', address)
+  var assetDefinitionManager = self._wallet.getAssetDefinitionManager()
+  return self.getTxMainColorValues(tx).then(function (colorValues) {
+    _.chain(colorValues)
+      .map(function (cv) { return cv.getColorDefinition().getDesc() })
+      .uniq()
+      .map(function (desc) { return assetDefinitionManager.getByDesc(desc) })
+      .uniq(function (assetdef) { return assetdef.getId() })
+      .forEach(function (assetdef) {
+        self.emit('touchAsset', assetdef)
       })
-    })
-  })
-
-  Q.all(promises).finally(function () {
-    self._syncExit()
-
-  }).catch(function (error) {
-    self.emit('error', error)
-
   })
 }
 
 /**
  * @param {Transaction} tx
+ * @return {Q.Promise}
  */
-CoinManager.prototype._revertTx = function (tx) {
+CoinManager.prototype.updateTx = function () { return Q() }
+
+/**
+ * @param {Transaction} tx
+ * @return {Q.Promise}
+ */
+CoinManager.prototype.revertTx = function (tx) {
   verify.Transaction(tx)
 
   var self = this
-
-  self._syncEnter()
-
   var txId = tx.getId()
-  var allAddresses = self._wallet.getAllAddresses()
 
   tx.ins.forEach(function (input) {
     var txId = Array.prototype.reverse.call(new Buffer(input.hash)).toString('hex')
-    self._storage.markCoinAsUnspent(txId, input.index)
-  })
-
-  var promises = tx.outs.map(function (output, index) {
-    var coinRecord = self._storage.removeCoin(txId, index)
-    if (coinRecord === null) {
-      return
+    self._spend[txId] = _.without(self._spend[txId], input.index)
+    if (self._spend[txId].length === 0) {
+      delete self._spend[txId]
     }
-
-    var coin = self._record2Coin(coinRecord)
-    return Q.ninvoke(coin, 'getMainColorValue').then(function (colorValue) {
-      var colorDesc = colorValue.getColorDefinition().getDesc()
-      var assetdef = self._wallet.getAssetDefinitionManager().getByDesc(colorDesc)
-      self.emit('touchAsset', assetdef)
-
-      self._wallet.getColorData().removeColorValues(txId, index)
-      _.intersection(coinRecord.addresses, allAddresses).forEach(function (address) {
-        self.emit('touchAddress', address)
-      })
-
-    })
   })
 
-  Q.all(promises).finally(function () {
-    self._syncExit()
+  var rawCoins = _.filter(_.range(tx.outs.length).map(function (index) {
+    return _.find(self._coins, {txId: txId, outIndex: index})
+  }))
+  self._coins = _.difference(self._coins, rawCoins)
 
-  }).catch(function (error) {
-    self.emit('error', error)
+  _.chain(rawCoins)
+    .pluck('addresses')
+    .flatten()
+    .uniq()
+    .intersection(self._wallet.getAllAddresses())
+    .forEach(function (address) {
+      self.emit('touchAddress', address)
+    })
 
+  var assetDefinitionManager = self._wallet.getAssetDefinitionManager()
+  return self.getTxMainColorValues(tx).then(function (colorValues) {
+    _.chain(colorValues)
+      .map(function (cv) { return cv.getColorDefinition().getDesc() })
+      .uniq()
+      .map(function (desc) { return assetDefinitionManager.getByDesc(desc) })
+      .uniq(function (assetdef) { return assetdef.getId() })
+      .forEach(function (assetdef) {
+        self.emit('touchAsset', assetdef)
+      })
   })
 }
 
 /**
- * @param {string} address
+ * @param {(string|string[])} [addresses]
  * @return {Coin[]}
+ * @throws {Error}
  */
-CoinManager.prototype.getCoinsForAddress = function (address) {
-  verify.string(address)
+CoinManager.prototype.getCoins = function (addresses) {
+  var rawCoins = this._coins
+  if (!_.isUndefined(addresses)) {
+    if (!_.isArray(addresses)) {
+      addresses = [addresses]
+    }
 
-  var records = this._storage.getCoinsForAddress(address)
-  records.forEach(function (record) { record.address = address })
-  return records.map(this._record2Coin.bind(this))
+    verify.array(addresses)
+    addresses.forEach(verify.string)
+    rawCoins = rawCoins.filter(function (rawCoin) {
+      return _.intersection(rawCoin.addresses, addresses).length > 0
+    })
+  }
+
+  var record2Coin = this._record2Coin.bind(this)
+  var coins = rawCoins.map(function (record) {
+    return record2Coin({
+      txId: record.txId,
+      outIndex: record.outIndex,
+      value: record.value,
+      script: record.script,
+      address: record.addresses[0]
+    })
+  })
+
+  return coins
 }
 
 /**
@@ -220,7 +209,7 @@ CoinManager.prototype.getCoinsForAddress = function (address) {
 CoinManager.prototype.isCoinSpent = function (coin) {
   verify.Coin(coin)
 
-  return this._storage.isSpent(coin.txId, coin.outIndex)
+  return (this._spend[coin.txId] || []).indexOf(coin.outIndex) !== -1
 }
 
 /**
@@ -230,8 +219,8 @@ CoinManager.prototype.isCoinSpent = function (coin) {
 CoinManager.prototype.isCoinValid = function (coin) {
   verify.Coin(coin)
 
-  var coinTxStatus = this._wallet.getTxDb().getTxStatus(coin.txId)
-  return txStatus.isValid(coinTxStatus)
+  var txData = this._txManager.getTxData(coin.txId)
+  return txData !== null && txStatus.isValid(txData.status)
 }
 
 /**
@@ -241,8 +230,8 @@ CoinManager.prototype.isCoinValid = function (coin) {
 CoinManager.prototype.isCoinAvailable = function (coin) {
   verify.Coin(coin)
 
-  var coinTxStatus = this._wallet.getTxDb().getTxStatus(coin.txId)
-  return txStatus.isAvailable(coinTxStatus)
+  var txData = this._txManager.getTxData(coin.txId)
+  return txData !== null && txStatus.isAvailable(txData.status)
 }
 
 /**
@@ -266,18 +255,15 @@ CoinManager.prototype.getCoinColorValue = function (coin, colorDefinition, cb) {
 }
 
 /**
- * @callback CoinManager~getMainColorValue
+ * @callback CoinManager~getCoinMainColorValue
  * @param {?Error} error
  * @param {ColorValue} coinColorValue
  */
 
 /**
- * Get one ColorValue or error if more than one
- *
  * @param {Coin} coin
- * @param {CoinManager~getMainColorValue} cb
+ * @param {CoinManager~getCoinMainColorValue} cb
  */
-// Todo: add synchronization from one coin
 CoinManager.prototype.getCoinMainColorValue = function (coin, cb) {
   verify.Coin(coin)
   verify.function(cb)
@@ -290,7 +276,7 @@ CoinManager.prototype.getCoinMainColorValue = function (coin, cb) {
     var promises = cdManager.getAllColorDefinitions().map(function (colorDefinition) {
       return Q.ninvoke(coin, 'getColorValue', colorDefinition).then(function (colorValue) {
         if (coinColorValue !== null && colorValue !== null) {
-          throw new Error('Coin ' + coin + ' have more that one ColorValue')
+          throw new Error('Coin ' + coin + ' have more than one ColorValue')
         }
 
         if (coinColorValue === null) {
@@ -303,12 +289,53 @@ CoinManager.prototype.getCoinMainColorValue = function (coin, cb) {
 
   }).then(function (coinColorValue) {
     if (coinColorValue === null) {
-      coinColorValue = new cclib.ColorValue(cdManager.getUncolored(), coin.value)
+      coinColorValue = new cclib.ColorValue(cclib.ColorDefinitionManager.getUncolored(), coin.value)
     }
 
     return coinColorValue
 
   }).done(function (coinColorValue) { cb(null, coinColorValue) }, function (error) { cb(error) })
+}
+
+/**
+ * @param {Transaction} tx
+ * @return {Q.Promise<ColorValue[]>}
+ */
+CoinManager.prototype.getTxMainColorValues = function (tx) {
+  var colorDefinitions = this._wallet.getColorDefinitionManager().getAllColorDefinitions()
+  var colorData = this._wallet.getColorData()
+  var getColorValuesForTx = Q.nbind(colorData.getColorValuesForTx, colorData)
+  var blockchain = this._wallet.getBlockchain()
+  var getTxFn = blockchain.getTx.bind(blockchain)
+
+  return Q.all(colorDefinitions.map(function (colorDefinition) {
+    return getColorValuesForTx(tx, colorDefinition, getTxFn)
+
+  })).then(function (colorValuess) {
+    var nullColorValues = Array.apply(null, Array(tx.outs.length)).map(function () { return null })
+    var colorValues = colorValuess.reduce(function (colorValues1, colorValues2) {
+      return colorValues1.map(function (cv, index) {
+        if (cv !== null) {
+          if (colorValues2[index] !== null) {
+            throw new Error(tx.getId() + ':' + index + ' have more than one ColorValue')
+          }
+
+          return cv
+        }
+
+        return colorValues2[index]
+      })
+    }, nullColorValues)
+
+    var uncolored = cclib.ColorDefinitionManager.getUncolored()
+    return colorValues.map(function (cv, index) {
+      if (cv !== null) {
+        return cv
+      }
+
+      return new cclib.ColorValue(uncolored, tx.outs[index].value)
+    })
+  })
 }
 
 

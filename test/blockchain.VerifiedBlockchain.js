@@ -16,6 +16,7 @@ describe('blockchain.VerifiedBlockchain', function () {
   })
 
   afterEach(function () {
+    // @todo Add interrupt method to VerifiedBlockchain for stop scanning?
     wallet.removeListeners()
     wallet.clearStorage()
   })

@@ -244,7 +244,7 @@ describe('Wallet', function () {
           wallet.transformTx(tx, 'signed', seed, function (error, tx) {
             expect(error).to.be.null
 
-            wallet.getTxDb().on('updateTx', function (newTx) {
+            wallet.on('updateTx', function (newTx) {
               if (newTx.getId() === tx.getId()) { deferred.resolve() }
             })
 
@@ -337,26 +337,14 @@ describe('Wallet', function () {
     var fixtures = [
       {event: 'error', prop: 'network'},
       {event: 'error', prop: 'blockchain'},
-      {event: 'error', prop: 'txDb'},
       {event: 'error', prop: 'txFetcher'},
-      {event: 'error', prop: 'coinManager'},
       {event: 'newHeight', prop: 'blockchain'},
-      {event: 'addTx', prop: 'txDb'},
-      {event: 'updateTx', prop: 'txDb'},
-      {event: 'revertTx', prop: 'txDb'},
       {event: 'newAddress', prop: 'aManager'},
-      {event: 'touchAddress', prop: 'coinManager'},
-      {event: 'newAsset', prop: 'aManager'},
-      {event: 'touchAsset', prop: 'coinManager'}
+      {event: 'newAsset', prop: 'aManager'}
     ]
 
     fixtures.forEach(function (fixture) {
       it(fixture.prop + ' ' + fixture.event, function (done) {
-        // patching txdb events, bad way
-        wallet.txDb._events.addTx = wallet.txDb._events.addTx.slice(2)
-        wallet.txDb._events.updateTx = wallet.txDb._events.updateTx.slice(1)
-        wallet.txDb._events.revertTx = wallet.txDb._events.revertTx.slice(2)
-
         wallet.on(fixture.event, function (msg) {
           expect(msg).to.be.instanceof(CustomMessage)
           done()

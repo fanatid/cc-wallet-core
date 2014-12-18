@@ -1,5 +1,6 @@
 var base58 = require('bs58')
 var bufferEqual = require('buffer-equal')
+var _ = require('lodash')
 
 var bitcoin = require('../bitcoin')
 var verify = require('../verify')
@@ -18,7 +19,7 @@ function Address(addressManager, record, network, assetDefinition) {
   verify.object(record)
   verify.hexString(record.pubKey)
   verify.bitcoinNetwork(network)
-  if (assetDefinition) { verify.AssetDefinition(assetDefinition) }
+  if (!_.isUndefined(assetDefinition)) { verify.AssetDefinition(assetDefinition) }
 
   this.addressManager = addressManager
 

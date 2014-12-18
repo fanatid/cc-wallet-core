@@ -5,7 +5,5 @@ module.exports = {
 
   transformTx: require('./TxTransformer'),
 
-  TxStorage: require('./TxStorage'),
-  TxDb: require('./TxDb'),
   TxFetcher: require('./TxFetcher')
 }

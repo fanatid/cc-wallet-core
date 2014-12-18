@@ -124,53 +124,50 @@ CoinQuery.prototype.getCoins = function (cb) {
   var self = this
 
   Q.fcall(function () {
-    var coinManager = self._wallet.getCoinManager()
+    var coins
+    if (self.query.onlyAddresses === null) {
+      coins = self._wallet.getStateManager().getCoins()
 
-    var coins = _.chain(self._wallet.getAllAssetDefinitions())
-      .map(function (assetdef) { return self._wallet.getAllAddresses(assetdef) })
-      .flatten()
-      .filter(function (address) {
-        return self.query.onlyAddresses === null || self.query.onlyAddresses.indexOf(address) !== -1
-      })
-      .map(function (address) { return coinManager.getCoinsForAddress(address) })
-      .flatten()
-      .uniq(function (coin) { return coin.txId + coin.outIndex })
-      .map(function (coin) {
-        // return if txStatus is invalid or unknow
-        if (!coin.isValid()) {
-          return
-        }
+    } else {
+      coins = self._wallet.getStateManager().getCoins(self.query.onlyAddresses)
 
-        // filter include/only spent coins
-        if (self.query.onlySpent && !coin.isSpent()) {
-          return
-        }
-        if (!self.query.onlySpent && !self.query.includeSpent && coin.isSpent()) {
-          return
-        }
+    }
 
-        // filter include/only unconfirmed coins
-        if (self.query.onlyUnconfirmed && coin.isAvailable()) {
-          return
-        }
-        if (!self.query.onlyUnconfirmed && !self.query.includeUnconfirmed && !coin.isAvailable()) {
-          return
-        }
+    var promises = coins.map(function (coin) {
+      // return if txStatus is invalid or unknow
+      if (!coin.isValid()) {
+        return
+      }
 
-        // filter color
-        if (self.query.onlyColoredAs === null) {
+      // filter include/only spent coins
+      if (self.query.onlySpent && !coin.isSpent()) {
+        return
+      }
+      if (!self.query.onlySpent && !self.query.includeSpent && coin.isSpent()) {
+        return
+      }
+
+      // filter include/only unconfirmed coins
+      if (self.query.onlyUnconfirmed && coin.isAvailable()) {
+        return
+      }
+      if (!self.query.onlyUnconfirmed && !self.query.includeUnconfirmed && !coin.isAvailable()) {
+        return
+      }
+
+      // filter color
+      if (self.query.onlyColoredAs === null) {
+        return coin
+      }
+
+      return Q.ninvoke(coin, 'getMainColorValue').then(function (colorValue) {
+        if (self.query.onlyColoredAs.indexOf(colorValue.getColorId()) !== -1) {
           return coin
         }
-
-        return Q.ninvoke(coin, 'getMainColorValue').then(function (colorValue) {
-          if (self.query.onlyColoredAs.indexOf(colorValue.getColorId()) !== -1) {
-            return coin
-          }
-        })
       })
-      .value()
+    })
 
-    return Q.all(coins).then(function (result) { return _.filter(result) })
+    return Q.all(promises).then(function (result) { return _.filter(result) })
 
   }).done(function (coins) { cb(null, new CoinList(coins)) }, function (error) { cb(error) })
 }

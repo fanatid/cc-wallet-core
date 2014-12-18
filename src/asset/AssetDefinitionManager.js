@@ -4,6 +4,7 @@ var inherits = require('util').inherits
 var _ = require('lodash')
 
 var AssetDefinition = require('./AssetDefinition')
+var cclib = require('../cclib')
 var verify = require('../verify')
 
 
@@ -29,7 +30,7 @@ function AssetDefinitionManager(cdManager, storage) {
 
   this.resolveAssetDefinition({
     monikers: ['bitcoin'],
-    colorDescs: [cdManager.getUncolored().getDesc()],
+    colorDescs: [cclib.ColorDefinitionManager.getUncolored().getDesc()],
     unit: 100000000
   })
 }

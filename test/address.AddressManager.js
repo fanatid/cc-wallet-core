@@ -22,7 +22,7 @@ describe('address.AddressManager', function () {
   beforeEach(function () {
     cdStorage = new cclib.ColorDefinitionStorage()
     cdManager = new cclib.ColorDefinitionManager(cdStorage)
-    uncolored = cdManager.getUncolored()
+    uncolored = cclib.ColorDefinitionManager.getUncolored()
     amStorage = new address.AddressStorage()
     am = new address.AddressManager(amStorage, networks.bitcoin)
   })

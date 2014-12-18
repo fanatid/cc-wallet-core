@@ -33,6 +33,7 @@ function isRawCoin(thing) {
 
 
 var functions = {
+// @todo Change import paths
   buffer: Buffer.isBuffer,
   length: isLength,
   blockchainChunk: isBlockchainChunk,
@@ -57,22 +58,19 @@ var functions = {
   rawCoin: isRawCoin,
   Coin: createInstanceCheck(function () { return require('./coin').Coin }),
   CoinQuery: createInstanceCheck(function () { return require('./coin').CoinQuery }),
-  CoinStorage: createInstanceCheck(function () { return require('./coin').CoinStorage }),
   CoinManager: createInstanceCheck(function () { return require('./coin').CoinManager }),
 
   HistoryEntry: createInstanceCheck(function () { return require('./history').HistoryEntry }),
   HistoryTarget: createInstanceCheck(function () { return require('./history').HistoryTarget }),
-  HistoryStorage: createInstanceCheck(function () { return require('./history').HistoryStorage }),
   HistoryManager: createInstanceCheck(function () { return require('./history').HistoryManager }),
 
   Network: createInstanceCheck(function () { return require('./network').Network }),
 
   AssetTx: createInstanceCheck(function () { return require('./tx').AssetTx }),
   BaseTxDb: createInstanceCheck(function () { return require('./tx').BaseTxDb }),
-  TxDb: createInstanceCheck(function () { return require('./tx').TxDb }),
+  TxManager: createInstanceCheck(function () { return require('./tx/TxManager') }),
   RawTx: createInstanceCheck(function () { return require('./tx').RawTx }),
-  TxFetcher: createInstanceCheck(function () { return require('./tx').TxFetcher }),
-  TxStorage: createInstanceCheck(function () { return require('./tx').TxStorage })
+  TxFetcher: createInstanceCheck(function () { return require('./tx').TxFetcher })
 }
 
 var expected = {

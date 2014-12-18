@@ -20,22 +20,20 @@ var verify = require('../verify')
 /**
  * @class TxFetcher
  * @extends events.EventEmitter
- * @param {TxDb} txdb
+ * @param {Wallet} wallet
  * @param {Blockchain} blockchain
  */
-function TxFetcher(txdb, blockchain) {
-  verify.TxDb(txdb)
-  verify.Blockchain(blockchain)
+function TxFetcher(wallet) {
+  verify.Wallet(wallet)
 
   var self = this
   events.EventEmitter.call(self)
 
   self._subscribedAddresses = {}
 
-  self._txdb = txdb
-  self._blockchain = blockchain
+  self._wallet = wallet
 
-  self._blockchain.on('touchAddress', function (address) {
+  self._wallet.getBlockchain().on('touchAddress', function (address) {
     if (_.isUndefined(self._subscribedAddresses[address])) { return }
 
     self.historySync(address, function (error) {
@@ -54,10 +52,9 @@ TxFetcher.prototype.historySync = function (address, cb) {
   verify.string(address)
   verify.function(cb)
 
-  var self = this
-
-  Q.ninvoke(self._blockchain, 'getHistory', address).then(function (entries) {
-    return Q.ninvoke(self._txdb, 'historySync', address, entries)
+  var wallet = this._wallet
+  Q.ninvoke(wallet.getBlockchain(), 'getHistory', address).then(function (entries) {
+    return wallet.getStateManager().historySync(address, entries)
 
   }).done(function () { cb(null) }, function (error) { cb(error) })
 }
@@ -75,7 +72,7 @@ TxFetcher.prototype.subscribeAndSyncAddress = function (address, cb) {
     return cb(null)
   }
 
-  Q.ninvoke(self._blockchain, 'subscribeAddress', address).then(function () {
+  Q.ninvoke(self._wallet.getBlockchain(), 'subscribeAddress', address).then(function () {
     self._subscribedAddresses[address] = true
     return Q.ninvoke(self, 'historySync', address)
 

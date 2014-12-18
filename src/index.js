@@ -8,6 +8,7 @@ module.exports = {
   SyncMixin: require('./util').SyncMixin,
   SyncStorage: require('./SyncStorage'),
 
+// @todo Remove index.js in subfolders
   address: require('./address'),
   asset: require('./asset'),
   blockchain: require('./blockchain'),

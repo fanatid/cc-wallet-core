@@ -10,87 +10,60 @@ var AssetValue = require('../asset').AssetValue
 var HistoryTarget = require('./HistoryTarget')
 var Coin = require('../coin').Coin
 var HistoryEntry = require('./HistoryEntry')
-var util = require('../util')
 var verify = require('../verify')
-var txStatus = require('../const').txStatus
 var historyEntryType = require('../const').historyEntryType
 
-
-/**
- * @event HistoryManager#error
- * @param {Error} error
- */
 
 /**
  * @event HistoryManager#update
  */
 
 /**
- * @event HistoryManager#syncStart
- */
-
-/**
- * @event HistoryManager#syncStop
- */
-
-/**
  * @class HistoryManager
  * @extends events.EventEmitter
- * @mixes SyncMixin
  * @param {Wallet} wallet
- * @param {HistoryStorage} storage
+ * @param {TxManager} txManager
+ * @param {CoinManager} coinManager
+ * @param {Object} rawStorage
  */
-function HistoryManager(wallet, storage) {
+function HistoryManager(wallet, txManager, coinManager, rawStorage) {
   verify.Wallet(wallet)
-  verify.HistoryStorage(storage)
+  verify.TxManager(txManager)
+  verify.CoinManager(coinManager)
+  verify.object(rawStorage)
 
   var self = this
   events.EventEmitter.call(self)
-  util.SyncMixin.call(self)
 
   self._wallet = wallet
-  self._storage = storage
-
-  self._historyEntriesCache = {}
-
-  var txdb = self._wallet.getTxDb()
-  txdb.on('addTx', self._addTx.bind(self))
-  txdb.on('updateTx', self._updateTx.bind(self))
-  txdb.on('revertTx', self._revertTx.bind(self))
-  _.chain(txdb.getAllTxIds())
-    .filter(function (txId) { return txStatus.isValid(txdb.getTxStatus(txId)) })
-    .map(txdb.getTx.bind(txdb))
-    .map(self._addTx.bind(self))
+  self._txManager = txManager
+  self._coinManager = coinManager
+  self._historyRecords = rawStorage
 }
 
 inherits(HistoryManager, events.EventEmitter)
 
 /**
  * @param {Transaction} tx
+ * @return {Q.Promise}
  */
-HistoryManager.prototype._addTx = function (tx) {
+HistoryManager.prototype.addTx = function (tx) {
   verify.Transaction(tx)
-  var txId = tx.getId()
 
   var self = this
-  if (self._storage.has(txId)) {
-    return
-  }
-
-  self._syncEnter()
+  var txId = tx.getId()
 
   var bs = self._wallet.getBlockchain()
-  var coinManager = self._wallet.getCoinManager()
-  var txdb = self._wallet.getTxDb()
   var walletAddresses = self._wallet.getAllAddresses()
+  var network = self._wallet.getBitcoinNetwork()
   var colorValues = {}
   var otherColorTargets = []
   var myColorTargets = []
   var myInsCount = 0
   var myOutsCount = 0
 
-  Q.ninvoke(tx, 'ensureInputValues', bs.getTx.bind(bs)).then(function (ensuredInputValuesTx) {
-    tx = ensuredInputValuesTx
+  return Q.ninvoke(tx, 'ensureInputValues', bs.getTx.bind(bs)).then(function (ensuredInputsTx) {
+    tx = ensuredInputsTx
     return Q.all(tx.ins.map(function (input) {
       // @todo Add multisig support (multi-address)
       var address = bitcoin.getAddressesFromOutputScript(
@@ -102,7 +75,7 @@ HistoryManager.prototype._addTx = function (tx) {
 
       myInsCount += 1
 
-      var coin = new Coin(coinManager, {
+      var coin = new Coin(self._coinManager, {
         txId: input.prevTx.getId(),
         outIndex: input.index,
         value: input.prevTx.outs[input.index].value,
@@ -123,38 +96,28 @@ HistoryManager.prototype._addTx = function (tx) {
     }))
 
   }).then(function () {
-    return Q.all(tx.outs.map(function (output, index) {
-      var address = bitcoin.getAddressesFromOutputScript(
-        output.script, self._wallet.getBitcoinNetwork())[0]
+    return self._coinManager.getTxMainColorValues(tx).then(function (txColorValues) {
+      txColorValues.forEach(function (colorValue, index) {
+        var colorTarget = new cclib.ColorTarget(tx.outs[index].script.toHex(), colorValue)
 
-      var coin = new Coin(coinManager, {
-        txId: txId,
-        outIndex: index,
-        value: output.value,
-        script: output.script.toHex(),
-        address: address
-      })
-
-      return Q.ninvoke(coin, 'getMainColorValue').then(function (cv) {
-        var colorTarget = new cclib.ColorTarget(output.script.toHex(), cv)
-
-        if (walletAddresses.indexOf(address) === -1) {
+        var touchedAddresses = bitcoin.getAddressesFromOutputScript(tx.outs[index].script, network)
+        if (_.intersection(walletAddresses, touchedAddresses).length === 0) {
           return otherColorTargets.push(colorTarget)
         }
 
         myOutsCount += 1
         myColorTargets.push(colorTarget)
 
-        var cid = cv.getColorId()
+        var cid = colorValue.getColorId()
         if (_.isUndefined(colorValues[cid])) {
-          colorValues[cid] = cv
+          colorValues[cid] = colorValue
 
         } else {
-          colorValues[cid] = colorValues[cid].plus(cv)
+          colorValues[cid] = colorValues[cid].plus(colorValue)
 
         }
       })
-    }))
+    })
 
   }).then(function () {
     colorValues = _.values(colorValues).map(function (cv) {
@@ -174,66 +137,50 @@ HistoryManager.prototype._addTx = function (tx) {
 
     }
 
-    self._storage.add({
+    self._historyRecords.push({
       txId: txId,
-      tx: tx.toHex(),
-      height: txdb.getTxHeight(txId),
-      timestamp: txdb.getTxTimestamp(txId),
-      isBlockTimestamp: txdb.isBlockTimestamp(txId),
       values: colorValues,
       targets: historyTargets,
       entryType: entryType
     })
 
     self.emit('update')
-
-  }).catch(function (error) {
-    self.emit('error', error)
-
-  }).finally(function () {
-    self._syncExit()
-
   })
 }
 
 /**
  * @param {Transaction} tx
+ * @return {Q.Promise}
  */
-HistoryManager.prototype._updateTx = function (tx) {
-  verify.Transaction(tx)
-
-  var txId = tx.getId()
-  var txdb = this._wallet.getTxDb()
-  this._storage.update(txId, {
-    height: txdb.getTxHeight(txId),
-    timestamp: txdb.getTxTimestamp(txId),
-    isBlockTimestamp: txdb.isBlockTimestamp(txId),
-  })
-  delete this._historyEntriesCache[txId]
-  this.emit('update')
-}
+HistoryManager.prototype.updateTx = function () { return Q() }
 
 /**
  * @param {Transaction} tx
+ * @return {Q.Promise}
  */
-HistoryManager.prototype._revertTx = function (tx) {
+HistoryManager.prototype.revertTx = function (tx) {
   verify.Transaction(tx)
 
+  var savedLength = this._historyRecords.length
   var txId = tx.getId()
-  this._storage.remove(txId)
-  delete this._historyEntriesCache[txId]
-  this.emit('update')
+  this._historyRecords = this._historyRecords.filter(function (record) {
+    return record.txId !== txId
+  })
+
+  if (savedLength !== this._historyRecords.length) {
+    this.emit('update')
+  }
 }
 
 /**
  * @param {AssetDefinition} [assetdef]
+ * @return {HistoryEntry[]}
  * @throws {Error}
  */
 HistoryManager.prototype.getEntries = function (assetdef) {
   var assetDefinitionManager = this._wallet.getAssetDefinitionManager()
   var bitcoinNetwork = this._wallet.getBitcoinNetwork()
-  var entriesCache = this._historyEntriesCache
-  var storage = this._storage
+  var txManager = this._txManager
 
   var assetId = null
   if (!_.isUndefined(assetdef)) {
@@ -241,50 +188,53 @@ HistoryManager.prototype.getEntries = function (assetdef) {
     assetId = assetdef.getId()
   }
 
-  var entries = storage.getAllTxIds().map(function (txId) {
-    if (_.isUndefined(entriesCache[txId])) {
-      var record = storage.get(txId)
-
-      var assetValues = {}
-      record.values.forEach(function (rv) {
-        var assetdef = assetDefinitionManager.getByDesc(rv.desc)
-        if (assetdef === null) {
-          throw new Error('asset for color description: ' + rv.desc + ' not found')
-        }
-
-        if (!_.isUndefined(assetValues[assetdef.getId()])) {
-          throw new Error('multi asset transactions not supported')
-        }
-
-        assetValues[assetdef.getId()] = new AssetValue(assetdef, rv.value)
-      })
-
-      var historyTargets = record.targets.map(function (rt) {
-        var assetdef = assetDefinitionManager.getByDesc(rt.desc)
-        if (assetdef === null) {
-          throw new Error('asset for color description ' + rt.desc + ' not found')
-        }
-
-        var assetValue = new AssetValue(assetdef, rt.value)
-        return new HistoryTarget(assetValue, rt.script, bitcoinNetwork)
-      })
-
-      var entry = new HistoryEntry({
-        tx: bitcoin.Transaction.fromHex(record.tx),
-        height: record.height,
-        timestamp: record.timestamp,
-        isBlockTimestamp: record.isBlockTimestamp,
-        values: _.values(assetValues),
-        targets: historyTargets,
-        entryType: record.entryType
-      })
-
-      entriesCache[txId] = {entry: entry, assetIds: _.keys(assetValues)}
+  var entries = this._historyRecords.map(function (record) {
+    var tx = txManager.getTx(record.txId)
+    if (tx === null) {
+      throw new Error('NotFoundTx: ' + record.txId)
     }
 
-    if (assetId === null || entriesCache[txId].assetIds.indexOf(assetId) !== -1) {
-      return entriesCache[txId].entry
+    var assetValues = {}
+    record.values.forEach(function (rv) {
+      var assetdef = assetDefinitionManager.getByDesc(rv.desc)
+      if (assetdef === null) {
+        throw new Error('asset for color description: ' + rv.desc + ' not found')
+      }
+
+      var assetId = assetdef.getId()
+      if (!_.isUndefined(assetValues[assetId])) {
+        throw new Error('multi asset transactions not supported')
+      }
+
+      assetValues[assetId] = new AssetValue(assetdef, rv.value)
+    })
+
+    if (assetId !== null && _.keys(assetValues).indexOf(assetId) === -1) {
+      return
     }
+
+    var historyTargets = record.targets.map(function (rt) {
+      var assetdef = assetDefinitionManager.getByDesc(rt.desc)
+      if (assetdef === null) {
+        throw new Error('asset for color description ' + rt.desc + ' not found')
+      }
+
+      var assetValue = new AssetValue(assetdef, rt.value)
+      return new HistoryTarget(assetValue, rt.script, bitcoinNetwork)
+    })
+
+    var txData = txManager.getTxData(record.txId)
+    var entry = new HistoryEntry({
+      tx: tx,
+      height: txData.height,
+      timestamp: txData.timestamp,
+      isBlockTimestamp: txData.isBlockTimestamp,
+      values: _.values(assetValues),
+      targets: historyTargets,
+      entryType: record.entryType
+    })
+
+    return entry
   })
 
   return _.filter(entries)

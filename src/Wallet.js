@@ -9,7 +9,6 @@ var asset = require('./asset')
 var blockchain = require('./blockchain')
 var coin = require('./coin')
 var ConfigStorage = require('./ConfigStorage')
-var walletHistory = require('./history')
 var network = require('./network')
 var tx = require('./tx')
 var WalletStateManager = require('./WalletStateManager')
@@ -145,48 +144,32 @@ function Wallet(opts) {
     })
   }
 
-  self.txStorage = new tx.TxStorage({saveTimeout: opts.storageSaveTimeout})
-  self.txDb = new tx.TxDb(self, self.txStorage)
-  self.txFetcher = new tx.TxFetcher(self.txDb, self.blockchain)
-
-  self.coinStorage = new coin.CoinStorage({saveTimeout: opts.storageSaveTimeout})
-  self.coinManager = new coin.CoinManager(self, self.coinStorage)
-
-  self.historyStorage = new walletHistory.HistoryStorage({saveTimeout: opts.storageSaveTimeout})
-  self.historyManager = new walletHistory.HistoryManager(self, self.historyStorage)
-
   self.walletStateManager = new WalletStateManager(self)
+
+  self.txFetcher = new tx.TxFetcher(self)
 
   // events
   self.network.on('error', function (error) { self.emit('error', error) })
   self.blockchain.on('error', function (error) { self.emit('error', error) })
-  self.txDb.on('error', function (error) { self.emit('error', error) })
   self.txFetcher.on('error', function (error) { self.emit('error', error) })
-  self.coinManager.on('error', function (error) { self.emit('error', error) })
-  self.historyManager.on('error', function (error) { self.emit('error', error) })
 
   self.blockchain.on('newHeight', function (height) { self.emit('newHeight', height) })
 
-  self.txDb.on('addTx', function (tx) { self.emit('addTx', tx) })
-  self.txDb.on('updateTx', function (tx) { self.emit('updateTx', tx) })
-  self.txDb.on('revertTx', function (tx) { self.emit('revertTx', tx) })
-
   self.aManager.on('newAddress', function (address) { self.emit('newAddress', address) })
-  self.coinManager.on('touchAddress', function (address) { self.emit('touchAddress', address) })
-
   self.aManager.on('newAsset', function (assetdef) { self.emit('newAsset', assetdef) })
-  self.coinManager.on('touchAsset', function (assetdef) { self.emit('touchAsset', assetdef) })
 
-  self.historyManager.on('update', function () { self.emit('historyUpdate') })
+  self.walletStateManager.on('error', function (error) { self.emit('error', error) })
+  self.walletStateManager.on('syncStart', function () { self._syncEnter() })
+  self.walletStateManager.on('syncStop', function () { self._syncExit() })
+  self.walletStateManager.on('addTx', function (tx) { self.emit('addTx', tx) })
+  self.walletStateManager.on('updateTx', function (tx) { self.emit('updateTx', tx) })
+  self.walletStateManager.on('revertTx', function (tx) { self.emit('revertTx', tx) })
+  self.walletStateManager.on('touchAddress', function (address) { self.emit('touchAddress', address) })
+  self.walletStateManager.on('touchAsset', function (assetdef) { self.emit('touchAsset', assetdef) })
+  self.walletStateManager.on('historyUpdate', function () { self.emit('historyUpdate') })
 
-  self.txDb.on('syncStart', function () { self._syncEnter() })
-  self.txDb.on('syncStop', function () { self._syncExit() })
-  self.coinManager.on('syncStart', function () { self._syncEnter() })
-  self.coinManager.on('syncStop', function () { self._syncExit() })
-  self.historyManager.on('syncStart', function () { self._syncEnter() })
-  self.historyManager.on('syncStop', function () { self._syncExit() })
-//  self.walletStateManager.on('syncStart', function () { self._syncEnter() })
-//  self.walletStateManager.on('syncStop', function () { self._syncExit() })
+  self._allAddressesCache = undefined
+  self.on('newAddress', function () { self._allAddressesCache = undefined })
 }
 
 inherits(Wallet, events.EventEmitter)
@@ -199,9 +182,8 @@ Wallet.prototype.getColorDefinitionManager = function () { return this.cdManager
 Wallet.prototype.getColorData = function () { return this.cData }
 Wallet.prototype.getAddressManager = function () { return this.aManager }
 Wallet.prototype.getAssetDefinitionManager = function () { return this.adManager }
-Wallet.prototype.getTxDb = function () { return this.txDb }
-Wallet.prototype.getCoinManager = function () { return this.coinManager }
 Wallet.prototype.getCoinQuery = function () { return new coin.CoinQuery(this) }
+Wallet.prototype.getStateManager = function () { return this.walletStateManager }
 
 /**
  * @return {boolean}
@@ -321,43 +303,45 @@ Wallet.prototype.getNewAddress = function (seedHex, assetdef, asColorAddress) {
 /**
  * Return all addresses for given asset
  *
- * @param {AssetDefinition} [assetdef]
+ * @param {(AssetDefinition|ColorDefinition)} [assetdef]
  * @param {boolean} [asColorAddress=false]
  * @return {string[]}
  * @throws {Error} If wallet not initialized
  */
 Wallet.prototype.getAllAddresses = function (assetdef, asColorAddress) {
-  // @todo Add cache (drop by event newAddress)
   var self = this
   self.isInitializedCheck()
 
-  if (_.isBoolean(assetdef) && _.isUndefined(asColorAddress)) {
-    asColorAddress = assetdef
-    assetdef = undefined
+  if (_.isUndefined(self._allAddressesCache)) {
+    self._allAddressesCache = {colored: {}, uncolored: {}}
+    self.getAllAssetDefinitions().forEach(function (assetdef) {
+      var addresses = self.getAddressManager().getAllAddresses(assetdef)
+      self._allAddressesCache.colored[assetdef.getId()] = addresses.map(function (o) { return o.getColorAddress() })
+      self._allAddressesCache.uncolored[assetdef.getId()] = addresses.map(function (o) { return o.getAddress() })
+    })
   }
 
-  if (!_.isUndefined(asColorAddress)) { verify.boolean(asColorAddress) }
+  var addresses = self._allAddressesCache
+  if (!_.isUndefined(assetdef)) {
+    if (assetdef instanceof cclib.ColorDefinition) {
+      assetdef = self.getAssetDefinitionManager().getByDesc(assetdef.getDesc())
+    }
 
-  var assetdefs
-  if (_.isUndefined(assetdef)) {
-    assetdefs = self.getAllAssetDefinitions()
-
-  } else {
-    assetdefs = [assetdef]
-
+    verify.AssetDefinition(assetdef)
+    addresses = {
+      colored: [addresses.colored[assetdef.getId()] || []],
+      uncolored: [addresses.uncolored[assetdef.getId()] || []]
+    }
   }
 
-  var addresses = _.chain(assetdefs)
-    .map(function (assetdef) { return self.getAddressManager().getAllAddresses(assetdef) })
+  if (_.isUndefined(asColorAddress)) { asColorAddress = false }
+  verify.boolean(asColorAddress)
+
+  return _.chain(asColorAddress ? addresses.colored : addresses.uncolored)
+    .values()
     .flatten()
     .uniq()
     .value()
-
-  if (asColorAddress) {
-    return addresses.map(function (address) { return address.getColorAddress() })
-  }
-
-  return addresses.map(function (address) { return address.getAddress() })
 }
 
 /**
@@ -512,10 +496,10 @@ Wallet.prototype.getUnconfirmedBalance = function (assetdef, cb) {
 }
 
 /**
- * {@link HistoryManager~getEntries}
+ * {@link WalletStateManager~getEntries}
  */
 Wallet.prototype.getHistory = function (assetdef) {
-  return this.historyManager.getEntries(assetdef)
+  return this.getStateManager().getHistory(assetdef)
 }
 
 /**
@@ -595,7 +579,7 @@ Wallet.prototype.createIssuanceTx = function (moniker, pck, units, atoms, seedHe
 
     var targetAddress = addresses[0].getAddress()
     var targetScript = bitcoin.Address.fromBase58Check(targetAddress).toOutputScript()
-    var colorValue = new cclib.ColorValue(self.getColorDefinitionManager().getGenesis(), units * atoms)
+    var colorValue = new cclib.ColorValue(cclib.ColorDefinitionManager.getGenesis(), units * atoms)
     var colorTarget = new cclib.ColorTarget(targetScript.toHex(), colorValue)
 
     var operationalTx = new tx.OperationalTx(self)
@@ -649,8 +633,7 @@ Wallet.prototype.transformTx = function (currentTx, targetKind, seedHex, cb) {
 Wallet.prototype.sendTx = function (tx, cb) {
   verify.function(cb)
 
-  Q.ninvoke(this.getTxDb(), 'sendTx', tx)
-    .done(function () { cb(null) }, function (error) { cb(error) })
+  this.getStateManager().sendTx(tx).done(function () { cb(null) }, function (error) { cb(error) })
 }
 
 /**
@@ -661,9 +644,8 @@ Wallet.prototype.removeListeners = function () {
   this.blockchain.removeAllListeners()
   this.aManager.removeAllListeners()
   this.adManager.removeAllListeners()
-  this.txDb.removeAllListeners()
+  this.walletStateManager.removeAllListeners()
   this.txFetcher.removeAllListeners()
-  this.coinManager.removeAllListeners()
 }
 
 /**
@@ -675,8 +657,7 @@ Wallet.prototype.clearStorage = function () {
   this.cDataStorage.clear()
   this.aStorage.clear()
   this.adStorage.clear()
-  this.txStorage.clear()
-  this.coinStorage.clear()
+  this.walletStateManager.clear()
 }
 
 

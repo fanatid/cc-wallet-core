@@ -9,6 +9,8 @@ var verify = require('../verify')
 var Network = require('./Network')
 
 
+// @todo Migrate to v2 API (address notifications available)
+
 /**
  * [Chain.com API]{@link https://chain.com/docs}
  *
@@ -175,7 +177,7 @@ Chain.prototype.getTx = function (txId, cb) {
   verify.txId(txId)
   verify.function(cb)
 
-  var tx = this._wallet.getTxDb().getTx(txId)
+  var tx = this._wallet.getStateManager().getTx(txId)
   if (tx !== null) {
     return process.nextTick(function () { cb(null, tx) })
   }
@@ -183,7 +185,7 @@ Chain.prototype.getTx = function (txId, cb) {
   this._request('/transactions/' + txId + '/hex').then(function (response) {
     verify.object(response)
 
-    tx = bitcoin.Transaction.fromHex(response.hex)
+    var tx = bitcoin.Transaction.fromHex(response.hex)
     if (tx.getId() === txId) {
       return tx
     }

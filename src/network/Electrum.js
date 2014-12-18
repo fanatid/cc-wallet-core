@@ -180,13 +180,13 @@ Electrum.prototype.getTx = function (txId, cb) {
   verify.txId(txId)
   verify.function(cb)
 
-  var tx = this._wallet.getTxDb().getTx(txId)
+  var tx = this._wallet.getStateManager().getTx(txId)
   if (tx !== null) {
     return process.nextTick(function () { cb(null, tx) })
   }
 
   this._request('blockchain.transaction.get', [txId]).then(function (rawTx) {
-    tx = bitcoin.Transaction.fromHex(rawTx)
+    var tx = bitcoin.Transaction.fromHex(rawTx)
     if (tx.getId() === txId) {
       return tx
     }

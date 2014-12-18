@@ -82,7 +82,7 @@ describe('address.Address', function () {
   })
 
   it('getAssetDefinition return null', function () {
-    uncolored = cdManager.getUncolored()
+    uncolored = cclib.ColorDefinitionManager.getUncolored()
     uncoloredAddress = am.getNewAddress(uncolored, seedHex)
     expect(uncoloredAddress.getAssetDefinition()).to.be.null
   })
