@@ -71,13 +71,6 @@ function WalletStateManager(wallet) {
   self._currentState = new WalletState(self._wallet)
 
   self._executeQueue = []
-  self._executeEvents = new util.OrderedMap()
-  self.on('syncStop', function () {
-    self._executeEvents.getVals().forEach(function (args) {
-      self.emit.apply(self, args)
-    })
-    self._executeEvents = new util.OrderedMap()
-  })
 
   self._currentState.getTxManager().getAllTxIds().filter(function (txId) {
     if (self._currentState.getTxManager().getTxData(txId).status === txStatus.dispatch) {
@@ -215,13 +208,12 @@ WalletStateManager.prototype.execute = function (fn) {
         return
       }
 
-      _.forEach(_.zipObject(events.getKeys(), events.getVals()), function (val, key) {
-        self._executeEvents.add(key, val)
-      })
-
       walletState.save()
       self._currentState = walletState
 
+      events.getVals().forEach(function (args) {
+        self.emit.apply(self, args)
+      })
     })
 
   }).finally(function () {

@@ -528,7 +528,7 @@ Wallet.prototype.createTx = function (assetdef, rawTargets, cb) {
   self.isInitializedCheck()
 
   var assetTargets = rawTargets.map(function (rawTarget) {
-    // Todo: add multisig support
+    // @todo Add multisig support
     var script = bitcoin.Address.fromBase58Check(rawTarget.address).toOutputScript()
     var assetValue = new asset.AssetValue(assetdef, rawTarget.value)
     return new asset.AssetTarget(script.toHex(), assetValue)

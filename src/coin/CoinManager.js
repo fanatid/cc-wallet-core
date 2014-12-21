@@ -304,12 +304,12 @@ CoinManager.prototype.getCoinMainColorValue = function (coin, cb) {
 CoinManager.prototype.getTxMainColorValues = function (tx) {
   var colorDefinitions = this._wallet.getColorDefinitionManager().getAllColorDefinitions()
   var colorData = this._wallet.getColorData()
-  var getColorValuesForTx = Q.nbind(colorData.getColorValuesForTx, colorData)
+  var getTxColorValues = Q.nbind(colorData.getTxColorValues, colorData)
   var blockchain = this._wallet.getBlockchain()
   var getTxFn = blockchain.getTx.bind(blockchain)
 
   return Q.all(colorDefinitions.map(function (colorDefinition) {
-    return getColorValuesForTx(tx, colorDefinition, getTxFn)
+    return getTxColorValues(tx, colorDefinition, getTxFn)
 
   })).then(function (colorValuess) {
     var nullColorValues = Array.apply(null, Array(tx.outs.length)).map(function () { return null })
