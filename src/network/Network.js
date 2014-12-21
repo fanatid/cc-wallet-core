@@ -67,19 +67,15 @@ Network.prototype.isConnected = function () {
 }
 
 /**
- * @callback Network~_setCurrentHeight
- */
-
-/**
  * @param {number} newHeight
- * @param {Network~_setCurrentHeight} cb
+ * @return {Q.Promise}
  */
-Network.prototype._setCurrentHeight = util.makeSerial(function (newHeight, cb) {
+Network.prototype._setCurrentHeight = util.makeSerial(function (newHeight) {
   verify.number(newHeight)
 
   var self = this
 
-  Q.ninvoke(self, 'getHeader', newHeight).then(function (header) {
+  return self.getHeader(newHeight).then(function (header) {
     header = bitcoin.header2buffer(header)
     self._currentBlockHash = bitcoin.headerHash(header)
     self._currentHeight = newHeight
@@ -88,8 +84,8 @@ Network.prototype._setCurrentHeight = util.makeSerial(function (newHeight, cb) {
   }).catch(function (error) {
     self.emit('error', error)
 
-  }).done(cb, cb)
-})
+  })
+}, {returnPromise: true})
 
 /**
  * @return {number}
@@ -116,47 +112,30 @@ Network.prototype.getCurrentBlockHash = function () {
  */
 
 /**
- * @callback Network~getHeader
- * @param {?Error} error
- * @param {HeaderObject}
+ * @abstract
+ * @param {number} height
+ * @return {Q.Promise<HeaderObject>}
  */
+Network.prototype.getHeader = function () {
+  return Q(new errors.NotImplementedError('Network.getHeader'))
+}
 
 /**
  * @abstract
- * @param {number} height
- * @param {Network~getHeader} cb
- */
-Network.prototype.getHeader = function () {
-  throw new errors.NotImplementedError('Network.getHeader')
-}
-
-/**
- * @callback Network~getChunk
- * @param {?Error} error
- * @param {string} chunkHex
- */
-
-/**
  * @param {number} index
- * @param {Network~getChunk} cb
+ * @return {Q.Promise<string>}
  */
 Network.prototype.getChunk = function () {
-  throw new errors.NotImplementedError('Network.getChunk')
+  return Q(new errors.NotImplementedError('Network.getChunk'))
 }
-
-/**
- * @callback Network~getTx
- * @param {?Error} error
- * @param {Transaction} tx
- */
 
 /**
  * @abstract
  * @param {string} txId
- * @param {Network~getTx} cb
+ * @return {Q.Promise<Transaction>}
  */
 Network.prototype.getTx = function () {
-  throw new errors.NotImplementedError('Network.getTx')
+  return Q(new errors.NotImplementedError('Network.getTx'))
 }
 
 /**
@@ -167,33 +146,22 @@ Network.prototype.getTx = function () {
  */
 
 /**
- * @callback Network~getMerkle
- * @param {?Error} error
- * @param {MerkleObject} result
- */
-
-/**
+ * @abstract
  * @param {string} txId
  * @param {number} [height]
- * @param {Network~getMerkle} cb
+ * @return {Q.Promise<MerkleObject>}
  */
 Network.prototype.getMerkle = function () {
-  throw new errors.NotImplementedError('Network.getMerkle')
+  return Q(new errors.NotImplementedError('Network.getMerkle'))
 }
-
-/**
- * @callback Network~sendTx
- * @param {?Error} error
- * @param {string} txId
- */
 
 /**
  * @abstract
  * @param {bitcoinjs-lib.Transaction} tx
- * @param {Network~sendTx} cb
+ * @return {Q.Promise<string>}
  */
 Network.prototype.sendTx = function () {
-  throw new errors.NotImplementedError('Network.sendTx')
+  return Q(new errors.NotImplementedError('Network.sendTx'))
 }
 
 /**
@@ -203,18 +171,12 @@ Network.prototype.sendTx = function () {
  */
 
 /**
- * @callback Network~getHistory
- * @param {?Error} error
- * @param {HistoryEntry[]} entries
- */
-
-/**
  * @abstract
  * @param {string} address
- * @param {Network~getHistory} cb
+ * @return {Q.Promise<HistoryEntry[]>}
  */
 Network.prototype.getHistory = function () {
-  throw new errors.NotImplementedError('Network.getHistory')
+  return Q(new errors.NotImplementedError('Network.getHistory'))
 }
 
 /**
@@ -226,31 +188,21 @@ Network.prototype.getHistory = function () {
  */
 
 /**
- * @callback Network~getUnspent
- * @param {?Error} error
- * @param {UnspentObject[]} entries
- */
-
-/**
+ * @abstract
  * @param {string} address
- * @param {Network~getUnspent} cb
+ * @return {Q.Promise<UnspentObject[]>}
  */
 Network.prototype.getUnspent = function () {
-  throw new errors.NotImplementedError('Network.getUnspent')
+  return Q(new errors.NotImplementedError('Network.getUnspent'))
 }
-
-/**
- * @callback Network~subscribeAddress
- * @param {?Error} error
- */
 
 /**
  * @abstract
  * @param {string} address
- * @param {Network~subscribeAddress} cb
+ * @return {Q.Promise}
  */
 Network.prototype.subscribeAddress = function () {
-  throw new errors.NotImplementedError('Network.subscribeAddress')
+  return Q(new errors.NotImplementedError('Network.subscribeAddress'))
 }
 
 

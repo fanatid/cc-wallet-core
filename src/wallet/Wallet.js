@@ -4,19 +4,19 @@ var inherits = require('util').inherits
 var _ = require('lodash')
 var Q = require('q')
 
-var address = require('./address')
-var asset = require('./asset')
-var blockchain = require('./blockchain')
-var coin = require('./coin')
-var ConfigStorage = require('./ConfigStorage')
-var network = require('./network')
-var tx = require('./tx')
+var address = require('../address')
+var asset = require('../asset')
+var blockchain = require('../blockchain')
+var coin = require('../coin')
+var ConfigStorage = require('../ConfigStorage')
+var network = require('../network')
+var tx = require('../tx')
 var WalletStateManager = require('./WalletStateManager')
 
-var cclib = require('./cclib')
-var bitcoin = require('./bitcoin')
-var util = require('./util')
-var verify = require('./verify')
+var cclib = require('../cclib')
+var bitcoin = require('../bitcoin')
+var util = require('../util')
+var verify = require('../verify')
 
 
 /**
@@ -176,7 +176,6 @@ inherits(Wallet, events.EventEmitter)
 
 Wallet.prototype.getBitcoinNetwork = function () { return this.bitcoinNetwork }
 Wallet.prototype.canSpendUnconfirmedCoins = function () { return this._spendUnconfirmedCoins }
-Wallet.prototype.getNetwork = function () { return this.network }
 Wallet.prototype.getBlockchain = function () { return this.blockchain }
 Wallet.prototype.getColorDefinitionManager = function () { return this.cdManager }
 Wallet.prototype.getColorData = function () { return this.cData }

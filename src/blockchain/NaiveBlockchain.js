@@ -67,13 +67,14 @@ NaiveBlockchain.prototype.getBlockTime = function (height, cb) {
   }
 
   if (_.isUndefined(self._getHeaderRunning[height])) {
-    var promise = Q.ninvoke(this._network, 'getHeader', height).then(function (header) {
+    self._getHeaderRunning[height] = this._network.getHeader(height).then(function (header) {
       self._headerCache.set(height, header.timestamp)
       return header.timestamp
 
-    }).finally(function () { delete self._getHeaderRunning[height] })
+    }).finally(function () {
+      delete self._getHeaderRunning[height]
 
-    self._getHeaderRunning[height] = promise
+    })
   }
 
   self._getHeaderRunning[height]
@@ -95,13 +96,14 @@ NaiveBlockchain.prototype.getTx = function (txId, cb) {
   }
 
   if (_.isUndefined(self._getTxRunning[txId])) {
-    var promise = Q.ninvoke(self._network, 'getTx', txId).then(function (tx) {
+    self._getTxRunning[txId] = self._network.getTx(txId).then(function (tx) {
       self._txCache.set(txId, tx)
       return tx
 
-    }).finally(function () { delete self._getTxRunning[txId] })
+    }).finally(function () {
+      delete self._getTxRunning[txId]
 
-    self._getTxRunning[txId] = promise
+    })
   }
 
   self._getTxRunning[txId]
@@ -112,21 +114,24 @@ NaiveBlockchain.prototype.getTx = function (txId, cb) {
  * {@link Blockchain~sendTx}
  */
 NaiveBlockchain.prototype.sendTx = function (tx, cb) {
-  this._network.sendTx(tx, cb)
+  this._network.sendTx(tx)
+    .done(function (txId) { cb(null, txId) }, function (error) { cb(error) })
 }
 
 /**
  * {@link Blockchain~getHistory}
  */
 NaiveBlockchain.prototype.getHistory = function (address, cb) {
-  this._network.getHistory(address, cb)
+  this._network.getHistory(address)
+    .done(function (entries) { cb(null, entries) }, function (error) { cb(error) })
 }
 
 /**
  * {@link Blockchain~subscribeAddress}
  */
 NaiveBlockchain.prototype.subscribeAddress = function (address, cb) {
-  this._network.subscribeAddress(address, cb)
+  this._network.subscribeAddress(address)
+    .done(function () { cb(null) }, function (error) { cb(error) })
 }
 
 

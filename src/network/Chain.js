@@ -25,6 +25,9 @@ var Network = require('./Network')
  * @param {number} [opts.refreshInterval=30*1000]
  */
 function Chain(wallet, opts) {
+// @todo Change to Promises
+throw new Error('Not supported right now')
+
   verify.Wallet(wallet)
   opts = _.extend({
     testnet: false,
@@ -53,7 +56,7 @@ function Chain(wallet, opts) {
   function getNetworkHeight() {
     return self._request('/blocks/latest').then(function (response) {
       if (self.getCurrentHeight() !== response.height) {
-        return self._setCurrentHeight(response.height)
+        return Q.ninvoke(self, '_setCurrentHeight', response.height)
       }
 
     }).catch(function (error) {

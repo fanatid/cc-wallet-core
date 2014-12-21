@@ -2,11 +2,11 @@ var inherits = require('util').inherits
 
 var _ = require('lodash')
 
-var TxManager = require('./tx/TxManager')
-var CoinManager = require('./coin/CoinManager')
-var HistoryManager = require('./history/HistoryManager')
-var SyncStorage = require('./SyncStorage')
-var verify = require('./verify')
+var TxManager = require('../tx/TxManager')
+var CoinManager = require('../coin/CoinManager')
+var HistoryManager = require('../history/HistoryManager')
+var SyncStorage = require('../SyncStorage')
+var verify = require('../verify')
 
 
 /**

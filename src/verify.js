@@ -40,7 +40,9 @@ var functions = {
   HDNode: createInstanceCheck(function () { return bitcoin.HDNode }),
   bitcoinNetwork: isBitcoinNetwork,
 
-  Wallet: createInstanceCheck(function () { return require('./Wallet') }),
+  Wallet: createInstanceCheck(function () { return require('./wallet/Wallet') }),
+  WalletState: createInstanceCheck(function () { return require('./wallet/WalletState') }),
+  WalletStateManager: createInstanceCheck(function () { return require('./wallet/WalletStateManager') }),
 
   Address: createInstanceCheck(function () { return require('./address/Address') }),
   AddressManager: createInstanceCheck(function () { return require('./address/AddressManager') }),
@@ -86,6 +88,8 @@ var expected = {
   bitcoinNetwork: 'Object from bitcoinjs-lib.networks',
 
   Wallet: 'Wallet',
+  WalletState: 'WalletState',
+  WalletStateManager: 'WalletStateManager',
 
   Address: 'Address',
   AddressManager: 'AddressManager',

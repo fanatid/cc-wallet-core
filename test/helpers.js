@@ -5,15 +5,14 @@ var bitcoin = require('../src/cclib').bitcoin
 
 /**
  * @param {Network} network
- * @param {function} done
+ * @return {Q.Promise<string>}
  */
-function sendCoins(network, done) {
+function sendCoins(network) {
   var hdnode = bitcoin.HDNode.fromSeedHex('00000000000000000000000000000000', bitcoin.networks.testnet)
   // address is mhW9PYb5jsjpsS5x6dcLrZj7gPvw9mMb9c
   var address = hdnode.pubKey.getAddress(bitcoin.networks.testnet).toBase58Check()
 
-  network.getUnspent(address, function (error, response) {
-    expect(error).to.be.null
+  return network.getUnspent(address).then(function (response) {
     expect(response).to.be.instanceof(Array).with.to.have.length.least(1)
     var totalValue = response.reduce(function (a, b) { return {value: a.value + b.value} }).value
     expect(totalValue).to.be.at.least(10000)
@@ -29,11 +28,11 @@ function sendCoins(network, done) {
     })
 
     var tx = txb.build()
-    network.sendTx(tx, function (error, txId) {
-      expect(error).to.be.null
+    return network.sendTx(tx).then(function (txId) {
       expect(txId).to.equal(tx.getId())
-      done(txId)
+      return txId
     })
+
   })
 }
 

@@ -86,7 +86,7 @@ function Electrum(wallet, opts) {
   self.on('connect', function () {
     self._request('blockchain.numblocks.subscribe').then(function (height) {
       verify.number(height)
-      self._setCurrentHeight(height)
+      return self._setCurrentHeight(height)
 
     }).catch(function (error) { self.emit('error', error) })
 
@@ -128,11 +128,10 @@ Electrum.prototype._request = function (method, params) {
 /**
  * {@link Network~getHeader}
  */
-Electrum.prototype.getHeader = function (height, cb) {
+Electrum.prototype.getHeader = function (height) {
   verify.number(height)
-  verify.function(cb)
 
-  this._request('blockchain.block.get_header', [height]).then(function (response) {
+  return this._request('blockchain.block.get_header', [height]).then(function (response) {
     verify.number(response.version)
     if (height === 0) {
       verify.null(response.prev_block_hash)
@@ -154,52 +153,46 @@ Electrum.prototype.getHeader = function (height, cb) {
       bits: response.bits,
       nonce: response.nonce
     }
-
-  }).done(function (data) { cb(null, data) }, function (error) { cb(error) })
+  })
 }
 
 /**
  * {@link Network~getChunk}
  */
-Electrum.prototype.getChunk = function (index, cb) {
+Electrum.prototype.getChunk = function (index) {
   verify.number(index)
-  verify.function(cb)
 
-  this._request('blockchain.block.get_chunk', [index]).then(function (chunkHex) {
+  return this._request('blockchain.block.get_chunk', [index]).then(function (chunkHex) {
     verify.blockchainChunk(chunkHex)
-
     return chunkHex
-
-  }).done(function (chunkHex) { cb(null, chunkHex) }, function (error) { cb(error) })
+  })
 }
 
 /**
  * {@link Network~getTx}
  */
-Electrum.prototype.getTx = function (txId, cb) {
+Electrum.prototype.getTx = function (txId) {
   verify.txId(txId)
-  verify.function(cb)
 
   var tx = this._wallet.getStateManager().getTx(txId)
   if (tx !== null) {
-    return process.nextTick(function () { cb(null, tx) })
+    return Q(tx)
   }
 
-  this._request('blockchain.transaction.get', [txId]).then(function (rawTx) {
+  return this._request('blockchain.transaction.get', [txId]).then(function (rawTx) {
     var tx = bitcoin.Transaction.fromHex(rawTx)
     if (tx.getId() === txId) {
       return tx
     }
 
     throw new Error('Received tx is incorrect')
-
-  }).done(function (tx) { cb(null, tx) }, function (error) { cb(error) })
+  })
 }
 
 /**
  * {@link Network~getMerkle}
  */
-Electrum.prototype.getMerkle = function (txId, height, cb) {
+Electrum.prototype.getMerkle = function (txId, height) {
   if (_.isFunction(height) && _.isUndefined(cb)) {
     cb = height
     height = undefined
@@ -207,9 +200,8 @@ Electrum.prototype.getMerkle = function (txId, height, cb) {
 
   verify.txId(txId)
   if (!_.isUndefined(height)) { verify.number(height) }
-  verify.function(cb)
 
-  this._request('blockchain.transaction.get_merkle', [txId, height]).then(function (response) {
+  return this._request('blockchain.transaction.get_merkle', [txId, height]).then(function (response) {
     verify.number(response.block_height)
     verify.array(response.merkle)
     response.merkle.forEach(verify.txId)
@@ -222,35 +214,31 @@ Electrum.prototype.getMerkle = function (txId, height, cb) {
     }
 
     return result
-
-  }).done(function (data) { cb(null, data) }, function (error) { cb(error) })
+  })
 }
 
 /**
  * {@link Network~sendTx}
  */
-Electrum.prototype.sendTx = function (tx, cb) {
+Electrum.prototype.sendTx = function (tx) {
   verify.Transaction(tx)
-  verify.function(cb)
 
-  this._request('blockchain.transaction.broadcast', [tx.toHex()]).then(function (txId) {
+  return this._request('blockchain.transaction.broadcast', [tx.toHex()]).then(function (txId) {
     if (txId === tx.getId()) {
       return txId
     }
 
     throw new Error('Received txId is incorrect')
-
-  }).done(function (txId) { cb(null, txId) }, function (error) { cb(error) })
+  })
 }
 
 /**
  * {@link Network~getHistory}
  */
-Electrum.prototype.getHistory = function (address, cb) {
+Electrum.prototype.getHistory = function (address) {
   verify.string(address)
-  verify.function(cb)
 
-  this._request('blockchain.address.get_history', [address]).then(function (entries) {
+  return this._request('blockchain.address.get_history', [address]).then(function (entries) {
     verify.array(entries)
 
     return entries.map(function (entry) {
@@ -260,17 +248,16 @@ Electrum.prototype.getHistory = function (address, cb) {
       return {txId: entry.tx_hash, height: entry.height}
     })
 
-  }).done(function (entries) { cb(null, entries) }, function (error) { cb(error) })
+  })
 }
 
 /**
  * {@link Network~getHistory}
  */
-Electrum.prototype.getUnspent = function (address, cb) {
+Electrum.prototype.getUnspent = function (address) {
   verify.string(address)
-  verify.function(cb)
 
-  this._request('blockchain.address.listunspent', [address]).then(function (unspent) {
+  return this._request('blockchain.address.listunspent', [address]).then(function (unspent) {
     verify.array(unspent)
 
     return unspent.map(function (entry) {
@@ -282,27 +269,24 @@ Electrum.prototype.getUnspent = function (address, cb) {
       return {txId: entry.tx_hash, outIndex: entry.tx_pos, value: entry.value, height: entry.height}
     })
 
-  }).done(function (unspent) { cb(null, unspent) }, function (error) { cb(error) })
+  })
 }
 
 /**
  * {@link Network~subscribeAddress}
  */
-Electrum.prototype.subscribeAddress = util.makeSerial(function (address, cb) {
+Electrum.prototype.subscribeAddress = util.makeSerial(function (address) {
   verify.string(address)
-  verify.function(cb)
 
   var self = this
-  var promise = Q()
-
-  if (self._subscribedAddresses.indexOf(address) === -1) {
-    promise = self._request('blockchain.address.subscribe', [address]).then(function () {
-      self._subscribedAddresses.push(address)
-    })
+  if (self._subscribedAddresses.indexOf(address) !== -1) {
+    return Q()
   }
 
-  promise.done(function () { cb(null) }, function (error) { cb(error) })
-})
+  return self._request('blockchain.address.subscribe', [address]).then(function () {
+    self._subscribedAddresses.push(address)
+  })
+}, {returnPromise: true})
 
 
 module.exports = Electrum

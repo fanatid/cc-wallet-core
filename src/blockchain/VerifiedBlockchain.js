@@ -68,9 +68,9 @@ function VerifiedBlockchain(network, opts) {
     self._currentBlockHash = self._storage.getLastHash()
   }
 
-  var onNewHeight = util.makeSerial(function (cb) {
-    self._sync().catch(function (error) { self.emit('error', error) }).done(cb, cb)
-  })
+  var onNewHeight = util.makeSerial(function () {
+    return self._sync().catch(function (error) { self.emit('error', error) })
+  }, {returnPromise: true})
   self._network.on('newHeight', onNewHeight)
   onNewHeight()
 
@@ -129,21 +129,24 @@ VerifiedBlockchain.prototype.getTx = function (txId, cb) {
  * {@link Blockchain~sendTx}
  */
 VerifiedBlockchain.prototype.sendTx = function (tx, cb) {
-  this._network.sendTx(tx, cb)
+  this._network.sendTx(tx)
+    .done(function (txId) { cb(null, txId) }, function (error) { cb(error) })
 }
 
 /**
  * {@link Blockchain~getHistory}
  */
 VerifiedBlockchain.prototype.getHistory = function (address, cb) {
-  this._network.getHistory(address, cb)
+  this._network.getHistory(address)
+    .done(function (entries) { cb(null, entries) }, function (error) { cb(error) })
 }
 
 /**
  * {@link Blockchain~subscribeAddress}
  */
 VerifiedBlockchain.prototype.subscribeAddress = function (address, cb) {
-  this._network.subscribeAddress(address, cb)
+  this._network.subscribeAddress(address)
+    .done(function () { cb(null) }, function (error) { cb(error) })
 }
 
 /**
@@ -173,7 +176,7 @@ VerifiedBlockchain.prototype._getVerifiedChunk = function (chunkIndex) {
   var self = this
 
   if (_.isUndefined(self._getVerifiedChunkRunning[chunkIndex])) {
-    var promise = Q.ninvoke(self._network, 'getChunk', chunkIndex).then(function (chunkHex) {
+    self._getVerifiedChunkRunning[chunkIndex] = self._network.getChunk(chunkIndex).then(function (chunkHex) {
       var chunk = new Buffer(chunkHex, 'hex')
 
       var chunkHash = bitcoin.crypto.hash256(chunk).toString('hex')
@@ -188,9 +191,10 @@ VerifiedBlockchain.prototype._getVerifiedChunk = function (chunkIndex) {
 
       return chunk
 
-    }).finally(function () { delete self._getVerifiedChunkRunning[chunkIndex] })
+    }).finally(function () {
+      delete self._getVerifiedChunkRunning[chunkIndex]
 
-    self._getVerifiedChunkRunning[chunkIndex] = promise
+    })
   }
 
   return self._getVerifiedChunkRunning[chunkIndex]
@@ -211,7 +215,7 @@ VerifiedBlockchain.prototype._getVerifiedChunk = function (chunkIndex) {
  * @return {Q.Promise<HeaderObject>}
  */
 VerifiedBlockchain.prototype._getHeader = function (height) {
-  return Q.ninvoke(this._network, 'getHeader', height)
+  return this._network.getHeader(height)
 }
 
 /**
@@ -256,7 +260,7 @@ VerifiedBlockchain.prototype._getVerifiedHeader = function (height) {
  * @return {Q.Promise<Transaction>}
  */
 VerifiedBlockchain.prototype._getTx = function (txId) {
-  return Q.ninvoke(this._network, 'getTx', txId)
+  return this._network.getTx(txId)
 }
 
 /**
@@ -278,9 +282,9 @@ VerifiedBlockchain.prototype._getVerifiedTx = function (txId) {
     var height
     var merkleRoot
 
-    var promise = self._getTx(txId).then(function (result) {
+    self._getVerifiedTxRunning[txId] = self._getTx(txId).then(function (result) {
       tx = result
-      return Q.ninvoke(self._network, 'getMerkle', txId).catch(function (error) {
+      return self._network.getMerkle(txId).catch(function (error) {
         if (error.message === 'BlockNotFound') {
           throw new BlockNotFoundError()
         }
@@ -325,9 +329,10 @@ VerifiedBlockchain.prototype._getVerifiedTx = function (txId) {
       self._txCache.set(txId, {height: height, tx: tx})
       return tx
 
-    }).finally(function () { delete self._getVerifiedTxRunning[txId] })
+    }).finally(function () {
+      delete self._getVerifiedTxRunning[txId]
 
-    self._getVerifiedTxRunning[txId] = promise
+    })
   }
 
   return self._getVerifiedTxRunning[txId]
@@ -569,7 +574,7 @@ VerifiedBlockchain.prototype._sync = function () {
     var chunk
     var prevHash
     var prevHeader
-    Q.ninvoke(self._network, 'getChunk', index).then(function (chunkHex) {
+    self._network.getChunk(index).then(function (chunkHex) {
       chunk = new Buffer(chunkHex, 'hex')
 
       if (index > 0) {
@@ -631,7 +636,8 @@ VerifiedBlockchain.prototype._sync = function () {
       }
 
       runChunkLoopOnce()
-    })
+
+    }).done()
   }
 
   /**

@@ -5,6 +5,7 @@ module.exports = {
   util: require('./util'),
   verify: require('./verify'),
 
+// @todo Getter with message about deprecated?
   SyncMixin: require('./util').SyncMixin,
   SyncStorage: require('./SyncStorage'),
 
@@ -17,5 +18,5 @@ module.exports = {
   network: require('./network'),
   tx: require('./tx'),
 
-  Wallet: require('./Wallet')
+  Wallet: require('./wallet/Wallet')
 }

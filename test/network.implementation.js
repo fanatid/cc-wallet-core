@@ -26,6 +26,7 @@ function networkImplementationTest(opts) {
         spendUnconfirmedCoins: true
       })
       network = wallet.network
+      network.on('error', function(error) { throw error })
       network.once('connect', done)
     })
 
@@ -54,8 +55,7 @@ function networkImplementationTest(opts) {
     })
 
     it('getHeader 0', function (done) {
-      network.getHeader(0, function (error, header) {
-        expect(error).to.be.null
+      network.getHeader(0).then(function (header) {
         expect(header).to.deep.equal({
           version: 1,
           prevBlockHash: null,
@@ -64,13 +64,12 @@ function networkImplementationTest(opts) {
           bits: 486604799,
           nonce: 414098458
         })
-        done()
-      })
+
+      }).done(done, done)
     })
 
     it('getHeader 300000', function (done) {
-      network.getHeader(300000, function (error, header) {
-        expect(error).to.be.null
+      network.getHeader(300000).then(function (header) {
         expect(header).to.deep.equal({
           version: 2,
           prevBlockHash: '00000000dfe970844d1bf983d0745f709368b5c66224837a17ed633f0dabd300',
@@ -79,8 +78,8 @@ function networkImplementationTest(opts) {
           bits: 453050367,
           nonce: 733842077
         })
-        done()
-      })
+
+      }).done(done, done)
     })
 
     it('getChunk', function (done) {
@@ -88,21 +87,19 @@ function networkImplementationTest(opts) {
         return done()
       }
 
-      network.getChunk(0, function (error, chunk) {
-        expect(error).to.be.null
+      network.getChunk(0).then(function (chunk) {
         expect(chunk).to.have.length(160 * 2016)
-        done()
-      })
+
+      }).done(done, done)
     })
 
     it('getTx', function (done) {
       var txId = '9854bf4761024a1075ebede93d968ce1ba98d240ba282fb1f0170e555d8fdbd8'
 
-      network.getTx(txId, function (error, tx) {
-        expect(error).to.be.null
+      network.getTx(txId).then(function (tx) {
         expect(tx.getId()).to.equal(txId)
-        done()
-      })
+
+      }).done(done, done)
     })
 
     it('getMerkle', function (done) {
@@ -113,8 +110,7 @@ function networkImplementationTest(opts) {
       var txId = '9854bf4761024a1075ebede93d968ce1ba98d240ba282fb1f0170e555d8fdbd8'
       var blockHeight = 279774
 
-      network.getMerkle(txId, function (error, result) {
-        expect(error).to.be.null
+      network.getMerkle(txId).then(function (result) {
         expect(result).to.deep.equal({
           height: blockHeight,
           merkle: [
@@ -127,31 +123,32 @@ function networkImplementationTest(opts) {
           ],
           index: 4
         })
-        done()
-      })
+
+      }).done(done, done)
     })
 
     it('getMerkle TransactionNotFound', function (done) {
       if (!network.supportVerificationMethods()) { return done() }
 
       var txId = '9854bf4761024a1075ebede93d968ce1ba98d240ba282fb1f0170e555d8fdbd9'
-      network.getMerkle(txId, function (error, result) {
+      network.getMerkle(txId).then(function (result) {
+        expect(result).to.be.undefined
+
+      }).catch(function (error) {
         expect(error).to.be.instanceof(Error)
         expect(error.message).to.be.equal('TransactionNotFound')
-        expect(result).to.be.undefined
-        done()
-      })
+
+      }).done(done, done)
     })
 
     it('sendTx', function (done) {
-      helpers.sendCoins(network, function () { done() })
+      helpers.sendCoins(network).then(function () {}).done(done, done)
     })
 
     it('getHistory', function (done) {
       var address = 'miASVwyhoeFqoLodXUdbDC5YjrdJPwxyXE'
 
-      network.getHistory(address, function (error, result) {
-        expect(error).to.be.null
+      network.getHistory(address).then(function (result) {
         expect(result).to.deep.equal([
           {
             txId: '1bd6a31671e9cc767d75980d4dbffc5cd5029f17d44dd32dcf949267e3f04631',
@@ -162,15 +159,14 @@ function networkImplementationTest(opts) {
             height: 16349
           }
         ])
-        done()
-      })
+
+      }).done(done, done)
     })
 
     it('getUnspent', function (done) {
       var address = 'mn675cxzUzM8hyd7TYApCvGBhQ8v69kgGb'
 
-      network.getUnspent(address, function (error, result) {
-        expect(error).to.be.null
+      network.getUnspent(address).then(function (result) {
         expect(result).to.deep.equal([
           {
             txId: 'd56e75eedb9e9e49a8ae81c3d4781312c4d343bea811219d3eb4184ae6b34639',
@@ -185,15 +181,12 @@ function networkImplementationTest(opts) {
             height: 103548
           }
         ])
-        done()
-      })
+
+      }).done(done, done)
     })
 
     it('address subscribe', function (done) {
-      network.subscribeAddress('ms8XQE6MHsreo9ZJx1vXqQVgzi84xb9FRZ', function (error) {
-        expect(error).to.be.null
-        done()
-      })
+      network.subscribeAddress('ms8XQE6MHsreo9ZJx1vXqQVgzi84xb9FRZ').done(done, done)
     })
   })
 }

@@ -5,9 +5,9 @@ var _ = require('lodash')
 var Q = require('q')
 
 var WalletState = require('./WalletState')
-var util = require('./util')
-var verify = require('./verify')
-var txStatus = require('./const').txStatus
+var util = require('../util')
+var verify = require('../verify')
+var txStatus = require('../const').txStatus
 
 
 /**
