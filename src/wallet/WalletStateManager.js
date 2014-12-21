@@ -307,10 +307,14 @@ WalletStateManager.prototype.sendTx = function (tx) {
 
 /**
  * @param {string} txId
+ * @param {WalletState} [walletState=currentWalletState]
  * @return {?Transaction}
  */
-WalletStateManager.prototype.getTx = function (txId) {
-  return this._currentState.getTxManager().getTx(txId)
+WalletStateManager.prototype.getTx = function (txId, walletState) {
+  walletState = _.isUndefined(walletState) ? this._currentState : walletState
+  verify.WalletState(walletState)
+
+  return walletState.getTxManager().getTx(txId)
 }
 
 /**

@@ -26,7 +26,7 @@ function networkImplementationTest(opts) {
         spendUnconfirmedCoins: true
       })
       network = wallet.network
-      network.on('error', function(error) { throw error })
+      network.on('error', function (error) { throw error })
       network.once('connect', done)
     })
 

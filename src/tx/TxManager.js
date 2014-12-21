@@ -48,10 +48,12 @@ function getCurrentTimestamp() {
  * @extends events.EventEmitter
  * @mixes SyncMixin
  * @param {Wallet} wallet
+ * @param {WalletState} walletState
  * @param {Object} rawStorage
  */
-function TxManager(wallet, rawStorage) {
+function TxManager(wallet, walletState, rawStorage) {
   verify.Wallet(wallet)
+  verify.WalletState(walletState)
   verify.object(rawStorage)
 
   events.EventEmitter.call(this)

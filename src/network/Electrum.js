@@ -171,10 +171,11 @@ Electrum.prototype.getChunk = function (index) {
 /**
  * {@link Network~getTx}
  */
-Electrum.prototype.getTx = function (txId) {
+Electrum.prototype.getTx = function (txId, walletState) {
   verify.txId(txId)
+  if (!_.isUndefined(walletState)) { verify.WalletState(walletState) }
 
-  var tx = this._wallet.getStateManager().getTx(txId)
+  var tx = this._wallet.getStateManager().getTx(txId, walletState)
   if (tx !== null) {
     return Q(tx)
   }
@@ -193,11 +194,6 @@ Electrum.prototype.getTx = function (txId) {
  * {@link Network~getMerkle}
  */
 Electrum.prototype.getMerkle = function (txId, height) {
-  if (_.isFunction(height) && _.isUndefined(cb)) {
-    cb = height
-    height = undefined
-  }
-
   verify.txId(txId)
   if (!_.isUndefined(height)) { verify.number(height) }
 

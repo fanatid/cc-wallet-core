@@ -25,19 +25,19 @@ var verify = require('../verify')
  * @class CoinManager
  * @extends events.EventEmitter
  * @param {Wallet} wallet
- * @param {TxManager} txManager
+ * @param {WalletState} walletState
  * @param {Object} rawStorage
  */
-function CoinManager(wallet, txManager, rawStorage) {
+function CoinManager(wallet, walletState, rawStorage) {
   verify.Wallet(wallet)
-  verify.TxManager(txManager)
+  verify.WalletState(walletState)
   verify.object(rawStorage)
   rawStorage = _.defaults(rawStorage, {'coins': [], 'spend': {}})
 
   events.EventEmitter.call(this)
 
   this._wallet = wallet
-  this._txManager = txManager
+  this._walletState = walletState
   this._coins = rawStorage.coins
   this._spend = rawStorage.spend
 }
@@ -49,7 +49,7 @@ inherits(CoinManager, events.EventEmitter)
  * @return {Coin}
  */
 CoinManager.prototype._record2Coin = function (record) {
-  var txData = this._txManager.getTxData(record.txId)
+  var txData = this._walletState.getTxManager().getTxData(record.txId)
   if (txData === null) {
     // @todo Throw custom error
     throw new Error('TxNotFound: ' + record.txId)
@@ -219,7 +219,7 @@ CoinManager.prototype.isCoinSpent = function (coin) {
 CoinManager.prototype.isCoinValid = function (coin) {
   verify.Coin(coin)
 
-  var txData = this._txManager.getTxData(coin.txId)
+  var txData = this._walletState.getTxManager().getTxData(coin.txId)
   return txData !== null && txStatus.isValid(txData.status)
 }
 
@@ -230,7 +230,7 @@ CoinManager.prototype.isCoinValid = function (coin) {
 CoinManager.prototype.isCoinAvailable = function (coin) {
   verify.Coin(coin)
 
-  var txData = this._txManager.getTxData(coin.txId)
+  var txData = this._walletState.getTxManager().getTxData(coin.txId)
   return txData !== null && txStatus.isAvailable(txData.status)
 }
 
@@ -302,14 +302,16 @@ CoinManager.prototype.getCoinMainColorValue = function (coin, cb) {
  * @return {Q.Promise<ColorValue[]>}
  */
 CoinManager.prototype.getTxMainColorValues = function (tx) {
-  var colorDefinitions = this._wallet.getColorDefinitionManager().getAllColorDefinitions()
-  var colorData = this._wallet.getColorData()
-  var getTxColorValues = Q.nbind(colorData.getTxColorValues, colorData)
-  var blockchain = this._wallet.getBlockchain()
-  var getTxFn = blockchain.getTx.bind(blockchain)
+  var self = this
 
+  var colorDefinitions = self._wallet.getColorDefinitionManager().getAllColorDefinitions()
   return Q.all(colorDefinitions.map(function (colorDefinition) {
-    return getTxColorValues(tx, colorDefinition, getTxFn)
+    var blockchain = self._wallet.getBlockchain()
+    function getTxFn(txId, cb) {
+      blockchain.getTx(txId, self._walletState, cb)
+    }
+
+    return Q.ninvoke(self._wallet.getColorData(), 'getTxColorValues', tx, colorDefinition, getTxFn)
 
   })).then(function (colorValuess) {
     var nullColorValues = Array.apply(null, Array(tx.outs.length)).map(function () { return null })

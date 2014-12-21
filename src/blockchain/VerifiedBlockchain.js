@@ -118,10 +118,16 @@ VerifiedBlockchain.prototype.getBlockTime = function (height, cb) {
 /**
  * {@link Blockchain~getTx}
  */
-VerifiedBlockchain.prototype.getTx = function (txId, cb) {
+VerifiedBlockchain.prototype.getTx = function (txId, walletState, cb) {
+  if (_.isFunction(walletState) && _.isUndefined(cb)) {
+    cb = walletState
+    walletState = undefined
+  }
+
+  if (!_.isUndefined(walletState)) { verify.WalletState(walletState) }
   verify.function(cb)
 
-  this._getVerifiedTx(txId)
+  this._getVerifiedTx(txId, walletState)
     .done(function (tx) { cb(null, tx) }, function (error) { cb(error) })
 }
 
@@ -257,17 +263,19 @@ VerifiedBlockchain.prototype._getVerifiedHeader = function (height) {
 
 /**
  * @param {string} txId
+ * @param {WalletState} [walletState]
  * @return {Q.Promise<Transaction>}
  */
-VerifiedBlockchain.prototype._getTx = function (txId) {
-  return this._network.getTx(txId)
+VerifiedBlockchain.prototype._getTx = function (txId, walletState) {
+  return this._network.getTx(txId, walletState)
 }
 
 /**
  * @param {string} txId
+ * @param {WalletState} [walletState]
  * @return {Q.Promise<Transaction>}
  */
-VerifiedBlockchain.prototype._getVerifiedTx = function (txId) {
+VerifiedBlockchain.prototype._getVerifiedTx = function (txId, walletState) {
   verify.txId(txId)
 
   var self = this
@@ -282,7 +290,7 @@ VerifiedBlockchain.prototype._getVerifiedTx = function (txId) {
     var height
     var merkleRoot
 
-    self._getVerifiedTxRunning[txId] = self._getTx(txId).then(function (result) {
+    self._getVerifiedTxRunning[txId] = self._getTx(txId, walletState).then(function (result) {
       tx = result
       return self._network.getMerkle(txId).catch(function (error) {
         if (error.message === 'BlockNotFound') {

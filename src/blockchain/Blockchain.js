@@ -61,6 +61,7 @@ Blockchain.prototype.getBlockTime = function () {
 /**
  * @abstract
  * @param {string} txId
+ * @param {WalletState} [walletState]
  * @param {Blockchain~getTx} cb
  */
 Blockchain.prototype.getTx = function () {

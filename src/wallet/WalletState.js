@@ -27,9 +27,9 @@ function WalletState(wallet) {
     this.store.set(this._stateDBKey + '_version', 1)
   }
 
-  this._txManager = new TxManager(wallet, this._state.tx)
-  this._coinManager = new CoinManager(wallet, this._txManager, this._state.coin)
-  this._historyManager = new HistoryManager(wallet, this._txManager, this._coinManager, this._state.history)
+  this._txManager = new TxManager(wallet, this, this._state.tx)
+  this._coinManager = new CoinManager(wallet, this, this._state.coin)
+  this._historyManager = new HistoryManager(wallet, this, this._state.history)
 }
 
 inherits(WalletState, SyncStorage)

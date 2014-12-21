@@ -25,8 +25,8 @@ var Network = require('./Network')
  * @param {number} [opts.refreshInterval=30*1000]
  */
 function Chain(wallet, opts) {
-// @todo Change to Promises
-throw new Error('Not supported right now')
+  // @todo Change to Promises
+  throw new Error('Not supported right now')
 
   verify.Wallet(wallet)
   opts = _.extend({

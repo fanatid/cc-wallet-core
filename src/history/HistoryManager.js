@@ -16,10 +16,10 @@ var historyEntryType = require('../const').historyEntryType
 
 /**
  * @param {{txId1: string, txIdN:string}[]} entries
- * @param {function} getTxFn
+ * @param {TxManager} txManager
  * @return {{txId1: string, txIdN:string}[]}
  */
-function toposort(entries, getTxFn) {
+function toposort(entries, txManager) {
   var entriesTxIds = _.zipObject(entries.map(function (entry) { return [entry.txId, entry] }))
   var result = []
   var resultTxIds = {}
@@ -29,7 +29,7 @@ function toposort(entries, getTxFn) {
       return
     }
 
-    getTxFn(entry.txId).ins.forEach(function (input) {
+    txManager.getTx(entry.txId).ins.forEach(function (input) {
       var inputId = Array.prototype.reverse.call(new Buffer(input.hash)).toString('hex')
       if (_.isUndefined(entriesTxIds[inputId])) {
         return
@@ -60,22 +60,19 @@ function toposort(entries, getTxFn) {
  * @class HistoryManager
  * @extends events.EventEmitter
  * @param {Wallet} wallet
- * @param {TxManager} txManager
- * @param {CoinManager} coinManager
+ * @param {WalletState} walletState
  * @param {Object} rawStorage
  */
-function HistoryManager(wallet, txManager, coinManager, rawStorage) {
+function HistoryManager(wallet, walletState, rawStorage) {
   verify.Wallet(wallet)
-  verify.TxManager(txManager)
-  verify.CoinManager(coinManager)
+  verify.WalletState(walletState)
   verify.object(rawStorage)
 
   var self = this
   events.EventEmitter.call(self)
 
   self._wallet = wallet
-  self._txManager = txManager
-  self._coinManager = coinManager
+  self._walletState = walletState
   self._historyRecords = rawStorage
 }
 
@@ -87,7 +84,7 @@ HistoryManager.prototype._resortHistoryRecords = function () {
   var self = this
 
   var orderedRecords = _.sortBy(self._historyRecords, function (record) {
-    var txData = self._txManager.getTxData(record.txId)
+    var txData = self._walletState.getTxManager().getTxData(record.txId)
     if (txData.height === 0) {
       return txData.timestamp
     }
@@ -95,8 +92,7 @@ HistoryManager.prototype._resortHistoryRecords = function () {
     return txData.height + txData.timestamp / 10000000000
   })
 
-  var getTxFn = self._txManager.getTx.bind(self._txManager)
-  toposort(orderedRecords, getTxFn).forEach(function (record, index) {
+  toposort(orderedRecords, self._walletState.getTxManager()).forEach(function (record, index) {
     self._historyRecords[index] = record
   })
 }
@@ -133,7 +129,7 @@ HistoryManager.prototype.addTx = function (tx) {
 
       myInsCount += 1
 
-      var coin = new Coin(self._coinManager, {
+      var coin = new Coin(self._walletState.getCoinManager(), {
         txId: input.prevTx.getId(),
         outIndex: input.index,
         value: input.prevTx.outs[input.index].value,
@@ -154,7 +150,7 @@ HistoryManager.prototype.addTx = function (tx) {
     }))
 
   }).then(function () {
-    return self._coinManager.getTxMainColorValues(tx).then(function (txColorValues) {
+    return self._walletState.getCoinManager().getTxMainColorValues(tx).then(function (txColorValues) {
       txColorValues.forEach(function (colorValue, index) {
         var colorTarget = new cclib.ColorTarget(tx.outs[index].script.toHex(), colorValue)
 
@@ -243,7 +239,7 @@ HistoryManager.prototype.revertTx = function (tx) {
 HistoryManager.prototype.getEntries = function (assetdef) {
   var assetDefinitionManager = this._wallet.getAssetDefinitionManager()
   var bitcoinNetwork = this._wallet.getBitcoinNetwork()
-  var txManager = this._txManager
+  var txManager = this._walletState.getTxManager()
 
   var assetId = null
   if (!_.isUndefined(assetdef)) {

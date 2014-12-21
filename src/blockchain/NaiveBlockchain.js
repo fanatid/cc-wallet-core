@@ -2,7 +2,6 @@ var inherits = require('util').inherits
 
 var _ = require('lodash')
 var LRU = require('lru-cache')
-var Q = require('q')
 
 var verify = require('../verify')
 var Blockchain = require('./Blockchain')
@@ -84,8 +83,14 @@ NaiveBlockchain.prototype.getBlockTime = function (height, cb) {
 /**
  * {@link Blockchain~getTx}
  */
-NaiveBlockchain.prototype.getTx = function (txId, cb) {
+NaiveBlockchain.prototype.getTx = function (txId, walletState, cb) {
+  if (_.isFunction(walletState) && _.isUndefined(cb)) {
+    cb = walletState
+    walletState = undefined
+  }
+
   verify.txId(txId)
+  if (!_.isUndefined(walletState)) { verify.WalletState(walletState) }
   verify.function(cb)
 
   var self = this
@@ -96,7 +101,7 @@ NaiveBlockchain.prototype.getTx = function (txId, cb) {
   }
 
   if (_.isUndefined(self._getTxRunning[txId])) {
-    self._getTxRunning[txId] = self._network.getTx(txId).then(function (tx) {
+    self._getTxRunning[txId] = self._network.getTx(txId, walletState).then(function (tx) {
       self._txCache.set(txId, tx)
       return tx
 

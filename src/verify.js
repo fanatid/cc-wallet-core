@@ -57,7 +57,8 @@ var functions = {
   Blockchain: createInstanceCheck(function () { return require('./blockchain/Blockchain') }),
   NaiveBlockchain: createInstanceCheck(function () { return require('./blockchain/NaiveBlockchain') }),
   VerifiedBlockchain: createInstanceCheck(function () { return require('./blockchain/VerifiedBlockchain') }),
-  VerifiedBlockchainStorage: createInstanceCheck(function () { return require('./blockchain/VerifiedBlockchainStorage') }),
+  VerifiedBlockchainStorage: createInstanceCheck(
+    function () { return require('./blockchain/VerifiedBlockchainStorage') }),
 
   rawCoin: isRawCoin,
   Coin: createInstanceCheck(function () { return require('./coin/Coin') }),
