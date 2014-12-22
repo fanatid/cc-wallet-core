@@ -40,44 +40,44 @@ var functions = {
   HDNode: createInstanceCheck(function () { return bitcoin.HDNode }),
   bitcoinNetwork: isBitcoinNetwork,
 
-  Wallet: createInstanceCheck(function () { return require('./wallet/Wallet') }),
-  WalletState: createInstanceCheck(function () { return require('./wallet/WalletState') }),
-  WalletStateManager: createInstanceCheck(function () { return require('./wallet/WalletStateManager') }),
+  Wallet: createInstanceCheck(function () { return require('./wallet').Wallet }),
+  WalletState: createInstanceCheck(function () { return require('./wallet').WalletState }),
+  WalletStateManager: createInstanceCheck(function () { return require('./wallet').WalletStateManager }),
 
-  Address: createInstanceCheck(function () { return require('./address/Address') }),
-  AddressManager: createInstanceCheck(function () { return require('./address/AddressManager') }),
-  AddressStorage: createInstanceCheck(function () { return require('./address/AddressStorage') }),
+  Address: createInstanceCheck(function () { return require('./address').Address }),
+  AddressManager: createInstanceCheck(function () { return require('./address').AddressManager }),
+  AddressStorage: createInstanceCheck(function () { return require('./address').AddressStorage }),
 
-  AssetDefinition: createInstanceCheck(function () { return require('./asset/AssetDefinition') }),
-  AssetDefinitionManager: createInstanceCheck(function () { return require('./asset/AssetDefinitionManager') }),
-  AssetDefinitionStorage: createInstanceCheck(function () { return require('./asset/AssetDefinitionStorage') }),
-  AssetTarget: createInstanceCheck(function () { return require('./asset/AssetTarget') }),
-  AssetValue: createInstanceCheck(function () { return require('./asset/AssetValue') }),
+  AssetDefinition: createInstanceCheck(function () { return require('./asset').AssetDefinition }),
+  AssetDefinitionManager: createInstanceCheck(function () { return require('./asset').AssetDefinitionManager }),
+  AssetDefinitionStorage: createInstanceCheck(function () { return require('./asset').AssetDefinitionStorage }),
+  AssetTarget: createInstanceCheck(function () { return require('./asset').AssetTarget }),
+  AssetValue: createInstanceCheck(function () { return require('./asset').AssetValue }),
 
-  Blockchain: createInstanceCheck(function () { return require('./blockchain/Blockchain') }),
-  NaiveBlockchain: createInstanceCheck(function () { return require('./blockchain/NaiveBlockchain') }),
-  VerifiedBlockchain: createInstanceCheck(function () { return require('./blockchain/VerifiedBlockchain') }),
+  Blockchain: createInstanceCheck(function () { return require('./blockchain').Blockchain }),
+  NaiveBlockchain: createInstanceCheck(function () { return require('./blockchain').NaiveBlockchain }),
+  VerifiedBlockchain: createInstanceCheck(function () { return require('./blockchain').VerifiedBlockchain }),
   VerifiedBlockchainStorage: createInstanceCheck(
-    function () { return require('./blockchain/VerifiedBlockchainStorage') }),
+    function () { return require('./blockchain').VerifiedBlockchainStorage }),
 
   rawCoin: isRawCoin,
-  Coin: createInstanceCheck(function () { return require('./coin/Coin') }),
-  CoinQuery: createInstanceCheck(function () { return require('./coin/CoinQuery') }),
-  CoinManager: createInstanceCheck(function () { return require('./coin/CoinManager') }),
+  Coin: createInstanceCheck(function () { return require('./coin').Coin }),
+  CoinQuery: createInstanceCheck(function () { return require('./coin').CoinQuery }),
+  CoinManager: createInstanceCheck(function () { return require('./coin').CoinManager }),
 
-  HistoryEntry: createInstanceCheck(function () { return require('./history/HistoryEntry') }),
-  HistoryTarget: createInstanceCheck(function () { return require('./history/HistoryTarget') }),
-  HistoryManager: createInstanceCheck(function () { return require('./history/HistoryManager') }),
+  HistoryEntry: createInstanceCheck(function () { return require('./history').HistoryEntry }),
+  HistoryTarget: createInstanceCheck(function () { return require('./history').HistoryTarget }),
+  HistoryManager: createInstanceCheck(function () { return require('./history').HistoryManager }),
 
-  Network: createInstanceCheck(function () { return require('./network/Network') }),
-  Chain: createInstanceCheck(function () { return require('./network/Chain') }),
-  Electrum: createInstanceCheck(function () { return require('./network/Electrum') }),
+  Network: createInstanceCheck(function () { return require('./network').Network }),
+  Chain: createInstanceCheck(function () { return require('./network').Chain }),
+  Electrum: createInstanceCheck(function () { return require('./network').Electrum }),
 
-  AssetTx: createInstanceCheck(function () { return require('./tx/AssetTx') }),
-  OperationalTx: createInstanceCheck(function () { return require('./tx/OperationalTx') }),
-  RawTx: createInstanceCheck(function () { return require('./tx/RawTx') }),
-  TxManager: createInstanceCheck(function () { return require('./tx/TxManager') }),
-  TxFetcher: createInstanceCheck(function () { return require('./tx/TxFetcher') })
+  AssetTx: createInstanceCheck(function () { return require('./tx').AssetTx }),
+  OperationalTx: createInstanceCheck(function () { return require('./tx').OperationalTx }),
+  RawTx: createInstanceCheck(function () { return require('./tx').RawTx }),
+  TxManager: createInstanceCheck(function () { return require('./tx').TxManager }),
+  TxFetcher: createInstanceCheck(function () { return require('./tx').TxFetcher })
 }
 
 var expected = {
