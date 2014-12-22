@@ -3,13 +3,12 @@ var inherits = require('util').inherits
 var _ = require('lodash')
 var Q = require('q')
 var request = require('request')
+var WebSocket = require('ws')
 
 var bitcoin = require('../bitcoin')
 var verify = require('../verify')
 var Network = require('./Network')
 
-
-// @todo Migrate to v2 API (address notifications available)
 
 /**
  * [Chain.com API]{@link https://chain.com/docs}
@@ -25,8 +24,6 @@ var Network = require('./Network')
  * @param {number} [opts.refreshInterval=30*1000]
  */
 function Chain(wallet, opts) {
-  throw new Error('Not supported right now')
-
   verify.Wallet(wallet)
   opts = _.extend({
     testnet: false,
@@ -47,13 +44,70 @@ function Chain(wallet, opts) {
   self._blockChain = opts.testnet ? 'testnet3' : 'bitcoin'
   self._apiKeyId = opts.apiKeyId
   self._requestTimeout = opts.requestTimeout
+
+  function initNotify() {
+    self._ws = new WebSocket('wss://ws.chain.com/v2/notifications')
+
+    self._ws.onopen = function () {
+      self._attemptCount = 0
+      self.emit('connect')
+    }
+
+    self._ws.onclose = function () {
+      attemptInitNotify()
+      self.emit('disconnect')
+    }
+
+    self._ws.onerror = function (error) {
+      if (!self.isConnected()) {
+        attemptInitNotify()
+      }
+      self.emit('error')
+    }
+
+    self._ws.onmessage = function (message) {
+      try {
+        var payload = JSON.parse(message.data).payload
+
+        if (payload.type === 'new-block') {
+          verify.number(payload.block.height)
+          return self._setCurrentHeight(payload.block.height).catch(function (error) {
+            self.emit('error', error)
+          })
+        }
+
+        if (payload.type === 'address') {
+          verify.number(payload.confirmations)
+          if (payload.confirmations < 2) {
+            return
+          }
+
+          verify.string(payload.address)
+          return self.emit('touchAddress', payload.address)
+        }
+
+      } catch (error) {
+        self.emit('error', error)
+
+      }
+    }
+  }
+
+  self._attemptCount = 0
+  function attemptInitNotify() {
+    setTimeout(initNotify, 15000 * Math.pow(2, self._attemptCount))
+    self._attemptCount += 1
+  }
+
+
+  self._subscribedAddressesQueue = {}
   self._subscribedAddresses = {}
 
-  /**
-   * @return {Q.Promise}
-   */
-  function getNetworkHeight() {
-    return self._request('/blocks/latest').then(function (response) {
+  self.on('connect', function () {
+    var req = {type: 'new-block', block_chain: self._blockChain}
+    self._ws.send(JSON.stringify(req))
+
+    self._request('/blocks/latest').then(function (response) {
       if (self.getCurrentHeight() !== response.height) {
         return Q.ninvoke(self, '_setCurrentHeight', response.height)
       }
@@ -61,46 +115,16 @@ function Chain(wallet, opts) {
     }).catch(function (error) {
       self.emit('error', error)
 
-    }).finally(function () { Q.delay(opts.refreshInterval).then(getNetworkHeight) })
-  }
-  getNetworkHeight().then(function () {
-    self.emit('connect')
+    }).done()
+
+    _.keys(self._subscribedAddressesQueue).forEach(function (address) {
+      self.subscribeAddress(address)
+    })
+    self._subscribedAddressesQueue = {}
   })
 
-  /**
-   * @return {Q.Promise}
-   */
-  function testSubscribedAddresses() {
-    return Q.all(_.keys(self._subscribedAddresses).map(function (address) {
-      return Q.ninvoke(self, 'getUnspent', address).then(function (entries) {
-        var isTouched = false
-        var addressEntries = self._subscribedAddresses[address]
-        var entryTxIds = _.indexBy(entries, 'txId')
 
-        _.keys(addressEntries).forEach(function (txId) {
-          if (_.isUndefined(entryTxIds[txId])) {
-            delete addressEntries[txId]
-            isTouched = true
-          }
-        })
-        entries.forEach(function (entry) {
-          if (addressEntries[entry.txId] !== entry.height) {
-            addressEntries[entry.txId] = entry.height
-            isTouched = true
-          }
-        })
-
-        if (isTouched) {
-          self.emit('touchAddress', address)
-        }
-      })
-
-    })).catch(function (error) {
-      self.emit('error', error)
-
-    }).finally(function () { Q.delay(opts.refreshInterval).then(testSubscribedAddresses) })
-  }
-  testSubscribedAddresses()
+  initNotify()
 }
 
 inherits(Chain, Network)
@@ -111,7 +135,7 @@ inherits(Chain, Network)
  */
 Chain.prototype._getRequestURL = function (path) {
   verify.string(path)
-  return 'https://api.chain.com/v1/' + this._blockChain + path + '?api-key-id=' + this._apiKeyId
+  return 'https://api.chain.com/v2/' + this._blockChain + path + '?api-key-id=' + this._apiKeyId
 }
 
 /**
@@ -222,15 +246,12 @@ Chain.prototype.getHistory = function (address) {
 
     var entries = response.map(function (entry) {
       verify.txId(entry.hash)
-      verify.number(entry.confirmations)
-
-      if (entry.confirmations === 0) {
-        entry.confirmations = currentHeight + 1
-      }
+      if (entry.block_height === null) { entry.block_height = 0 }
+      verify.number(entry.block_height)
 
       return {
         txId: entry.hash,
-        height: currentHeight - entry.confirmations + 1
+        height: entry.block_height
       }
     })
 
@@ -246,32 +267,43 @@ Chain.prototype.getHistory = function (address) {
 Chain.prototype.getUnspent = function (address) {
   verify.string(address)
 
-  var currentHeight = this.getCurrentHeight()
+  var self = this
+  var promise = Q()
+  if (!self.isConnected() || self.getCurrentHeight() === -1) {
+    var deferred = Q.defer()
+    self.once('newHeight', deferred.resolve)
+    promise = deferred.promise
+  }
 
-  return this._request('/addresses/' + address + '/unspents').then(function (response) {
+  return promise.then(function () {
+    return self._request('/addresses/' + address + '/unspents')
+
+  }).then(function (response) {
     verify.array(response)
 
-    var entries = response.map(function (entry) {
-      verify.txId(entry.transaction_hash)
-      verify.number(entry.output_index)
-      verify.number(entry.value)
-      verify.number(entry.confirmations)
+    var currentHeight = self.getCurrentHeight()
+    return _.chain(response)
+      .map(function (entry) {
+        verify.txId(entry.transaction_hash)
+        verify.number(entry.output_index)
+        verify.number(entry.value)
+        verify.number(entry.confirmations)
 
-      if (entry.confirmations === 0) {
-        entry.confirmations = currentHeight + 1
-      }
+        if (entry.confirmations === 0) {
+          entry.confirmations = currentHeight + 1
+        }
 
-      return {
-        txId: entry.transaction_hash,
-        outIndex: entry.output_index,
-        value: entry.value,
-        height: currentHeight - entry.confirmations + 1
-      }
-    })
-
-    return _.sortBy(entries, function (entry) {
-      return entry.height === 0 ? Infinity : entry.height
-    })
+        return {
+          txId: entry.transaction_hash,
+          outIndex: entry.output_index,
+          value: entry.value,
+          height: currentHeight - entry.confirmations + 1
+        }
+      })
+      .sortBy(function (entry) {
+        return entry.height === 0 ? Infinity : entry.height
+      })
+      .value()
   })
 }
 
@@ -281,8 +313,18 @@ Chain.prototype.getUnspent = function (address) {
 Chain.prototype.subscribeAddress = function (address) {
   verify.string(address)
 
-  if (_.isUndefined(this._subscribedAddresses[address])) {
-    this._subscribedAddresses[address] = {}
+  var obj = this.isConnected() ? this._subscribedAddresses : this._subscribedAddressesQueue
+  if (_.isUndefined(obj[address])) {
+    obj[address] = true
+
+    if (this.isConnected()) {
+      var req = {type: 'address', address: address, block_chain: this._blockChain}
+      this._ws.send(JSON.stringify(req))
+
+    } else {
+      this._subscribedAddressesQueue.push(address)
+
+    }
   }
 
   return Q()

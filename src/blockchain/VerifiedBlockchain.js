@@ -34,6 +34,7 @@ var VerifyTxError = createError('VerifyTxError')
  * @param {number} [opts.headerCacheSize=6500] ~508kB
  */
 function VerifiedBlockchain(network, opts) {
+  // @todo Pass storage through arguments
   verify.Network(network)
   if (!network.supportVerificationMethods()) {
     throw new Error('Network doesn\'t support verification methods (getChunk, getMerkle)')

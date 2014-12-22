@@ -27,6 +27,7 @@
     "querystring": "^0.2.0",
     "request": "^2.48.0",
     "socket.io-client": "^1.2.0",
+    "ws": "^0.6.3",
     "zfill": "0.0.2"
   },
   "devDependencies": {

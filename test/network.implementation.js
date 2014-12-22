@@ -128,7 +128,9 @@ function networkImplementationTest(opts) {
     })
 
     it('getMerkle TransactionNotFound', function (done) {
-      if (!network.supportVerificationMethods()) { return done() }
+      if (!network.supportVerificationMethods()) {
+        return done()
+      }
 
       var txId = '9854bf4761024a1075ebede93d968ce1ba98d240ba282fb1f0170e555d8fdbd9'
       network.getMerkle(txId).then(function (result) {
