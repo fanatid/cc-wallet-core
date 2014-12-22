@@ -2,9 +2,9 @@ var verify = require('../verify')
 
 
 /**
- * @class AssetValue
- *
  * As ColorValue, just for asset
+ *
+ * @class AssetValue
  *
  * @param {AssetDefinition} assetdef
  * @param {number} value

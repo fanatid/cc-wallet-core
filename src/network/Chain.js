@@ -25,7 +25,6 @@ var Network = require('./Network')
  * @param {number} [opts.refreshInterval=30*1000]
  */
 function Chain(wallet, opts) {
-  // @todo Change to Promises
   throw new Error('Not supported right now')
 
   verify.Wallet(wallet)
@@ -136,18 +135,16 @@ Chain.prototype._request = function (path, data) {
     }
 
     throw new Error('Request error: ' + response.statusMessage)
-
   })
 }
 
 /**
  * {@link Network~getHeader}
  */
-Chain.prototype.getHeader = function (height, cb) {
+Chain.prototype.getHeader = function (height) {
   verify.number(height)
-  verify.function(cb)
 
-  this._request('/blocks/' + height).then(function (response) {
+  return this._request('/blocks/' + height).then(function (response) {
     verify.number(response.version)
     if (height === 0) {
       verify.null(response.previous_block_hash)
@@ -170,22 +167,22 @@ Chain.prototype.getHeader = function (height, cb) {
       nonce: response.nonce
     }
 
-  }).done(function (result) { cb(null, result) }, function (error) { cb(error) })
+  })
 }
 
 /**
  * {@link Network~getTx}
  */
-Chain.prototype.getTx = function (txId, cb) {
+Chain.prototype.getTx = function (txId, walletState) {
   verify.txId(txId)
-  verify.function(cb)
+  if (!_.isUndefined(walletState)) { verify.WalletState(walletState) }
 
-  var tx = this._wallet.getStateManager().getTx(txId)
+  var tx = this._wallet.getStateManager().getTx(txId, walletState)
   if (tx !== null) {
-    return process.nextTick(function () { cb(null, tx) })
+    return Q(tx)
   }
 
-  this._request('/transactions/' + txId + '/hex').then(function (response) {
+  return this._request('/transactions/' + txId + '/hex').then(function (response) {
     verify.object(response)
 
     var tx = bitcoin.Transaction.fromHex(response.hex)
@@ -194,37 +191,33 @@ Chain.prototype.getTx = function (txId, cb) {
     }
 
     throw new Error('Received tx is incorrect')
-
-  }).done(function (result) { cb(null, result) }, function (error) { cb(error) })
+  })
 }
 
 /**
  * {@link Network~sendTx}
  */
-Chain.prototype.sendTx = function (tx, cb) {
+Chain.prototype.sendTx = function (tx) {
   verify.Transaction(tx)
-  verify.function(cb)
 
-  this._request('/transactions', {'hex': tx.toHex()}).then(function (response) {
+  return this._request('/transactions', {'hex': tx.toHex()}).then(function (response) {
     if (response.transaction_hash === tx.getId()) {
       return response.transaction_hash
     }
 
     throw new Error('Received txId is incorrect')
-
-  }).done(function (txId) { cb(null, txId) }, function (error) { cb(error) })
+  })
 }
 
 /**
  * {@link Network~getHistory}
  */
-Chain.prototype.getHistory = function (address, cb) {
+Chain.prototype.getHistory = function (address) {
   verify.string(address)
-  verify.function(cb)
 
   var currentHeight = this.getCurrentHeight()
 
-  this._request('/addresses/' + address + '/transactions').then(function (response) {
+  return this._request('/addresses/' + address + '/transactions').then(function (response) {
     verify.array(response)
 
     var entries = response.map(function (entry) {
@@ -244,20 +237,18 @@ Chain.prototype.getHistory = function (address, cb) {
     return _.sortBy(entries, function (entry) {
       return entry.height === 0 ? Infinity : entry.height
     })
-
-  }).done(function (result) { cb(null, result) }, function (error) { cb(error) })
+  })
 }
 
 /**
  * {@link Network~getHistory}
  */
-Chain.prototype.getUnspent = function (address, cb) {
+Chain.prototype.getUnspent = function (address) {
   verify.string(address)
-  verify.function(cb)
 
   var currentHeight = this.getCurrentHeight()
 
-  this._request('/addresses/' + address + '/unspents').then(function (response) {
+  return this._request('/addresses/' + address + '/unspents').then(function (response) {
     verify.array(response)
 
     var entries = response.map(function (entry) {
@@ -281,22 +272,20 @@ Chain.prototype.getUnspent = function (address, cb) {
     return _.sortBy(entries, function (entry) {
       return entry.height === 0 ? Infinity : entry.height
     })
-
-  }).done(function (result) { cb(null, result) }, function (error) { cb(error) })
+  })
 }
 
 /**
  * {@link Network~subscribeAddress}
  */
-Chain.prototype.subscribeAddress = function (address, cb) {
+Chain.prototype.subscribeAddress = function (address) {
   verify.string(address)
-  verify.function(cb)
 
   if (_.isUndefined(this._subscribedAddresses[address])) {
     this._subscribedAddresses[address] = {}
   }
 
-  process.nextTick(function () { cb(null) })
+  return Q()
 }
 
 

@@ -15,9 +15,9 @@ var historyEntryType = require('../const').historyEntryType
 
 
 /**
- * @param {{txId1: string, txIdN:string}[]} entries
+ * @param {Array.<{txId1: string, txIdN:string}>} entries
  * @param {TxManager} txManager
- * @return {{txId1: string, txIdN:string}[]}
+ * @return {Array.<{txId1: string, txIdN:string}>}
  */
 function toposort(entries, txManager) {
   var entriesTxIds = _.zipObject(entries.map(function (entry) { return [entry.txId, entry] }))

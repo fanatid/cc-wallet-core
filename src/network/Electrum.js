@@ -107,7 +107,7 @@ Electrum.prototype.supportVerificationMethods = function () {
 
 /**
  * @param {string} method
- * @param {*[]} [params]
+ * @param {Array.<*>} [params]
  * @return {Q.Promise}
  */
 Electrum.prototype._request = function (method, params) {

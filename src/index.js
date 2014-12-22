@@ -5,8 +5,6 @@ module.exports = {
   util: require('./util'),
   verify: require('./verify'),
 
-// @todo Getter with message about deprecated?
-  SyncMixin: require('./util').SyncMixin,
   SyncStorage: require('./SyncStorage'),
 
 // @todo Remove index.js in subfolders
@@ -20,3 +18,10 @@ module.exports = {
 
   Wallet: require('./wallet/Wallet')
 }
+
+Object.defineProperty(module.exports, 'SyncMixin', {
+  get: function () {
+    console.warn('SyncMixin deprecated for removal in 1.0.0, use util.SyncMixin')
+    return module.exports.util.SyncMixin
+  }
+})

@@ -6,9 +6,9 @@ var verify = require('../verify')
 
 
 /**
- * @class AssetTx
- *
  * Simple asset transaction, but now supports only 1 color in asset
+ *
+ * @class AssetTx
  *
  * @param {Wallet} wallet
  * @param {AssetTarget[]} [assetTargets]

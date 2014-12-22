@@ -228,7 +228,7 @@ WalletStateManager.prototype.execute = function (fn) {
 
 /**
  * @param {string} address
- * @param {{txId: string, height: number}[]} entries
+ * @param {Array.<{txId: string, height: number}>} entries
  * @return {Q.Promise}
  */
 WalletStateManager.prototype.historySync = function (address, entries) {

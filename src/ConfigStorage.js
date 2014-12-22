@@ -27,14 +27,14 @@ function ConfigStorage() {
 inherits(ConfigStorage, SyncStorage)
 
 /**
- * @return {*[]}
+ * @return {Array.<*>}
  */
 ConfigStorage.prototype._getRecords = function () {
   return this.configRecords
 }
 
 /**
- * @param {*[]} records
+ * @param {Array.<*>} records
  */
 ConfigStorage.prototype._saveRecords = function (records) {
   this.store.set(this.configDbKey, records)
