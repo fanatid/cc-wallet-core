@@ -2,6 +2,7 @@ var _ = require('lodash')
 var Q = require('q')
 
 var bitcoin = require('../bitcoin')
+var errors = require('../errors')
 var AssetTx = require('./AssetTx')
 var OperationalTx = require('./OperationalTx')
 var ComposedTx = require('../cclib').ComposedTx
@@ -72,11 +73,11 @@ function transformAssetTx(assetTx, targetKind, opts, cb) {
 
   Q.fcall(function () {
     if (['operational', 'composed', 'raw', 'signed'].indexOf(targetKind) === -1) {
-      throw new Error('do not know how to transform assetTx')
+      throw new errors.TargetKindIsNotReachableError('AssetTx to ' + targetKind)
     }
 
     if (!assetTx.isMonoColor()) {
-      throw new Error('multi color AssetTx not supported')
+      throw new errors.MultiColorNotSupportedError('Attempt transform multi-color AssetTx')
     }
 
     var operationalTx = assetTx.makeOperationalTx()
@@ -108,16 +109,16 @@ function transformOperationalTx(operationalTx, targetKind, opts, cb) {
 
   Q.fcall(function () {
     if (['composed', 'raw', 'signed'].indexOf(targetKind) === -1) {
-      throw new Error('do not know how to transform operationalTx')
+      throw new errors.TargetKindIsNotReachableError('OperationalTx to ' + targetKind)
     }
 
     if (!operationalTx.isMonoColor()) {
-      throw new Error('multi color operationalTx not supported')
+      throw new errors.MultiColorNotSupportedError('Attempt transform multi-color OperationalTx')
     }
 
     var composer = operationalTx.getTargets()[0].getColorDefinition().constructor.makeComposedTx
     if (_.isUndefined(composer)) {
-      throw new Error('composer not found')
+      throw new errors.ComposerFunctionNotFoundError()
     }
 
     return Q.nfcall(composer, operationalTx)
@@ -151,7 +152,7 @@ function transformComposedTx(composedTx, targetKind, opts, cb) {
 
   Q.fcall(function () {
     if (['raw', 'signed'].indexOf(targetKind) === -1) {
-      throw new Error('do not know how to transform composedTx')
+      throw new errors.TargetKindIsNotReachableError('ComposedTx to ' + targetKind)
     }
 
     return RawTx.fromComposedTx(composedTx)
@@ -187,7 +188,7 @@ function transformRawTx(rawTx, targetKind, opts, cb) {
 
   Q.fcall(function () {
     if (['signed', 'partially-signed'].indexOf(targetKind) === -1) {
-      throw new Error('do not know how to transform rawTx')
+      throw new errors.TargetKindIsNotReachableError('RawTx to ' + targetKind)
     }
 
     return Q.ninvoke(rawTx, 'sign', opts.wallet, opts.seedHex)
@@ -205,7 +206,7 @@ function transformRawTx(rawTx, targetKind, opts, cb) {
 /**
  * @callback TxTranformer~transformTx
  * @param {?Error} error
- * @param {(OpeationalTx|ComposedTx|Transaction)} tx
+ * @param {(OpeationalTx|ComposedTx|RawTx|Transaction)} tx
  */
 
 /**
@@ -214,7 +215,7 @@ function transformRawTx(rawTx, targetKind, opts, cb) {
  * AssetTx  -> OperationalTx -> ComposedTx -> RawTx -> Transaction
  * "simple" -> "operational" -> "composed" -> "raw" -> ("signed" or "partially-signed")
  *
- * @param {(AssetTx|OperationalTx|ComposedTx)} tx
+ * @param {(AssetTx|OperationalTx|ComposedTx|RawTx|Transaction)} tx
  * @param {string} targetKind
  * @param {Object} [opts] Required if targetKind is signed
  * @param {string} [opts.seedHex]
@@ -237,12 +238,11 @@ function transformTx(tx, targetKind, opts, cb) {
 
   Q.fcall(function () {
     var currentKind = classifyTx(tx)
-
-    if (currentKind === targetKind) {
-      return tx
+    if (currentKind === null) {
+      throw new errors.TxKindIsNotRecognizedError()
     }
 
-    if (currentKind === 'signed' && targetKind === 'partially-signed') {
+    if ([targetKind, 'signed', 'partially-signed'].indexOf(currentKind) !== -1) {
       return tx
     }
 
@@ -261,8 +261,6 @@ function transformTx(tx, targetKind, opts, cb) {
     if (currentKind === 'raw') {
       return Q.nfcall(transformRawTx, tx, targetKind, opts)
     }
-
-    throw new Error('targetKind is not recognized')
 
   }).done(function (targetTx) { cb(null, targetTx) }, function (error) { cb(error) })
 }

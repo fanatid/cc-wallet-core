@@ -1,7 +1,8 @@
 var expect = require('chai').expect
 var _ = require('lodash')
 
-var cclib = require('../src/cclib')
+var cclib = require('../src').cclib
+var errors = require('../src').errors
 var AssetDefinition = require('../src/asset').AssetDefinition
 
 
@@ -28,7 +29,7 @@ describe('asset.AssetDefinition', function () {
       unit: 2
     }
     var fn = function () { new AssetDefinition(cdManager, data) }
-    expect(fn).to.throw(Error)
+    expect(fn).to.throw(errors.VerifyPowerError)
   })
 
   it('getId', function () {

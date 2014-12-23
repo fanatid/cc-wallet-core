@@ -15,6 +15,7 @@ var WalletStateManager = require('./WalletStateManager')
 
 var cclib = require('../cclib')
 var bitcoin = require('../bitcoin')
+var errors = require('../errors')
 var util = require('../util')
 var verify = require('../verify')
 
@@ -125,7 +126,10 @@ function Wallet(opts) {
   self.config = new ConfigStorage()
 
   self.network = new network[opts.network](self, opts.networkOpts)
-  self.blockchain = new blockchain[opts.blockchain](self.network, {testnet: opts.testnet})
+  self.blockchainStorage = new blockchain.VerifiedBlockchainStorage()
+  var BlockchainCls = blockchain[opts.blockchain]
+  self.blockchain = new BlockchainCls(
+    self.network, {testnet: opts.testnet, storage: self.blockchainStorage})
 
   self.cdStorage = new cclib.ColorDefinitionStorage()
   self.cdManager = new cclib.ColorDefinitionManager(self.cdStorage)
@@ -196,7 +200,7 @@ Wallet.prototype.isInitialized = function () {
  */
 Wallet.prototype.isInitializedCheck = function () {
   if (!this.isInitialized()) {
-    throw new Error('Wallet not initialized')
+    throw new errors.WalletNotInitializedError()
   }
 }
 
@@ -208,7 +212,7 @@ Wallet.prototype.initialize = function (seedHex) {
   verify.hexString(seedHex)
 
   if (this.isInitialized()) {
-    throw new Error('Wallet already initialized')
+    throw new errors.WalletAlreadyInitializedError()
   }
 
   var addressManager = this.getAddressManager()
@@ -568,7 +572,7 @@ Wallet.prototype.createIssuanceTx = function (moniker, pck, units, atoms, seedHe
   Q.fcall(function () {
     var colorDefinitionCls = cclib.ColorDefinitionManager.getColorDefenitionClsForType(pck)
     if (colorDefinitionCls === null) {
-      throw new Error('color desc ' + pck + ' not recognized')
+      throw new errors.VerifyColorDefinitionTypeError('Type: ' + pck)
     }
 
     var addresses = self.getAddressManager().getAllAddresses(colorDefinitionCls)
@@ -651,7 +655,7 @@ Wallet.prototype.removeListeners = function () {
  */
 Wallet.prototype.clearStorage = function () {
   this.config.clear()
-  this.blockchain.clear()
+  this.blockchainStorage.clear()
   this.cdStorage.clear()
   this.cDataStorage.clear()
   this.aStorage.clear()

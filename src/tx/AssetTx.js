@@ -2,6 +2,7 @@ var _ = require('lodash')
 
 var OperationalTx = require('./OperationalTx')
 var cclib = require('../cclib')
+var errors = require('../errors')
 var verify = require('../verify')
 
 
@@ -50,11 +51,10 @@ AssetTx.prototype.addTargets = function (targets) {
  * Return true if transaction represent 1 asset
  *
  * @return {boolean}
- * @throws {Error} Will throw an error if current transaction don't have targets
  */
 AssetTx.prototype.isMonoAsset = function () {
   if (this.targets.length === 0) {
-    throw new Error('asset targets not found')
+    throw new errors.ZeroArrayLengthError('AssetTx targets not found')
   }
 
   var assetId = this.targets[0].getAsset().getId()
@@ -69,7 +69,6 @@ AssetTx.prototype.isMonoAsset = function () {
  * Return true if transaction represent 1 color
  *
  * @return {boolean}
- * @throws {Error} Will throw an error if current transaction don't have targets
  */
 AssetTx.prototype.isMonoColor = function () {
   if (!this.isMonoAsset) {
@@ -84,12 +83,14 @@ AssetTx.prototype.isMonoColor = function () {
 
 /**
  * @return {OperationalTx}
- * @throws {Error} Will throw an error if current transaction don't have targets or multi color
  */
 AssetTx.prototype.makeOperationalTx = function () {
-  // don't forget check targets.length > 0 if mono color check will be removed
   if (!this.isMonoColor()) {
-    throw new Error('not supported multi color OperationalTx')
+    throw new errors.MultiColorNotSupportedError('Attempt create OperationalTx from multi-color AssetTx')
+  }
+
+  if (this.targets.length === 0) {
+    throw new errors.ZeroArrayLengthError('AssetTx targets not found')
   }
 
   var assetdef = this.targets[0].getAsset()

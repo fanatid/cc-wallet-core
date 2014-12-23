@@ -1,6 +1,7 @@
 var _ = require('lodash')
 
 var cclib = require('../cclib')
+var errors = require('../errors')
 var verify = require('../verify')
 
 
@@ -32,12 +33,12 @@ function AssetDefinition(colorDefinitionManager, data) {
   if (data.unit) { verify.number(data.unit) }
 
   if (data.colorDescs.length !== 1) {
-    throw new Error('Currently only single-color assets are supported')
+    throw errors.MultiColorNotSupportedError('AssetDefinition.constructor')
   }
 
   data.unit = _.isUndefined(data.unit) ? 1 : data.unit
   if (Math.log(data.unit) / Math.LN10 % 1 !== 0) {
-    throw new Error('data.unit must be power of 10 and greater than 0')
+    throw new errors.VerifyPowerError('data.unit must be power of 10 and greater than 0')
   }
 
   this.monikers = data.monikers

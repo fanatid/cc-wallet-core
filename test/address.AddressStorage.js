@@ -1,7 +1,8 @@
 var expect = require('chai').expect
 
-var SyncStorage = require('../src/SyncStorage')
-var AddressStorage = require('../src/address/AddressStorage')
+var errors = require('../src').errors
+var SyncStorage = require('../src').SyncStorage
+var AddressStorage = require('../src').address.AddressStorage
 
 
 describe('address.AddressStorage', function () {
@@ -27,13 +28,13 @@ describe('address.AddressStorage', function () {
   it('add throw UniqueConstraint for account, chain and index', function () {
     storage.add({chain: 0, index: 0, pubKey: pubKeyHex1})
     var fn = function () { storage.add({chain: 0, index: 0, pubKey: pubKeyHex2}) }
-    expect(fn).to.throw(Error)
+    expect(fn).to.throw(errors.AlreadyExistsError)
   })
 
   it('add throw UniqueConstraint for pubKey', function () {
     storage.add({chain: 0, index: 0, pubKey: pubKeyHex1})
     var fn = function () { storage.add({chain: 0, index: 1, pubKey: pubKeyHex1}) }
-    expect(fn).to.throw(Error)
+    expect(fn).to.throw(errors.AlreadyExistsError)
   })
 
   it('getAll', function () {

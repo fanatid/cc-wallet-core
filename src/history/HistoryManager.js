@@ -6,6 +6,7 @@ var Q = require('q')
 
 var cclib = require('../cclib')
 var bitcoin = require('../bitcoin')
+var errors = require('../errors')
 var AssetValue = require('../asset').AssetValue
 var HistoryTarget = require('./HistoryTarget')
 var Coin = require('../coin').Coin
@@ -36,7 +37,7 @@ function toposort(entries, txManager) {
       }
 
       if (entriesTxIds[inputId].txId === topEntry.txId) {
-        throw new Error('graph is cyclical')
+        throw new errors.ToposortError('Graph is cyclical')
       }
 
       sort(entriesTxIds[inputId], topEntry)
@@ -250,19 +251,19 @@ HistoryManager.prototype.getEntries = function (assetdef) {
   var entries = this._historyRecords.map(function (record) {
     var tx = txManager.getTx(record.txId)
     if (tx === null) {
-      throw new Error('NotFoundTx: ' + record.txId)
+      throw new errors.TxNotFoundError('TxId: ' + record.txId)
     }
 
     var assetValues = {}
     record.values.forEach(function (rv) {
       var assetdef = assetDefinitionManager.getByDesc(rv.desc)
       if (assetdef === null) {
-        throw new Error('asset for color description: ' + rv.desc + ' not found')
+        throw new errors.AssetNotFoundError('Color description: ' + rv.desc)
       }
 
       var assetId = assetdef.getId()
       if (!_.isUndefined(assetValues[assetId])) {
-        throw new Error('multi asset transactions not supported')
+        throw new errors.MultiAssetTransactionNotSupportedError('TxId: ' + tx.getId())
       }
 
       assetValues[assetId] = new AssetValue(assetdef, rv.value)
@@ -275,7 +276,7 @@ HistoryManager.prototype.getEntries = function (assetdef) {
     var historyTargets = record.targets.map(function (rt) {
       var assetdef = assetDefinitionManager.getByDesc(rt.desc)
       if (assetdef === null) {
-        throw new Error('asset for color description ' + rt.desc + ' not found')
+        throw new errors.AssetNotFoundError('Color description: ' + rt.desc)
       }
 
       var assetValue = new AssetValue(assetdef, rt.value)

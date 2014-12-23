@@ -3,6 +3,7 @@ var inherits = require('util').inherits
 var _ = require('lodash')
 
 var SyncStorage = require('../SyncStorage')
+var errors = require('../errors')
 var verify = require('../verify')
 
 
@@ -67,11 +68,11 @@ AddressStorage.prototype.add = function (data) {
   var records = this._getRecords()
   records.forEach(function (record) {
     if (record.chain === data.chain && record.index === data.index) {
-      throw new Error('pubkey for given account, chain and index exists')
+      throw new errors.AlreadyExistsError('Same accout, chain and index exists')
     }
 
     if (record.pubKey === data.pubKey) {
-      throw new Error('pubKey already exists')
+      throw new errors.AlreadyExistsError('Same pubKey already exists')
     }
   })
 

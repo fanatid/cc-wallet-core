@@ -10,6 +10,7 @@ var HDNode = bitcoin.HDNode
 
 var Address = require('./Address')
 var AssetDefinition = require('../asset').AssetDefinition
+var errors = require('../errors')
 var verify = require('../verify')
 
 var UNCOLORED_CHAIN = 0
@@ -49,13 +50,13 @@ function derive(rootNode, account, chain, index) {
 /**
  * @param {(function|ColorDefinition|AssetDefinition)} definition
  * @return {number}
- * @throws {Error} If multi-color asset or unknown definition type
+ * @throws {Error}
  */
 function selectChain(definition) {
   if (definition instanceof AssetDefinition) {
     var colordefs = definition.getColorSet().getColorDefinitions()
     if (colordefs.length !== 1) {
-      throw new Error('Currently only single-color assets are supported')
+      throw new errors.MultiColorNotSupportedError('Attempt selectChain for multi-color AssetDefinition')
     }
 
     definition = colordefs[0]
@@ -73,7 +74,7 @@ function selectChain(definition) {
     return EPOBC_CHAIN
   }
 
-  throw new Error('Unknow ColorDefinition')
+  throw new errors.VerifyColorDefinitionTypeError('Type: ' + definition)
 }
 
 
@@ -131,7 +132,7 @@ AddressManager.prototype.isCurrentSeed = function (seedHex) {
  */
 AddressManager.prototype.isCurrentSeedCheck = function (seedHex) {
   if (!this.isCurrentSeed(seedHex)) {
-    throw new Error('Given seedHex is not currently used')
+    throw new errors.VerifySeedHexError()
   }
 }
 

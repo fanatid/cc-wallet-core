@@ -3,9 +3,10 @@ var inherits = require('util').inherits
 var _ = require('lodash')
 var Q = require('q')
 var request = require('request')
-var WebSocket = require('ws')
+var WebSockets = require('ws')
 
 var bitcoin = require('../bitcoin')
+var errors = require('../errors')
 var verify = require('../verify')
 var Network = require('./Network')
 
@@ -46,7 +47,7 @@ function Chain(wallet, opts) {
   self._requestTimeout = opts.requestTimeout
 
   function initNotify() {
-    self._ws = new WebSocket('wss://ws.chain.com/v2/notifications')
+    self._ws = new WebSockets('wss://ws.chain.com/v2/notifications')
 
     self._ws.onopen = function () {
       self._attemptCount = 0
@@ -62,7 +63,7 @@ function Chain(wallet, opts) {
       if (!self.isConnected()) {
         attemptInitNotify()
       }
-      self.emit('error')
+      self.emit('error', error)
     }
 
     self._ws.onmessage = function (message) {
@@ -158,7 +159,7 @@ Chain.prototype._request = function (path, data) {
       return body
     }
 
-    throw new Error('Request error: ' + response.statusMessage)
+    throw new errors.NetworkChainError(response.statusMessage)
   })
 }
 
@@ -214,7 +215,7 @@ Chain.prototype.getTx = function (txId, walletState) {
       return tx
     }
 
-    throw new Error('Received tx is incorrect')
+    throw new errors.NetworkGetTxError('Expected: ' + txId + ', got: ' + tx.getId())
   })
 }
 
@@ -229,7 +230,7 @@ Chain.prototype.sendTx = function (tx) {
       return response.transaction_hash
     }
 
-    throw new Error('Received txId is incorrect')
+    throw new errors.NetworkSendTxError('Expected: ' + tx.getId() + ', got: ' + response.transaction_hash)
   })
 }
 
@@ -238,8 +239,6 @@ Chain.prototype.sendTx = function (tx) {
  */
 Chain.prototype.getHistory = function (address) {
   verify.string(address)
-
-  var currentHeight = this.getCurrentHeight()
 
   return this._request('/addresses/' + address + '/transactions').then(function (response) {
     verify.array(response)

@@ -118,10 +118,5 @@ Blockchain.prototype.subscribeAddress = function () {
   throw new errors.NotImplementedError('Blockchain.subscribeAddress')
 }
 
-/**
- * Clear VerifiedBlockchainStorage in VerifiedBlockchain
- */
-Blockchain.prototype.clear = function () {}
-
 
 module.exports = Blockchain

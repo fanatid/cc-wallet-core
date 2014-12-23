@@ -2,7 +2,6 @@ var assert = require('assert')
 var inherits = require('util').inherits
 
 var BigInteger = require('bigi')
-var createError = require('errno').create
 var bufferEqual = require('buffer-equal')
 var _ = require('lodash')
 var LRU = require('lru-cache')
@@ -10,36 +9,38 @@ var Q = require('q')
 var zfill = require('zfill')
 
 var Blockchain = require('./Blockchain')
-var VerifiedBlockchainStorage = require('./VerifiedBlockchainStorage')
 var bitcoin = require('../bitcoin')
+var errors = require('../errors')
 var verify = require('../verify')
 var util = require('../util')
 
+var createError = errors.createError || require('errno').create
 
-var BlockNotFoundError = createError('BlockNotFoundError')
-var NotFoundError = createError('NotFoundError')
+/**
+ * @class VerifiedBlockchain~LoopInterrupt
+ * @extends Error
+ */
 var LoopInterrupt = createError('LoopInterrupt')
-var VerifyError = createError('VerifyError')
-var VerifyChunkError = createError('VerifyChunkError')
-var VerifyTxError = createError('VerifyTxError')
 
 
 /**
  * @class VerifiedBlockchain
  * @extends Blockchain
  * @param {Network} network
- * @param {Object} [opts]
+ * @param {Object} opts
+ * @param {VerifiedBlockchainStorage} opts.storage
  * @param {boolean} [opts.testnet=false]
  * @param {number} [opts.txCacheSize=250]
  * @param {number} [opts.headerCacheSize=6500] ~508kB
  */
 function VerifiedBlockchain(network, opts) {
-  // @todo Pass storage through arguments
   verify.Network(network)
   if (!network.supportVerificationMethods()) {
-    throw new Error('Network doesn\'t support verification methods (getChunk, getMerkle)')
+    throw new errors.NetworkNotSupportVerificationMethodsError()
   }
   opts = _.extend({testnet: false, txCacheSize: 250, headerCacheSize: 6500}, opts)
+  verify.object(opts)
+  verify.VerifiedBlockchainStorage(opts.storage)
   verify.boolean(opts.testnet)
   verify.number(opts.txCacheSize)
   verify.number(opts.headerCacheSize)
@@ -60,7 +61,7 @@ function VerifiedBlockchain(network, opts) {
 
   self._currentHeight = -1
   self._currentBlockHash = new Buffer(zfill('', 64), 'hex')
-  self._storage = new VerifiedBlockchainStorage()
+  self._storage = opts.storage
 
   var storageChunksCount = self._storage.getChunksCount()
   var storageHeadersCount = self._storage.getHeadersCount()
@@ -157,12 +158,6 @@ VerifiedBlockchain.prototype.subscribeAddress = function (address, cb) {
 }
 
 /**
- */
-VerifiedBlockchain.prototype.clear = function () {
-  this._storage.clear()
-}
-
-/**
  * @param {number} height
  * @return {Q.Promise}
  */
@@ -188,7 +183,7 @@ VerifiedBlockchain.prototype._getVerifiedChunk = function (chunkIndex) {
 
       var chunkHash = bitcoin.crypto.hash256(chunk).toString('hex')
       if (chunkHash !== self._storage.getChunkHash(chunkIndex)) {
-        throw new VerifyChunkError('Chunk: ' + chunkIndex)
+        throw new errors.VerifyChunkError('Chunk #' + chunkIndex)
       }
 
       _.range(0, 2016).forEach(function (offset) {
@@ -250,7 +245,7 @@ VerifiedBlockchain.prototype._getVerifiedHeader = function (height) {
 
     if (chunkIndex === self._storage.getChunksCount()) {
       if (headerIndex >= self._storage.getHeadersCount()) {
-        throw new NotFoundError('Height: ' + height)
+        throw new errors.HeaderNotFoundError('Header height #' + height)
       }
 
       return new Buffer(self._storage.getHeader(headerIndex), 'hex')
@@ -295,7 +290,7 @@ VerifiedBlockchain.prototype._getVerifiedTx = function (txId, walletState) {
       tx = result
       return self._network.getMerkle(txId).catch(function (error) {
         if (error.message === 'BlockNotFound') {
-          throw new BlockNotFoundError()
+          throw new errors.HeaderNotFoundError()
         }
 
         throw error
@@ -324,11 +319,11 @@ VerifiedBlockchain.prototype._getVerifiedTx = function (txId, walletState) {
     }).then(function (buffer) {
       var header = bitcoin.buffer2header(buffer)
       if (header.merkleRoot !== merkleRoot) {
-        throw new VerifyTxError('TxId: ' + txId)
+        throw new errors.VerifyTxError('TxId: ' + txId)
       }
 
     }).catch(function (error) {
-      if (error.type !== 'BlockNotFoundError') {
+      if (!(error instanceof errors.HeaderNotFoundError)) {
         throw error
       }
 
@@ -390,7 +385,7 @@ VerifiedBlockchain.prototype._sync = function () {
         lastHeader = bitcoin.buffer2header(buffer)
 
       }).catch(function (error) {
-        if (error.type !== 'NotFoundError') {
+        if (!(error instanceof errors.HeaderNotFoundError)) {
           throw error
         }
 
@@ -453,7 +448,7 @@ VerifiedBlockchain.prototype._sync = function () {
    * @param {Buffer} prevHash
    * @param {Header} prevHeader
    * @param {{bits: number, target: Buffer}} target
-   * @throws {VerifyError}
+   * @throws {VerifyHeaderError}
    */
   function verifyHeader(currentHash, currentHeader, prevHash, prevHeader, target) {
     try {
@@ -476,7 +471,7 @@ VerifiedBlockchain.prototype._sync = function () {
 
     } catch (error) {
       if (error instanceof assert.AssertionError) {
-        throw new VerifyError('Chain verification failed')
+        throw new errors.VerifyHeaderError('HeaderHash: ' + currentHash.toString('hex'))
       }
 
       throw error

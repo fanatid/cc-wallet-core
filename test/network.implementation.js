@@ -2,6 +2,7 @@ var expect = require('chai').expect
 
 var _ = require('lodash')
 
+var errors = require('../src').errors
 var Wallet = require('../src').Wallet
 var Network = require('../src').network.Network
 
@@ -137,7 +138,7 @@ function networkImplementationTest(opts) {
         expect(result).to.be.undefined
 
       }).catch(function (error) {
-        expect(error).to.be.instanceof(Error)
+        expect(error).to.be.instanceof(errors.NetworkElectrumError)
         expect(error.message).to.be.equal('TransactionNotFound')
 
       }).done(done, done)

@@ -5,6 +5,7 @@ var _ = require('lodash')
 var Q = require('q')
 
 var Transaction = require('../bitcoin').Transaction
+var errors = require('../errors')
 var verify = require('../verify')
 var txStatus = require('../const').txStatus
 
@@ -84,7 +85,7 @@ TxManager.prototype.addTx = function (tx, data) {
 
   var txId = tx.getId()
   if (!_.isUndefined(self._txRecords[txId])) {
-    return Q(new Error('Same tx already exists'))
+    return Q(new errors.AlreadyExistsError('TxId: ' + txId))
   }
 
   var record = {
@@ -132,7 +133,7 @@ TxManager.prototype.updateTx = function (tx, data) {
 
   var record = this._txRecords[tx.getId()]
   if (_.isUndefined(record)) {
-    return Q(new Error('Tx not found'))
+    return Q(new errors.TxNotFoundError('TxId: ' + tx.getId()))
   }
 
   var savedRecord = _.cloneDeep(record)
@@ -171,7 +172,7 @@ TxManager.prototype.revertTx = function (tx, rAddress) {
 
   var record = this._txRecords[tx.getId()]
   if (_.isUndefined(record)) {
-    return Q(new Error('Tx not found'))
+    return Q(new errors.TxNotFoundError('TxId: ' + tx.getId()))
   }
 
   record.rAddresses = _.union(record.rAddresses, [rAddress]).sort()
@@ -190,7 +191,7 @@ TxManager.prototype.sendTx = function (tx) {
 
   var txId = tx.getId()
   if (!_.isUndefined(this._txRecords[txId])) {
-    return Q(new Error('Same tx already exists'))
+    return Q(new errors.AlreadyExistsError('TxId: ' + txId))
   }
 
   this._txRecords[txId] = {

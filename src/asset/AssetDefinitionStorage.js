@@ -3,6 +3,7 @@ var inherits = require('util').inherits
 var _ = require('lodash')
 
 var SyncStorage = require('../SyncStorage')
+var errors = require('../errors')
 var verify = require('../verify')
 
 
@@ -66,17 +67,17 @@ AssetDefinitionStorage.prototype.add = function (data) {
   var records = this._getRecords()
   records.forEach(function (record) {
     if (record.id === data.id) {
-      throw new Error('exists asset already have same id')
+      throw new errors.AlreadyExistsError('Same id: ' + data.id)
     }
 
     var someMoniker = data.monikers.some(function (moniker) { return record.monikers.indexOf(moniker) !== -1 })
     if (someMoniker) {
-      throw new Error('exists asset already have same moniker')
+      throw new errors.AlreadyExistsError('Same moniker: ' + data.monikers)
     }
 
     var someColorDesc = data.colorDescs.some(function (cs) { return record.colorDescs.indexOf(cs) !== -1 })
     if (someColorDesc) {
-      throw new Error('exists asset already have same colorDesc')
+      throw new errors.AlreadyExistsError('Same colorDesc: ' + data.colorDescs)
     }
   })
 

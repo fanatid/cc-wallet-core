@@ -7,6 +7,7 @@ var Q = require('q')
 var cclib = require('../cclib')
 var txStatus = require('../const').txStatus
 var bitcoin = require('../bitcoin')
+var errors = require('../errors')
 var Coin = require('./Coin')
 var verify = require('../verify')
 
@@ -51,8 +52,7 @@ inherits(CoinManager, events.EventEmitter)
 CoinManager.prototype._record2Coin = function (record) {
   var txData = this._walletState.getTxManager().getTxData(record.txId)
   if (txData === null) {
-    // @todo Throw custom error
-    throw new Error('TxNotFound: ' + record.txId)
+    throw new errors.TxNotFoundError('TxId: ' + record.txId)
   }
 
   var opts = {
@@ -276,7 +276,9 @@ CoinManager.prototype.getCoinMainColorValue = function (coin, cb) {
     var promises = cdManager.getAllColorDefinitions().map(function (colorDefinition) {
       return Q.ninvoke(coin, 'getColorValue', colorDefinition).then(function (colorValue) {
         if (coinColorValue !== null && colorValue !== null) {
-          throw new Error('Coin ' + coin + ' have more than one ColorValue')
+          var rawCoin = coin.toRawCoin()
+          var msg = rawCoin.txId + ':' + rawCoin.outIndex + ' have more than one ColorValue'
+          throw new errors.CoinColorValueError(msg)
         }
 
         if (coinColorValue === null) {
@@ -319,7 +321,7 @@ CoinManager.prototype.getTxMainColorValues = function (tx) {
       return colorValues1.map(function (cv, index) {
         if (cv !== null) {
           if (colorValues2[index] !== null) {
-            throw new Error(tx.getId() + ':' + index + ' have more than one ColorValue')
+            throw new errors.CoinColorValueError(tx.getId() + ':' + index + ' have more than one ColorValue')
           }
 
           return cv

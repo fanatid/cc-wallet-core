@@ -5,6 +5,7 @@ var Q = require('q')
 var socket = require('socket.io-client')
 
 var bitcoin = require('../bitcoin')
+var errors = require('../errors')
 var util = require('../util')
 var verify = require('../verify')
 var Network = require('./Network')
@@ -78,7 +79,7 @@ function Electrum(wallet, opts) {
       deferred.resolve(response.result)
 
     } else {
-      deferred.reject(new Error(response.error))
+      deferred.reject(new errors.NetworkElectrumError(response.error))
 
     }
 
@@ -188,7 +189,7 @@ Electrum.prototype.getTx = function (txId, walletState) {
       return tx
     }
 
-    throw new Error('Received tx is incorrect')
+    throw new errors.NetworkGetTxError('Expected: ' + txId + ', got: ' + tx.getId())
   })
 }
 
@@ -226,7 +227,7 @@ Electrum.prototype.sendTx = function (tx) {
       return txId
     }
 
-    throw new Error('Received txId is incorrect')
+    throw new errors.NetworkSendTxError('Expected: ' + tx.getId() + ', got: ' + txId)
   })
 }
 

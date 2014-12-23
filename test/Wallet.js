@@ -2,8 +2,10 @@ var expect = require('chai').expect
 
 var Q = require('q')
 
-var AssetDefinition = require('../src/asset').AssetDefinition
-var Wallet = require('../src/index').Wallet
+var cccore = require('../src')
+var errors = cccore.errors
+var AssetDefinition = cccore.asset.AssetDefinition
+var Wallet = cccore.Wallet
 
 
 //var replay = require('replay')
@@ -76,12 +78,12 @@ describe('Wallet', function () {
       })
 
       it('isInitializedCheck throw Error', function () {
-        expect(wallet.isInitializedCheck).to.throw(Error)
+        expect(wallet.isInitializedCheck.bind(wallet)).to.throw(errors.WalletNotInitializedError)
       })
 
       it('isInitializedCheck not throw Error', function () {
         wallet.initialize(seed)
-        expect(wallet.isInitializedCheck.bind(wallet)).to.not.throw(Error)
+        expect(wallet.isInitializedCheck.bind(wallet)).to.not.throw(errors.WalletAlreadyInitializedError)
       })
 
       it('isCurrentSeed return true', function () {
@@ -98,7 +100,7 @@ describe('Wallet', function () {
     describe('asset methods', function () {
       it('addAssetDefinition need initialization', function () {
         var fn = function () { wallet.addAssetDefinition(seed, goldAsset) }
-        expect(fn).to.throw(Error)
+        expect(fn).to.throw(errors.WalletNotInitializedError)
       })
 
       it('addAssetDefinition', function () {
@@ -110,7 +112,7 @@ describe('Wallet', function () {
 
       it('getAssetDefinitionByMoniker need initialization', function () {
         var fn = function () { wallet.getAssetDefinitionByMoniker('bitcoin') }
-        expect(fn).to.throw(Error)
+        expect(fn).to.throw(errors.WalletNotInitializedError)
       })
 
       it('getAssetDefinitionByMoniker', function () {
@@ -122,7 +124,7 @@ describe('Wallet', function () {
 
       it('getAllAssetDefinitions need initialization', function () {
         var fn = function () { wallet.getAllAssetDefinitions('bitcoin') }
-        expect(fn).to.throw(Error)
+        expect(fn).to.throw(errors.WalletNotInitializedError)
       })
 
       it('getAllAssetDefinitions', function () {
@@ -138,7 +140,7 @@ describe('Wallet', function () {
       var bitcoin
 
       it('getNewAddress need initialization', function () {
-        expect(wallet.getNewAddress).to.throw(Error)
+        expect(wallet.getNewAddress.bind(wallet)).to.throw(errors.WalletNotInitializedError)
       })
 
       it('getNewAddress', function () {
@@ -149,7 +151,7 @@ describe('Wallet', function () {
 
       it('getAllAddresses need initialization', function () {
         var fn = function () { wallet.getAllAddresses(bitcoin) }
-        expect(fn).to.throw(Error)
+        expect(fn).to.throw(errors.WalletNotInitializedError)
       })
 
       it('getAllAddresses', function () {
@@ -159,7 +161,7 @@ describe('Wallet', function () {
 
       it('getSomeAddress need initialization', function () {
         var fn = function () { wallet.getSomeAddress() }
-        expect(fn).to.throw(Error)
+        expect(fn).to.throw(errors.WalletNotInitializedError)
       })
 
       it('getSomeAddress', function () {

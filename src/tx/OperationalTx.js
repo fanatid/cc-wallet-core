@@ -3,6 +3,7 @@ var util = require('util')
 var Q = require('q')
 
 var cclib = require('../cclib')
+var errors = require('../errors')
 var verify = require('../verify')
 
 
@@ -59,7 +60,7 @@ OperationalTx.prototype.getTargets = function () {
  */
 OperationalTx.prototype.isMonoColor = function () {
   if (this.targets.length === 0) {
-    throw new Error('color targets not found')
+    throw new errors.ZeroArrayLengthError('ColorTargets')
   }
 
   var colorId = this.targets[0].getColorId()
@@ -112,7 +113,7 @@ OperationalTx.prototype.selectCoins = function (colorValue, feeEstimator, cb) {
     colordef = colorValue.getColorDefinition()
 
     if (!colorValue.isUncolored() && feeEstimator !== null) {
-      throw new Error('feeEstimator can only be used with uncolored coins')
+      throw new errors.ColoredFeeEstimatorError()
     }
 
     var coinQuery = self.wallet.getCoinQuery()
@@ -156,7 +157,7 @@ OperationalTx.prototype.selectCoins = function (colorValue, feeEstimator, cb) {
 
       var required = requiredSum.getValue()
       var selected = selectedCoinsColorValue.getValue()
-      throw new Error('not enough coins: ' + required + ' requested, ' + selected + ' found')
+      throw new errors.InsufficientFundsError(required + ' requested, ' + selected + ' found')
     })
 
   }).done(function (data) { cb(null, data.coins, data.value) }, function (error) { cb(error) })

@@ -1,7 +1,8 @@
 var expect = require('chai').expect
 
-var SyncStorage = require('../src/SyncStorage')
-var AssetDefinitionStorage = require('../src/asset').AssetDefinitionStorage
+var errors = require('../src').errors
+var SyncStorage = require('../src').SyncStorage
+var AssetDefinitionStorage = require('../src').asset.AssetDefinitionStorage
 
 
 describe('asset.AssetDefinitionStorage', function () {
@@ -34,7 +35,7 @@ describe('asset.AssetDefinitionStorage', function () {
       unit: 1
     }
     var fn = function () { storage.add(data) }
-    expect(fn).to.throw(Error)
+    expect(fn).to.throw(errors.AlreadyExistsError)
   })
 
   it('add throw error, moniker already exist', function () {
@@ -45,7 +46,7 @@ describe('asset.AssetDefinitionStorage', function () {
       unit: 1
     }
     var fn = function () { storage.add(data) }
-    expect(fn).to.throw(Error)
+    expect(fn).to.throw(errors.AlreadyExistsError)
   })
 
   it('getByMoniker return null', function () {
