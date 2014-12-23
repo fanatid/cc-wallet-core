@@ -146,12 +146,16 @@ Chain.prototype._getRequestURL = function (path) {
  */
 Chain.prototype._request = function (path, data) {
   var requestOpts = {
-    method: _.isUndefined(data) ? 'GET' : 'POST',
+    method: 'GET',
     uri: this._getRequestURL(path),
-    body: JSON.stringify(data),
     timeout: this._requestTimeout,
     zip: true,
     json: true
+  }
+
+  if (!_.isUndefined(data)) {
+    requestOpts.method = 'POST'
+    requestOpts.json = data
   }
 
   return Q.nfcall(request, requestOpts).spread(function (response, body) {
