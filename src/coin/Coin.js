@@ -4,9 +4,18 @@ var verify = require('../verify')
 
 
 /**
+ * @typedef Coin~RawCoin
+ * @property {string} txId
+ * @property {number} outIndex
+ * @property {number} value
+ * @property {string} script
+ * @property {string} address
+ */
+
+/**
  * @class Coin
  * @param {CoinManager} coinManager
- * @param {CoinStorageRecord} rawCoin
+ * @param {Coin~RawCoin} rawCoin
  * @param {Object} [opts]
  * @param {boolean} [opts.isSpent]
  * @param {boolean} [opts.isValid]
@@ -38,7 +47,7 @@ function Coin(coinManager, rawCoin, opts) {
 }
 
 /**
- * @return {CoinStorageRecord}
+ * @return {Coin~RawCoin}
  */
 Coin.prototype.toRawCoin = function () {
   return {
@@ -51,7 +60,7 @@ Coin.prototype.toRawCoin = function () {
 }
 
 /**
- * {@link CoinManager.isCoinSpent}
+ * @return {boolean}
  */
 Coin.prototype.isSpent = function () {
   if (!_.isUndefined(this._isSpent)) {
@@ -62,7 +71,7 @@ Coin.prototype.isSpent = function () {
 }
 
 /**
- * {@link CoinManager.isCoinValid}
+ * @return {boolean}
  */
 Coin.prototype.isValid = function () {
   if (!_.isUndefined(this._isValid)) {
@@ -73,7 +82,7 @@ Coin.prototype.isValid = function () {
 }
 
 /**
- * {@link CoinManager.isCoinAvailable}
+ * @return {boolean}
  */
 Coin.prototype.isAvailable = function () {
   if (!_.isUndefined(this._isAvailable)) {
@@ -84,14 +93,21 @@ Coin.prototype.isAvailable = function () {
 }
 
 /**
- * {@link CoinManager.getCoinColorValue}
+ * @callback Coin~getColorValueCallback
+ * @param {?Error} error
+ * @param {external:coloredcoinjs-lib.ColorValue} colorValue
+ */
+
+/**
+ * @param {external:coloredcoinjs-lib.ColorDefinition} colorDefinition
+ * @param {Coin~getColorValueCallback} cb
  */
 Coin.prototype.getColorValue = function (colorDefinition, cb) {
   this.coinManager.getCoinColorValue(this, colorDefinition, cb)
 }
 
 /**
- * {@link CoinManager.getCoinMainColorValue}
+ * @param {Coin~getColorValueCallback} cb
  */
 Coin.prototype.getMainColorValue = function (cb) {
   this.coinManager.getCoinMainColorValue(this, cb)

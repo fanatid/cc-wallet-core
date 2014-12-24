@@ -12,6 +12,7 @@ var verify = require('../verify')
  * @param {AddressManager} addressManager
  * @param {AddressStorageRecord} record
  * @param {Object} network Network description from bitcoinjs-lib.networks
+ * @param {number} network.pubKeyHash
  * @param {AssetDefinition} [assetDefinition]
  */
 function Address(addressManager, record, network, assetDefinition) {
@@ -88,7 +89,7 @@ Address.checkColorAddress = function (assetdef, address) {
 }
 
 /**
- * @return {bitcoinjs-lib.ECPubKey}
+ * @return {external:coloredcoinjs-lib.bitcoin.ECPubKey}
  */
 Address.prototype.getPubKey = function () {
   return this.pubKey
@@ -96,7 +97,7 @@ Address.prototype.getPubKey = function () {
 
 /**
  * @param {string} seedHex
- * @return {bitcoinjs-lib.ECKey}
+ * @return {external:coloredcoinjs-lib.bitcoin.ECKey}
  */
 Address.prototype.getPrivKey = function (seedHex) {
   verify.hexString(seedHex)
@@ -135,7 +136,9 @@ Address.prototype.getColorAddress = function () {
 }
 
 /**
- * {@link Address.getAddress}
+ * @memberof Address.prototype
+ * @method toString
+ * @see {@link Address#getAddress}
  */
 Address.prototype.toString = Address.prototype.getAddress
 

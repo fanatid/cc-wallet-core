@@ -109,9 +109,10 @@ Electrum.prototype.supportVerificationMethods = function () {
 }
 
 /**
+ * @private
  * @param {string} method
  * @param {Array.<*>} [params]
- * @return {Q.Promise}
+ * @return {external:Q.Promise}
  */
 Electrum.prototype._request = function (method, params) {
   verify.string(method)
@@ -129,7 +130,9 @@ Electrum.prototype._request = function (method, params) {
 }
 
 /**
- * {@link Network~getHeader}
+ * @memberof Electrum.prototype
+ * @method getHeader
+ * @see {@link Network#getHeader}
  */
 Electrum.prototype.getHeader = function (height) {
   verify.number(height)
@@ -160,7 +163,9 @@ Electrum.prototype.getHeader = function (height) {
 }
 
 /**
- * {@link Network~getChunk}
+ * @memberof Electrum.prototype
+ * @method getChunk
+ * @see {@link Network#getChunk}
  */
 Electrum.prototype.getChunk = function (index) {
   verify.number(index)
@@ -172,7 +177,9 @@ Electrum.prototype.getChunk = function (index) {
 }
 
 /**
- * {@link Network~getTx}
+ * @memberof Electrum.prototype
+ * @method getTx
+ * @see {@link Network#getTx}
  */
 Electrum.prototype.getTx = function (txId, walletState) {
   verify.txId(txId)
@@ -194,7 +201,9 @@ Electrum.prototype.getTx = function (txId, walletState) {
 }
 
 /**
- * {@link Network~getMerkle}
+ * @memberof Electrum.prototype
+ * @method getMerkle
+ * @see {@link Network#getMerkle}
  */
 Electrum.prototype.getMerkle = function (txId, height) {
   verify.txId(txId)
@@ -217,7 +226,9 @@ Electrum.prototype.getMerkle = function (txId, height) {
 }
 
 /**
- * {@link Network~sendTx}
+ * @memberof Electrum.prototype
+ * @method sendTx
+ * @see {@link Network#sendTx}
  */
 Electrum.prototype.sendTx = function (tx) {
   verify.Transaction(tx)
@@ -232,7 +243,9 @@ Electrum.prototype.sendTx = function (tx) {
 }
 
 /**
- * {@link Network~getHistory}
+ * @memberof Electrum.prototype
+ * @method getHistory
+ * @see {@link Network#getHistory}
  */
 Electrum.prototype.getHistory = function (address) {
   verify.string(address)
@@ -251,7 +264,9 @@ Electrum.prototype.getHistory = function (address) {
 }
 
 /**
- * {@link Network~getHistory}
+ * @memberof Electrum.prototype
+ * @method getUnspent
+ * @see {@link Network#getUnspent}
  */
 Electrum.prototype.getUnspent = function (address) {
   verify.string(address)
@@ -272,7 +287,9 @@ Electrum.prototype.getUnspent = function (address) {
 }
 
 /**
- * {@link Network~subscribeAddress}
+ * @memberof Electrum.prototype
+ * @method subscribeAddress
+ * @see {@link Network#subscribeAddress}
  */
 Electrum.prototype.subscribeAddress = util.makeSerial(function (address) {
   verify.string(address)

@@ -10,7 +10,7 @@ var verify = require('../verify')
  *
  * @param {Wallet} wallet
  * @param {Object} [query]
- * @param {ColorDefinition[]} [query.onlyColoredAs=null]
+ * @param {external:coloredcoinjs-lib.ColorDefinition[]} [query.onlyColoredAs=null]
  * @param {string[]} [query.onlyAddresses=null]
  * @param {boolean} [query.includeSpent=false]
  * @param {boolean} [query.onlySpent=false]
@@ -43,7 +43,7 @@ CoinQuery.prototype.clone = function () {
 }
 
 /**
- * @param {(ColorDefinition|ColorDefinition[])} colors
+ * @param {(external:coloredcoinjs-lib.ColorDefinition|external:coloredcoinjs-lib.ColorDefinition[])} colors
  * @return {CoinQuery}
  */
 CoinQuery.prototype.onlyColoredAs = function (colors) {
@@ -108,15 +108,13 @@ CoinQuery.prototype.onlyUnconfirmed = function () {
 }
 
 /**
- * @callback CoinQuery~getCoins
+ * @callback CoinQuery~getCoinsCallback
  * @param {?Error} error
  * @param {CoinList} coinList
  */
 
 /**
- * Select coins and return CoinList via cb
- *
- * @param {CoinQuery~getCoins} cb
+ * @param {CoinQuery~getCoinsCallback} cb
  */
 CoinQuery.prototype.getCoins = function (cb) {
   verify.function(cb)

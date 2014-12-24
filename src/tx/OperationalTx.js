@@ -9,7 +9,7 @@ var verify = require('../verify')
 
 /**
  * @class OperationalTx
- * @extends cclib.OperationalTx
+ * @extends external:coloredcoinjs-lib.OperationalTx
  *
  * @param {Wallet} wallet
  */
@@ -27,7 +27,7 @@ util.inherits(OperationalTx, cclib.OperationalTx)
 /**
  * Add ColorTarget to current tx
  *
- * @param {ColorTarget} target
+ * @param {external:coloredcoinjs-lib.ColorTarget} target
  */
 OperationalTx.prototype.addTarget = function (target) {
   verify.ColorTarget(target)
@@ -37,7 +37,7 @@ OperationalTx.prototype.addTarget = function (target) {
 /**
  * Vectorized version of addTarget
  *
- * @param {ColorTarget[]} targets
+ * @param {external:coloredcoinjs-lib.ColorTarget[]} targets
  */
 OperationalTx.prototype.addTargets = function (targets) {
   targets.forEach(this.addTarget.bind(this))
@@ -46,7 +46,7 @@ OperationalTx.prototype.addTargets = function (targets) {
 /**
  * Return ColorTargets of current transaction
  *
- * @return {ColorTarget[]}
+ * @return {external:coloredcoinjs-lib.ColorTarget[]}
  */
 OperationalTx.prototype.getTargets = function () {
   return this.targets
@@ -56,7 +56,7 @@ OperationalTx.prototype.getTargets = function () {
  * Return true if transaction represent 1 color
  *
  * @return {boolean}
- * @throws {Error} Will throw an error if current transaction don't have targets
+ * @throws {ZeroArrayLengthError}
  */
 OperationalTx.prototype.isMonoColor = function () {
   if (this.targets.length === 0) {
@@ -71,7 +71,7 @@ OperationalTx.prototype.isMonoColor = function () {
 
 /**
  * @param {number} txSize
- * @return {ColorValue}
+ * @return {external:coloredcoinjs-lib.ColorValue}
  */
 OperationalTx.prototype.getRequiredFee = function (txSize) {
   verify.number(txSize)
@@ -83,23 +83,23 @@ OperationalTx.prototype.getRequiredFee = function (txSize) {
 }
 
 /**
- * @return {ColorValue}
+ * @return {external:coloredcoinjs-lib.ColorValue}
  */
 OperationalTx.prototype.getDustThreshold = function () {
   return new cclib.ColorValue(new cclib.UncoloredColorDefinition(), 5500)
 }
 
 /**
- * @callback OperationalTx~selectCoins
+ * @callback OperationalTx~selectCoinsCallback
  * @param {?Error}
  * @param {Coin[]} utxo
- * @param {ColorValue} utxoColorValue
+ * @param {external:coloredcoinjs-lib.ColorValue} utxoColorValue
  */
 
 /*
- * @param {ColorValue}
+ * @param {external:coloredcoinjs-lib.ColorValue}
  * @param {?Object} feeEstimator
- * @param {OperationalTx~selectCoins} cb
+ * @param {OperationalTx~selectCoinsCallback} cb
  */
 OperationalTx.prototype.selectCoins = function (colorValue, feeEstimator, cb) {
   verify.ColorValue(colorValue)
@@ -164,9 +164,8 @@ OperationalTx.prototype.selectCoins = function (colorValue, feeEstimator, cb) {
 }
 
 /**
- * @param {ColorDefinition} colordef
+ * @param {external:coloredcoinjs-lib.ColorDefinition} colordef
  * @return {string}
- * @throws {Error} If targets not found or multi-color
  */
 OperationalTx.prototype.getChangeAddress = function (colordef) {
   verify.ColorDefinition(colordef)

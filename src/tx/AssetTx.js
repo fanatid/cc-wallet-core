@@ -82,7 +82,7 @@ AssetTx.prototype.isMonoColor = function () {
 }
 
 /**
- * @return {OperationalTx}
+ * @return {external:coloredcoinjs-lib.OperationalTx}
  */
 AssetTx.prototype.makeOperationalTx = function () {
   if (!this.isMonoColor()) {

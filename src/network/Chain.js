@@ -131,6 +131,7 @@ function Chain(wallet, opts) {
 inherits(Chain, Network)
 
 /**
+ * @private
  * @param {string} path
  * @return {string}
  */
@@ -140,9 +141,10 @@ Chain.prototype._getRequestURL = function (path) {
 }
 
 /**
+ * @private
  * @param {string} path
  * @param {Object} [data] Data for POST request, may be missed
- * @return {Q.Promise<string>}
+ * @return {external:Q.Promise<string>}
  */
 Chain.prototype._request = function (path, data) {
   var requestOpts = {
@@ -168,7 +170,9 @@ Chain.prototype._request = function (path, data) {
 }
 
 /**
- * {@link Network~getHeader}
+ * @memberof Chain.prototype
+ * @method getHeader
+ * @see {@link Network#getHeader}
  */
 Chain.prototype.getHeader = function (height) {
   verify.number(height)
@@ -200,7 +204,9 @@ Chain.prototype.getHeader = function (height) {
 }
 
 /**
- * {@link Network~getTx}
+ * @memberof Chain.prototype
+ * @method getTx
+ * @see {@link Network#getTx}
  */
 Chain.prototype.getTx = function (txId, walletState) {
   verify.txId(txId)
@@ -224,7 +230,9 @@ Chain.prototype.getTx = function (txId, walletState) {
 }
 
 /**
- * {@link Network~sendTx}
+ * @memberof Chain.prototype
+ * @method sendTx
+ * @see {@link Network#sendTx}
  */
 Chain.prototype.sendTx = function (tx) {
   verify.Transaction(tx)
@@ -239,7 +247,9 @@ Chain.prototype.sendTx = function (tx) {
 }
 
 /**
- * {@link Network~getHistory}
+ * @memberof Chain.prototype
+ * @method getHistory
+ * @see {@link Network#getHistory}
  */
 Chain.prototype.getHistory = function (address) {
   verify.string(address)
@@ -265,7 +275,9 @@ Chain.prototype.getHistory = function (address) {
 }
 
 /**
- * {@link Network~getHistory}
+ * @memberof Chain.prototype
+ * @method getUnspent
+ * @see {@link Network#getUnspent}
  */
 Chain.prototype.getUnspent = function (address) {
   verify.string(address)
@@ -311,7 +323,9 @@ Chain.prototype.getUnspent = function (address) {
 }
 
 /**
- * {@link Network~subscribeAddress}
+ * @memberof Chain.prototype
+ * @method subscribeAddress
+ * @see {@link Network#subscribeAddress}
  */
 Chain.prototype.subscribeAddress = function (address) {
   verify.string(address)

@@ -19,7 +19,7 @@ var verify = require('../verify')
 
 /**
  * @class TxFetcher
- * @extends events.EventEmitter
+ * @extends external:events.EventEmitter
  * @param {Wallet} wallet
  * @param {Blockchain} blockchain
  */

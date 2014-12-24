@@ -11,12 +11,12 @@ var txStatus = require('../const').txStatus
 
 
 /**
- * @constant
- * @type {number}
+ * @const {number} TxManager~TimezoneOffset
  */
 var TimezoneOffset = new Date().getTimezoneOffset() * 60
 
 /**
+ * @name TxManager~getCurrentTimestamp
  * @return {number}
  */
 function getCurrentTimestamp() {
@@ -26,27 +26,27 @@ function getCurrentTimestamp() {
 
 /**
  * @event TxManager#addTx
- * @param {Transaction} tx
+ * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
  */
 
 /**
  * @event TxManager#updateTx
- * @param {Transaction} tx
+ * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
  */
 
 /**
  * @event TxManager#revertTx
- * @param {Transaction} tx
+ * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
  */
 
 /**
  * @event TxManager#sendTx
- * @param {Transaction} tx
+ * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
  */
 
 /**
  * @class TxManager
- * @extends events.EventEmitter
+ * @extends external:events.EventEmitter
  * @mixes SyncMixin
  * @param {Wallet} wallet
  * @param {WalletState} walletState
@@ -66,12 +66,12 @@ function TxManager(wallet, walletState, rawStorage) {
 inherits(TxManager, events.EventEmitter)
 
 /**
- * @param {Transaction} tx
+ * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
  * @param {Object} data
  * @param {number} [data.status=txStatus.unknown]
  * @param {number} data.height
  * @param {string} data.tAddresses
- * @return {Q.Promise}
+ * @return {external:Q.Promise}
  */
 TxManager.prototype.addTx = function (tx, data) {
   verify.Transaction(tx)
@@ -117,12 +117,12 @@ TxManager.prototype.addTx = function (tx, data) {
 }
 
 /**
- * @param {Transaction} tx
+ * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
  * @param {Object} data
  * @param {number} [data.status]
  * @param {number} [data.height]
  * @param {string} [data.tAddress]
- * @return {Q.Promise}
+ * @return {external:Q.Promise}
  */
 TxManager.prototype.updateTx = function (tx, data) {
   verify.Transaction(tx)
@@ -162,9 +162,9 @@ TxManager.prototype.updateTx = function (tx, data) {
 }
 
 /**
- * @param {Transaction} tx
+ * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
  * @param {string} rAddress
- * @return {Q.Promise}
+ * @return {external:Q.Promise}
  */
 TxManager.prototype.revertTx = function (tx, rAddress) {
   verify.Transaction(tx)
@@ -183,8 +183,8 @@ TxManager.prototype.revertTx = function (tx, rAddress) {
 }
 
 /**
- * @param {Transaction} tx
- * @return {Q.Promise}
+ * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
+ * @return {external:Q.Promise}
  */
 TxManager.prototype.sendTx = function (tx) {
   verify.Transaction(tx)
@@ -232,7 +232,7 @@ TxManager.prototype.getAllTxIds = function (addresses) {
 
 /**
  * @param {string} txId
- * @return {?Transaction}
+ * @return {?external:coloredcoinjs-lib.bitcoin.Transaction}
  */
 TxManager.prototype.getTx = function (txId) {
   verify.txId(txId)

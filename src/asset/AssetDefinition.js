@@ -6,7 +6,7 @@ var verify = require('../verify')
 
 
 /**
- * @typedef {Object} AssetDefinitionDesc
+ * @typedef {Object} AssetDefinition~Desc
  * @param {string[]} monikers
  * @param {string[]} colorDescs
  * @param {number} [unit=1] Power of 10 and greater than 0
@@ -14,10 +14,9 @@ var verify = require('../verify')
 
 /**
  * @class AssetDefinition
-
- * @param {coloredcoinjs-lib.ColorDefinitionManager} colorDefinitionManager
- * @param {AssetDefinitionDesc} data
- * @throws {Error} If data.unit not power of 10
+ * @param {external:coloredcoinjs-lib.ColorDefinitionManager} colorDefinitionManager
+ * @param {AssetDefinition~Desc} data
+ * @throws {VerifyPowerError} If data.unit not power of 10
  */
 function AssetDefinition(colorDefinitionManager, data) {
   if (!data.colorDescs) {
@@ -47,7 +46,7 @@ function AssetDefinition(colorDefinitionManager, data) {
 }
 
 /**
- * @return {AssetDefinitionDesc}
+ * @return {AssetDefinition~Desc}
  */
 AssetDefinition.prototype.getData = function () {
   return {
@@ -65,7 +64,7 @@ AssetDefinition.prototype.getMonikers = function () {
 }
 
 /**
- * @return {ColorSet}
+ * @return {external:coloredcoinjs-lib.ColorSet}
  */
 AssetDefinition.prototype.getColorSet = function () {
   return this.colorSet
@@ -79,7 +78,7 @@ AssetDefinition.prototype.getId = function () {
 }
 
 /**
- * @return {ColorDefinition[]}
+ * @return {external:coloredcoinjs-lib.ColorDefinition[]}
  */
 AssetDefinition.prototype.getColorDefinitions = function () {
   return this.getColorSet().getColorDefinitions()

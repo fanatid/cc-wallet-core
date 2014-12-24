@@ -7,7 +7,7 @@ var verify = require('../verify')
  *
  * @param {AssetValue} assetValue
  * @param {string} script
- * @param {Object} network
+ * @param {Object} network One of coloredcoinjs-lib.bitcoin.networks
  */
 function HistoryTarget(assetValue, script, network) {
   verify.AssetValue(assetValue)

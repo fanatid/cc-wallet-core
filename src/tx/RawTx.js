@@ -13,7 +13,7 @@ function RawTx() {
 }
 
 /**
- * @param {ComposedTx} composedTx
+ * @param {external:coloredcoinjs-lib.ComposedTx} composedTx
  * @return {RawTx}
  */
 RawTx.fromComposedTx = function (composedTx) {
@@ -33,7 +33,7 @@ RawTx.fromComposedTx = function (composedTx) {
 }
 
 /**
- * @param {bitcoinjs-lib.Transaction} tx
+ * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
  * @return {RawTx}
  */
 RawTx.fromTransaction = function (tx) {
@@ -57,13 +57,14 @@ RawTx.fromHex = function (hex) {
 }
 
 /**
- * @callback RawTx~sign
+ * @callback RawTx~signCallback
  * @param {?Error} error
  */
 
 /**
- * @param {Wallet} opts.wallet
- * @param {string} opts.seedHex
+ * @param {Wallet} wallet
+ * @param {string} seedHex
+ * @param {RawTx~signCallback} cb
  */
 RawTx.prototype.sign = function (wallet, seedHex, cb) {
   verify.Wallet(wallet)
@@ -110,7 +111,7 @@ RawTx.prototype.sign = function (wallet, seedHex, cb) {
 
 /**
  * @param {boolean} [allowIncomplete=fallse]
- * @return {bitcoinjs-lib.Transaction}
+ * @return {external:coloredcoinjs-lib.bitcoin.Transaction}
  */
 RawTx.prototype.toTransaction = function (allowIncomplete) {
   allowIncomplete = allowIncomplete || false

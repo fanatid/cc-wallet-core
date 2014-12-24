@@ -18,6 +18,7 @@ function transformTx() {}
  * For a given transaction tx, returns a string that represents
  *  the type of transaction (asset, operational, composed, signed) that it is
  *
+ * @name transformTx~classifyTx
  * @param {(AssetTx|OperationalTx|ComposedTx|RawTx|Transaction)} tx
  * @return {?string}
  */
@@ -51,7 +52,7 @@ function classifyTx(tx) {
 }
 
 /**
- * @callback transformAssetTx~callback
+ * @callback transformTx~transformAssetTxCallback
  * @param {?Error} error
  * @param {OperationalTx} operationalTx
  */
@@ -60,10 +61,11 @@ function classifyTx(tx) {
  * Takes a AssetTx assetTx and returns a transaction
  *  of type targetKind which is one of (operational, composed, signed)
  *
+ * @name transformTx~transformAssetTx
  * @param {AssetTx} assetTx
  * @param {string} targetKind
  * @param {Object} opts
- * @param {transformAssetTx~callback} cb
+ * @param {transformTx~transformAssetTxCallback} cb
  */
 function transformAssetTx(assetTx, targetKind, opts, cb) {
   verify.AssetTx(assetTx)
@@ -87,19 +89,20 @@ function transformAssetTx(assetTx, targetKind, opts, cb) {
 }
 
 /**
- * @callback transformOperationalTx~callback
+ * @callback transformTx~transformOperationalTxCallback
  * @param {?Error} error
- * @param {ComposedTx} composedTx
+ * @param {external:coloredcoinjs-lib.ComposedTx} composedTx
  */
 
 /**
  * Takes a OperationalTx operationalTx and returns a transaction
  *  of type targetKind which is one of (composed, signed)
  *
+ * @name transformTx~transformOperationalTx
  * @param {OperationalTx} operationalTx
  * @param {string} targetKind
  * @param {Object} opts
- * @param {transformOperationalTx~callback} cb
+ * @param {transformTx~transformOperationalTxCallback} cb
  */
 function transformOperationalTx(operationalTx, targetKind, opts, cb) {
   verify.OperationalTx(operationalTx)
@@ -130,19 +133,20 @@ function transformOperationalTx(operationalTx, targetKind, opts, cb) {
 }
 
 /**
- * @callback transformComposedTx~callback
+ * @callback transformTx~transformComposedTxCallback
  * @param {?Error} error
- * @param {Transaction} tx
+ * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
  */
 
 /**
  * Takes a ComposedTx composedTx and returns a transaction
  *  of type targetKind which is one of (raw, signed)
  *
+ * @name transformTx~transformComposedTx
  * @param {ComposedTx} composedTx
  * @param {string} targetKind
  * @param {Object} opts
- * @param {transformComposedTx~callback} cb
+ * @param {transformTx~transformComposedTxCallback} cb
  */
 function transformComposedTx(composedTx, targetKind, opts, cb) {
   verify.ComposedTx(composedTx)
@@ -164,19 +168,20 @@ function transformComposedTx(composedTx, targetKind, opts, cb) {
 }
 
 /**
- * @callback transformRawTx~callback
+ * @callback transformTx~transformRawTxCallback
  * @param {?Error} error
- * @param {Transaction} tx
+ * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
  */
 
 /**
  * Takes a RawTx rawTx and returns a transaction
  *  of type targetKind which is one of (signed)
  *
+ * @name transformTx~transformRawTx
  * @param {RawTx} rawTx
  * @param {string} targetKind
  * @param {Object} opts
- * @param {transformRawTx~callback} cb
+ * @param {transformTx~transformRawTxCallback} cb
  */
 function transformRawTx(rawTx, targetKind, opts, cb) {
   verify.RawTx(rawTx)
@@ -204,7 +209,7 @@ function transformRawTx(rawTx, targetKind, opts, cb) {
 }
 
 /**
- * @callback TxTranformer~transformTx
+ * @callback transformTx~callback
  * @param {?Error} error
  * @param {(OpeationalTx|ComposedTx|RawTx|Transaction)} tx
  */
@@ -220,7 +225,7 @@ function transformRawTx(rawTx, targetKind, opts, cb) {
  * @param {Object} [opts] Required if targetKind is signed
  * @param {string} [opts.seedHex]
  * @param {Wallet} [opts.wallet]
- * @param {TxTranformer~transformTx} cb
+ * @param {transformTx~callback} cb
  */
 function transformTx(tx, targetKind, opts, cb) {
   if (_.isUndefined(cb)) {

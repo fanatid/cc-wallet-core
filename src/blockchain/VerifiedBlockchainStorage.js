@@ -36,6 +36,7 @@ function VerifiedBlockchainStorage() {
 inherits(VerifiedBlockchainStorage, SyncStorage)
 
 /**
+ * @private
  * @return {{headers: string, hashes: string}}
  */
 VerifiedBlockchainStorage.prototype._getData = function () {
@@ -43,6 +44,7 @@ VerifiedBlockchainStorage.prototype._getData = function () {
 }
 
 /**
+ * @private
  * @param {{headers: string, hashes: string}} data
  */
 VerifiedBlockchainStorage.prototype._saveData = function (data) {

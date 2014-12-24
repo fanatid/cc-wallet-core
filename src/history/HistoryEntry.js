@@ -6,7 +6,7 @@ var historyEntryType = require('../const').historyEntryType
  * @class HistoryEntry
  *
  * @param {Object} data
- * @param {bitcoinjs-lib.Transaction} data.tx
+ * @param {external:coloredcoinjs-lib.bitcoin.Transaction} data.tx
  * @param {number} data.height
  * @param {number} data.timestamp
  * @param {boolean} data.isBlockTimestamp
@@ -51,7 +51,7 @@ HistoryEntry.prototype.isEqual = function (historyEntry) {
 }
 
 /**
- * @return {bitcoinjs-lib.Transaction}
+ * @return {external:coloredcoinjs-lib.bitcoin.Transaction}
  */
 HistoryEntry.prototype.getTx = function () {
   return this._tx

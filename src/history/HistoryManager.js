@@ -16,6 +16,7 @@ var historyEntryType = require('../const').historyEntryType
 
 
 /**
+ * @private
  * @param {Array.<{txId1: string, txIdN:string}>} entries
  * @param {TxManager} txManager
  * @return {Array.<{txId1: string, txIdN:string}>}
@@ -59,7 +60,7 @@ function toposort(entries, txManager) {
 
 /**
  * @class HistoryManager
- * @extends events.EventEmitter
+ * @extends external:events.EventEmitter
  * @param {Wallet} wallet
  * @param {WalletState} walletState
  * @param {Object} rawStorage
@@ -80,6 +81,7 @@ function HistoryManager(wallet, walletState, rawStorage) {
 inherits(HistoryManager, events.EventEmitter)
 
 /**
+ * @private
  */
 HistoryManager.prototype._resortHistoryRecords = function () {
   var self = this
@@ -99,8 +101,8 @@ HistoryManager.prototype._resortHistoryRecords = function () {
 }
 
 /**
- * @param {Transaction} tx
- * @return {Q.Promise}
+ * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
+ * @return {external:Q.Promise}
  */
 HistoryManager.prototype.addTx = function (tx) {
   verify.Transaction(tx)
@@ -206,8 +208,8 @@ HistoryManager.prototype.addTx = function (tx) {
 }
 
 /**
- * @param {Transaction} tx
- * @return {Q.Promise}
+ * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
+ * @return {external:Q.Promise}
  */
 HistoryManager.prototype.updateTx = function () {
   this._resortHistoryRecords()
@@ -215,8 +217,8 @@ HistoryManager.prototype.updateTx = function () {
 }
 
 /**
- * @param {Transaction} tx
- * @return {Q.Promise}
+ * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
+ * @return {external:Q.Promise}
  */
 HistoryManager.prototype.revertTx = function (tx) {
   verify.Transaction(tx)
@@ -235,7 +237,7 @@ HistoryManager.prototype.revertTx = function (tx) {
 /**
  * @param {AssetDefinition} [assetdef]
  * @return {HistoryEntry[]}
- * @throws {Error}
+ * @throws {(TxNotFoundError|AssetNotFoundError|MultiAssetTransactionNotSupportedError)}
  */
 HistoryManager.prototype.getEntries = function (assetdef) {
   var assetDefinitionManager = this._wallet.getAssetDefinitionManager()

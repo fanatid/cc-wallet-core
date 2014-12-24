@@ -6,7 +6,6 @@ var verify = require('../verify')
 
 /**
  * @class CoinList
- *
  * @param {Coin[]} coins
  */
 function CoinList(coins) {
@@ -30,16 +29,16 @@ CoinList.prototype.getCoins = function () {
 }
 
 /**
- * @callback CoinList~getValues
+ * @callback CoinList~getValuesCallback
  * @param {?Error} error
  * @param {Object} values
- * @param {ColorValue[]} values.total
- * @param {ColorValue[]} values.available
- * @param {ColorValue[]} values.unconfirmed
+ * @param {external:coloredcoinjs-lib.ColorValue[]} values.total
+ * @param {external:coloredcoinjs-lib.ColorValue[]} values.available
+ * @param {external:coloredcoinjs-lib.ColorValue[]} values.unconfirmed
  */
 
 /**
- * @param {CoinList~getValues} cb
+ * @param {CoinList~getValuesCallback} cb
  */
 CoinList.prototype.getValues = function (cb) {
   verify.function(cb)
@@ -92,13 +91,13 @@ CoinList.prototype.getValues = function (cb) {
 }
 
 /**
- * @callback CoinList~getTotalValue
+ * @callback CoinList~getTotalValueCallback
  * @param {?Error} error
- * @param {ColorValue[]} colorValues
+ * @param {external:coloredcoinjs-lib.ColorValue[]} colorValues
  */
 
 /**
- * @param {CoinList~getTotalValue} cb
+ * @param {CoinList~getTotalValueCallback} cb
  */
 CoinList.prototype.getTotalValue = function (cb) {
   verify.function(cb)

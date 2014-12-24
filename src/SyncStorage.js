@@ -5,10 +5,10 @@ var _ = require('lodash')
 var cclib = require('./cclib')
 
 
-/*
+/**
  * @class SyncStorage
- * @extends coloredcoinjs-lib.SyncStorage
- * {@link coloredcoinjs-lib.SyncStorage~constructor}
+ * @extends external:coloredcoinjs-lib.SyncStorage
+ * {@link external:coloredcoinjs-lib.SyncStorage~constructor}
  */
 function SyncStorage(opts) {
   opts = _.extend({

@@ -15,8 +15,8 @@ var verify = require('../verify')
 
 /**
  * @class AssetDefinitionManager
- * @extends events.EventEmitter
- * @param {coloredcoinjs-lib.ColorDefinitionManager} cdManager
+ * @extends external:events.EventEmitter
+ * @param {external:coloredcoinjs-lib.ColorDefinitionManager} cdManager
  * @param {AssetDefinitionStorage} storage
  */
 function AssetDefinitionManager(cdManager, storage) {

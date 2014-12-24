@@ -21,7 +21,7 @@ var errors = require('../errors')
 
 /**
  * @class Blockchain
- * @extends events.EventEmitter
+ * @extends external:events.EventEmitter
  */
 function Blockchain() {
   events.EventEmitter.call(this)
@@ -38,7 +38,7 @@ Blockchain.prototype.getCurrentHeight = function () {
 }
 
 /**
- * @callback Blockchain~getBlockTime
+ * @callback Blockchain~getBlockTimeCallback
  * @param {?Error} error
  * @param {number} timestamp
  */
@@ -46,30 +46,30 @@ Blockchain.prototype.getCurrentHeight = function () {
 /**
  * @abstract
  * @param {number} height
- * @param {Blockchain~getBlockTime} cb
+ * @param {Blockchain~getBlockTimeCallback} cb
  */
 Blockchain.prototype.getBlockTime = function () {
   throw new errors.NotImplementedError('Blockchain.getBlockTime')
 }
 
 /**
- * @callback Blockchain~getTx
+ * @callback Blockchain~getTxCallback
  * @param {?Error} error
- * @param {Transaction} tx
+ * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
  */
 
 /**
  * @abstract
  * @param {string} txId
  * @param {WalletState} [walletState]
- * @param {Blockchain~getTx} cb
+ * @param {Blockchain~getTxCallback} cb
  */
 Blockchain.prototype.getTx = function () {
   throw new errors.NotImplementedError('Blockchain.getTx')
 }
 
 /**
- * @callback Blockchain~sendTx
+ * @callback Blockchain~sendTxCallback
  * @param {?Error} error
  * @param {string} txId
  */
@@ -77,42 +77,36 @@ Blockchain.prototype.getTx = function () {
 /**
  * @abstract
  * @param {Transaction} tx
- * @param {Blockchain~sendTx} cb
+ * @param {Blockchain~sendTxCallback} cb
  */
 Blockchain.prototype.sendTx = function () {
   throw new errors.NotImplementedError('Blockchain.sendTx')
 }
 
 /**
- * @typedef {Object} HistoryEntry
- * @property {string} txId
- * @property {number} height Zero for unconfirmed transactions
- */
-
-/**
- * @callback Blockchain~getHistory
+ * @callback Blockchain~getHistoryCallback
  * @param {?Error} error
- * @param {HistoryEntry[]} entries
+ * @param {Array.<{txId: string, height: number}>} entries
  */
 
 /**
  * @abstract
  * @param {string} address
- * @param {Blockchain~getHistory} cb
+ * @param {Blockchain~getHistoryCallback} cb
  */
 Blockchain.prototype.getHistory = function () {
   throw new errors.NotImplementedError('Blockchain.getHistory')
 }
 
 /**
- * @callback Blockchain~subscribeAddress
+ * @callback Blockchain~subscribeAddressCallback
  * @param {?Error} error
  */
 
 /**
  * @abstract
  * @param {string} address
- * @param {Blockchain~subscribeAddress} cb
+ * @param {Blockchain~subscribeAddressCallback} cb
  */
 Blockchain.prototype.subscribeAddress = function () {
   throw new errors.NotImplementedError('Blockchain.subscribeAddress')

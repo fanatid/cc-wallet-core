@@ -8,7 +8,7 @@ var verify = require('../verify')
 
 
 /**
- * @typedef {Object} AssetDefinitionRecord
+ * @typedef {Object} AssetDefinition~Record
  * @param {string} id
  * @param {string[]} monikers
  * @param {string[]} colorDescs
@@ -37,14 +37,16 @@ function AssetDefinitionStorage() {
 inherits(AssetDefinitionStorage, SyncStorage)
 
 /**
- * @return {AssetDefinitionRecord[]}
+ * @private
+ * @return {AssetDefinition~Record[]}
  */
 AssetDefinitionStorage.prototype._getRecords = function () {
   return this.assetRecords
 }
 
 /**
- * @param {AssetDefinitionRecord[]} records
+ * @private
+ * @param {AssetDefinition~Record[]} records
  */
 AssetDefinitionStorage.prototype._saveRecords = function (records) {
   this.assetRecords = records
@@ -52,8 +54,8 @@ AssetDefinitionStorage.prototype._saveRecords = function (records) {
 }
 
 /**
- * @param {AssetDefinitionRecord} data
- * @throws {?Error} If data.id or moniker from data.monikers already exists
+ * @param {AssetDefinition~Record} data
+ * @throws {?AlreadyExistsError} If data.id or moniker from data.monikers already exists
  */
 AssetDefinitionStorage.prototype.add = function (data) {
   verify.object(data)
@@ -92,7 +94,7 @@ AssetDefinitionStorage.prototype.add = function (data) {
 
 /**
  * @param {string} moniker
- * @return {?AssetDefinitionRecord}
+ * @return {?AssetDefinition~Record}
  */
 AssetDefinitionStorage.prototype.getByMoniker = function (moniker) {
   verify.string(moniker)
@@ -106,7 +108,7 @@ AssetDefinitionStorage.prototype.getByMoniker = function (moniker) {
 
 /**
  * @param {string} desc
- * @return {?AssetDefinitionRecord}
+ * @return {?AssetDefinition~Record}
  */
 AssetDefinitionStorage.prototype.getByDesc = function (desc) {
   verify.string(desc)
@@ -119,7 +121,7 @@ AssetDefinitionStorage.prototype.getByDesc = function (desc) {
 }
 
 /*
- * @return {AssetDefinitionRecord[]}
+ * @return {AssetDefinition~Record[]}
  */
 AssetDefinitionStorage.prototype.getAll = function () {
   return _.cloneDeep(this._getRecords())

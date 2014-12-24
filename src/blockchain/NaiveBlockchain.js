@@ -46,14 +46,18 @@ function NaiveBlockchain(network, opts) {
 inherits(NaiveBlockchain, Blockchain)
 
 /**
- * {@link Blockchain~getCurrentHeight}
+ * @memberof NaiveBlockchain.prototype
+ * @method getCurrentHeight
+ * @see {@link Blockchain#getCurrentHeight}
  */
 NaiveBlockchain.prototype.getCurrentHeight = function () {
   return this._currentHeight
 }
 
 /**
- * {@link Blockchain~getBlockTime}
+ * @memberof NaiveBlockchain.prototype
+ * @method getBlockTime
+ * @see {@link Blockchain#getBlockTime}
  */
 NaiveBlockchain.prototype.getBlockTime = function (height, cb) {
   verify.function(cb)
@@ -81,7 +85,9 @@ NaiveBlockchain.prototype.getBlockTime = function (height, cb) {
 }
 
 /**
- * {@link Blockchain~getTx}
+ * @memberof NaiveBlockchain.prototype
+ * @method getTx
+ * @see {@link Blockchain#getTx}
  */
 NaiveBlockchain.prototype.getTx = function (txId, walletState, cb) {
   if (_.isFunction(walletState) && _.isUndefined(cb)) {
@@ -116,7 +122,9 @@ NaiveBlockchain.prototype.getTx = function (txId, walletState, cb) {
 }
 
 /**
- * {@link Blockchain~sendTx}
+ * @memberof NaiveBlockchain.prototype
+ * @method sendTx
+ * @see {@link Blockchain#sendTx}
  */
 NaiveBlockchain.prototype.sendTx = function (tx, cb) {
   this._network.sendTx(tx)
@@ -124,7 +132,9 @@ NaiveBlockchain.prototype.sendTx = function (tx, cb) {
 }
 
 /**
- * {@link Blockchain~getHistory}
+ * @memberof NaiveBlockchain.prototype
+ * @method getHistory
+ * @see {@link Blockchain#getHistory}
  */
 NaiveBlockchain.prototype.getHistory = function (address, cb) {
   this._network.getHistory(address)
@@ -132,7 +142,9 @@ NaiveBlockchain.prototype.getHistory = function (address, cb) {
 }
 
 /**
- * {@link Blockchain~subscribeAddress}
+ * @memberof NaiveBlockchain.prototype
+ * @method subscribeAddress
+ * @see {@link Blockchain#subscribeAddress}
  */
 NaiveBlockchain.prototype.subscribeAddress = function (address, cb) {
   this._network.subscribeAddress(address)

@@ -3,6 +3,27 @@ var verify = require('./verify')
 
 
 /**
+ * @member {Object} external:coloredcoinjs-lib.bitcoin
+ * @see {@link https://github.com/bitcoinjs/bitcoinjs-lib/ BitcoinJS library}
+ */
+
+/**
+ * @member {function} external:coloredcoinjs-lib.bitcoin.HDNode
+ */
+
+/**
+ * @member {function} external:coloredcoinjs-lib.bitcoin.ECKey
+ */
+
+/**
+ * @member {function} external:coloredcoinjs-lib.bitcoin.ECPubKey
+ */
+
+/**
+ * @member {function} external:coloredcoinjs-lib.bitcoin.Transaction
+ */
+
+/**
  * @param {Buffer} s
  * @return {string}
  */
@@ -21,6 +42,7 @@ bitcoin.hashDecode = function (s) {
 /**
  * Revert bytes order
  *
+ * @private
  * @param {string} s
  * @return {string}
  */

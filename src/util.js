@@ -4,6 +4,24 @@ var util = require('./cclib').util
 
 
 /**
+ * @external events
+ * @see {@link http://nodejs.org/api/events.html Built-in node.js events module}
+ */
+
+/**
+ * @member {function} external:events.EventEmitter
+ */
+
+/**
+ * @external Q
+ * @see {@link https://github.com/kriskowal/q Q on github}
+ */
+
+/**
+ * @member {function} external:Q.Promise
+ */
+
+/**
  * @class OrderedMap
  */
 function OrderedMap() {
@@ -56,6 +74,7 @@ function SyncMixin() {
   }
 
   /**
+   * @private
    */
   self._syncEnter = function () {
     syncCount += 1
@@ -63,6 +82,7 @@ function SyncMixin() {
   }
 
   /**
+   * @private
    */
   self._syncExit = function () {
     syncCount -= 1

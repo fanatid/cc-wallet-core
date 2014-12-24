@@ -18,11 +18,12 @@ var EPOBC_CHAIN = 826130763
 
 
 /**
- * @param {bitcoinjs-lib.HDNode} rootNode
+ * @private
+ * @param {external:coloredcoinjs-lib.bitcoin.HDNode} rootNode
  * @param {number} account
  * @param {number} chain
  * @param {number} index
- * @return {bitcoinjs-lib.HDNode}
+ * @return {external:coloredcoinjs-lib.bitcoin.HDNode}
  */
 function derive(rootNode, account, chain, index) {
   verify.HDNode(rootNode)
@@ -48,9 +49,10 @@ function derive(rootNode, account, chain, index) {
 }
 
 /**
- * @param {(function|ColorDefinition|AssetDefinition)} definition
+ * @private
+ * @param {(function|external:coloredcoinjs-lib.ColorDefinition|AssetDefinition)} definition
  * @return {number}
- * @throws {Error}
+ * @throws {MultiColorNotSupportedError|VerifyColorDefinitionTypeError}
  */
 function selectChain(definition) {
   if (definition instanceof AssetDefinition) {
@@ -85,8 +87,8 @@ function selectChain(definition) {
 
 /**
  * @class AddressManager
- * @extends events.EventEmitter
- * @param {storage.AddressStorage} storage
+ * @extends external:events.EventEmitter
+ * @param {AddressStorage} storage
  * @param {Object} network Network description from bitcoinjs-lib.networks
  */
 function AddressManager(storage, network) {
@@ -103,7 +105,7 @@ inherits(AddressManager, events.EventEmitter)
 
 /**
  * @param {string} seedHex
- * @return {bitcoinjs-lib.HDNode}
+ * @return {external:coloredcoinjs-lib.bitcoin.HDNode}
  */
 AddressManager.prototype.HDNodeFromSeed = function (seedHex) {
   verify.hexString(seedHex)
@@ -128,7 +130,7 @@ AddressManager.prototype.isCurrentSeed = function (seedHex) {
 
 /**
  * @param {string} seedHex
- * @throws {Error} If not currently seedHex
+ * @throws {VerifySeedHexError}
  */
 AddressManager.prototype.isCurrentSeedCheck = function (seedHex) {
   if (!this.isCurrentSeed(seedHex)) {
@@ -139,10 +141,10 @@ AddressManager.prototype.isCurrentSeedCheck = function (seedHex) {
 /**
  * Get new address and save it to db
  *
- * @param {(function|ColorDefinition|AssetDefinition)} definition
+ * @param {(function|external:coloredcoinjs-lib.ColorDefinition|AssetDefinition)} definition
  * @param {string} seedHex
  * @return {Address}
- * @throws {Error} If not currently seedHex or unknow chain
+ * @throws {VerifySeedHexError|MultiColorNotSupportedError|VerifyColorDefinitionTypeError}
  */
 AddressManager.prototype.getNewAddress = function (definition, seedHex) {
   this.isCurrentSeedCheck(seedHex)
@@ -177,9 +179,9 @@ AddressManager.prototype.getNewAddress = function (definition, seedHex) {
 /**
  * Get all addresses
  *
- * @param {(function|ColorDefinition|AssetDefinition)} definition
+ * @param {(function|external:coloredcoinjs-lib.ColorDefinition|AssetDefinition)} definition
  * @return {Address[]}
- * @throws {Error} If unknow chain
+ * @throws {MultiColorNotSupportedError|VerifyColorDefinitionTypeError}
  */
 AddressManager.prototype.getAllAddresses = function (definition) {
   var chain = selectChain(definition)
@@ -198,7 +200,7 @@ AddressManager.prototype.getAllAddresses = function (definition) {
 
 /**
  * @param {string} address
- * @return {?bitcoinjs-lib.ECPubKey}
+ * @return {?external:coloredcoinjs-lib.bitcoin.ECPubKey}
  */
 AddressManager.prototype.getPubKeyByAddress = function (address) {
   verify.string(address)
@@ -218,7 +220,7 @@ AddressManager.prototype.getPubKeyByAddress = function (address) {
 /**
  * @param {string} address
  * @param {string} seedHex
- * @return {?bitcoinjs-lib.ECKey}
+ * @return {?external:coloredcoinjs-lib.bitcoin.ECKey}
  */
 AddressManager.prototype.getPrivKeyByAddress = function (address, seedHex) {
   verify.string(address)

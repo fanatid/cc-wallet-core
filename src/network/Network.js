@@ -35,7 +35,7 @@ var util = require('../util')
 
 /**
  * @class Network
- * @extends events.EventEmitter
+ * @extends external:events.EventEmitter
  */
 function Network() {
   var self = this
@@ -67,8 +67,9 @@ Network.prototype.isConnected = function () {
 }
 
 /**
+ * @private
  * @param {number} newHeight
- * @return {Q.Promise}
+ * @return {external:Q.Promise}
  */
 Network.prototype._setCurrentHeight = util.makeSerial(function (newHeight) {
   verify.number(newHeight)
@@ -102,7 +103,7 @@ Network.prototype.getCurrentBlockHash = function () {
 }
 
 /**
- * @typedef {Object} HeaderObject
+ * @typedef {Object} Network~HeaderObject
  * @property {number} version
  * @property {string} prevBlockHash
  * @property {string} merkleRoot
@@ -114,7 +115,7 @@ Network.prototype.getCurrentBlockHash = function () {
 /**
  * @abstract
  * @param {number} height
- * @return {Q.Promise<HeaderObject>}
+ * @return {external:Q.Promise<HeaderObject>}
  */
 Network.prototype.getHeader = function () {
   return Q(new errors.NotImplementedError('Network.getHeader'))
@@ -123,7 +124,7 @@ Network.prototype.getHeader = function () {
 /**
  * @abstract
  * @param {number} index
- * @return {Q.Promise<string>}
+ * @return {external:Q.Promise<string>}
  */
 Network.prototype.getChunk = function () {
   return Q(new errors.NotImplementedError('Network.getChunk'))
@@ -132,14 +133,14 @@ Network.prototype.getChunk = function () {
 /**
  * @abstract
  * @param {string} txId
- * @return {Q.Promise<Transaction>}
+ * @return {external:Q.Promise<Transaction>}
  */
 Network.prototype.getTx = function () {
   return Q(new errors.NotImplementedError('Network.getTx'))
 }
 
 /**
- * @typedef {Object} MerkleObject
+ * @typedef {Object} Network~MerkleObject
  * @property {number} height
  * @property {string[]} merkle
  * @property {number} index
@@ -149,7 +150,7 @@ Network.prototype.getTx = function () {
  * @abstract
  * @param {string} txId
  * @param {number} [height]
- * @return {Q.Promise<MerkleObject>}
+ * @return {external:Q.Promise<Network~MerkleObject>}
  */
 Network.prototype.getMerkle = function () {
   return Q(new errors.NotImplementedError('Network.getMerkle'))
@@ -157,30 +158,24 @@ Network.prototype.getMerkle = function () {
 
 /**
  * @abstract
- * @param {bitcoinjs-lib.Transaction} tx
- * @return {Q.Promise<string>}
+ * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
+ * @return {external:Q.Promise<string>}
  */
 Network.prototype.sendTx = function () {
   return Q(new errors.NotImplementedError('Network.sendTx'))
 }
 
 /**
- * @typedef {Object} HistoryEntry
- * @property {string} txId
- * @property {number} height
- */
-
-/**
  * @abstract
  * @param {string} address
- * @return {Q.Promise<HistoryEntry[]>}
+ * @return {external:Q.Promise<Array.<{txId: string, height: number}>>}
  */
 Network.prototype.getHistory = function () {
   return Q(new errors.NotImplementedError('Network.getHistory'))
 }
 
 /**
- * @typedef {Object} UnspentObject
+ * @typedef {Object} Network~UnspentObject
  * @property {string} txId
  * @property {number} outIndex
  * @property {number} value
@@ -190,7 +185,7 @@ Network.prototype.getHistory = function () {
 /**
  * @abstract
  * @param {string} address
- * @return {Q.Promise<UnspentObject[]>}
+ * @return {external:Q.Promise<Network~UnspentObject[]>}
  */
 Network.prototype.getUnspent = function () {
   return Q(new errors.NotImplementedError('Network.getUnspent'))
@@ -199,7 +194,7 @@ Network.prototype.getUnspent = function () {
 /**
  * @abstract
  * @param {string} address
- * @return {Q.Promise}
+ * @return {external:Q.Promise}
  */
 Network.prototype.subscribeAddress = function () {
   return Q(new errors.NotImplementedError('Network.subscribeAddress'))

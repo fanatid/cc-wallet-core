@@ -24,7 +24,7 @@ var verify = require('../verify')
 
 /**
  * @class CoinManager
- * @extends events.EventEmitter
+ * @extends external:events.EventEmitter
  * @param {Wallet} wallet
  * @param {WalletState} walletState
  * @param {Object} rawStorage
@@ -46,7 +46,8 @@ function CoinManager(wallet, walletState, rawStorage) {
 inherits(CoinManager, events.EventEmitter)
 
 /**
- * @param {?} record
+ * @private
+ * @param {Coin~RawCoin} record
  * @return {Coin}
  */
 CoinManager.prototype._record2Coin = function (record) {
@@ -65,8 +66,9 @@ CoinManager.prototype._record2Coin = function (record) {
 }
 
 /**
- * @param {Transaction} tx
- * @return {Q.Promise}
+ * @private
+ * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
+ * @return {external:Q.Promise}
  */
 CoinManager.prototype.addTx = function (tx) {
   verify.Transaction(tx)
@@ -119,14 +121,14 @@ CoinManager.prototype.addTx = function (tx) {
 }
 
 /**
- * @param {Transaction} tx
- * @return {Q.Promise}
+ * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
+ * @return {external:Q.Promise}
  */
 CoinManager.prototype.updateTx = function () { return Q() }
 
 /**
- * @param {Transaction} tx
- * @return {Q.Promise}
+ * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
+ * @return {external:Q.Promise}
  */
 CoinManager.prototype.revertTx = function (tx) {
   verify.Transaction(tx)
@@ -172,7 +174,6 @@ CoinManager.prototype.revertTx = function (tx) {
 /**
  * @param {(string|string[])} [addresses]
  * @return {Coin[]}
- * @throws {Error}
  */
 CoinManager.prototype.getCoins = function (addresses) {
   var rawCoins = this._coins
@@ -235,15 +236,15 @@ CoinManager.prototype.isCoinAvailable = function (coin) {
 }
 
 /**
- * @callback CoinManager~getCoinColorValue
+ * @callback CoinManager~getCoinColorValueCallback
  * @param {?Error} error
- * @param {ColorValue} colorValue
+ * @param {external:coloredcoinjs-lib.ColorValue} colorValue
  */
 
 /**
  * @param {Coin} coin
- * @param {ColorDefinition} colorDefinition
- * @param {CoinManager~getCoinColorValue} cb
+ * @param {external:coloredcoinjs-lib.ColorDefinition} colorDefinition
+ * @param {CoinManager~getCoinColorValueCallback} cb
  */
 CoinManager.prototype.getCoinColorValue = function (coin, colorDefinition, cb) {
   verify.Coin(coin)
@@ -255,14 +256,8 @@ CoinManager.prototype.getCoinColorValue = function (coin, colorDefinition, cb) {
 }
 
 /**
- * @callback CoinManager~getCoinMainColorValue
- * @param {?Error} error
- * @param {ColorValue} coinColorValue
- */
-
-/**
  * @param {Coin} coin
- * @param {CoinManager~getCoinMainColorValue} cb
+ * @param {CoinManager~getCoinColorValueCallback} cb
  */
 CoinManager.prototype.getCoinMainColorValue = function (coin, cb) {
   verify.Coin(coin)
@@ -300,8 +295,8 @@ CoinManager.prototype.getCoinMainColorValue = function (coin, cb) {
 }
 
 /**
- * @param {Transaction} tx
- * @return {Q.Promise<ColorValue[]>}
+ * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
+ * @return {external:Q.Promise<external:coloredcoinjs-lib.ColorValue[]>}
  */
 CoinManager.prototype.getTxMainColorValues = function (tx) {
   var self = this

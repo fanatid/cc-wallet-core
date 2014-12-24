@@ -99,14 +99,18 @@ function VerifiedBlockchain(network, opts) {
 inherits(VerifiedBlockchain, Blockchain)
 
 /**
- * {@link Blockchain~getCurrentHeight}
+ * @memberof VerifiedBlockchain.prototype
+ * @method getCurrentHeight
+ * @see {@link Blockchain#getCurrentHeight}
  */
 VerifiedBlockchain.prototype.getCurrentHeight = function () {
   return this._currentHeight
 }
 
 /**
- * {@link Blockchain~getBlockTime}
+ * @memberof VerifiedBlockchain.prototype
+ * @method getBlockTime
+ * @see {@link Blockchain#getBlockTime}
  */
 VerifiedBlockchain.prototype.getBlockTime = function (height, cb) {
   verify.function(cb)
@@ -118,7 +122,9 @@ VerifiedBlockchain.prototype.getBlockTime = function (height, cb) {
 }
 
 /**
- * {@link Blockchain~getTx}
+ * @memberof VerifiedBlockchain.prototype
+ * @method getTx
+ * @see {@link Blockchain#getTx}
  */
 VerifiedBlockchain.prototype.getTx = function (txId, walletState, cb) {
   if (_.isFunction(walletState) && _.isUndefined(cb)) {
@@ -134,7 +140,9 @@ VerifiedBlockchain.prototype.getTx = function (txId, walletState, cb) {
 }
 
 /**
- * {@link Blockchain~sendTx}
+ * @memberof VerifiedBlockchain.prototype
+ * @method sendTx
+ * @see {@link Blockchain#sendTx}
  */
 VerifiedBlockchain.prototype.sendTx = function (tx, cb) {
   this._network.sendTx(tx)
@@ -142,7 +150,9 @@ VerifiedBlockchain.prototype.sendTx = function (tx, cb) {
 }
 
 /**
- * {@link Blockchain~getHistory}
+ * @memberof VerifiedBlockchain.prototype
+ * @method getHistory
+ * @see {@link Blockchain#getHistory}
  */
 VerifiedBlockchain.prototype.getHistory = function (address, cb) {
   this._network.getHistory(address)
@@ -150,7 +160,9 @@ VerifiedBlockchain.prototype.getHistory = function (address, cb) {
 }
 
 /**
- * {@link Blockchain~subscribeAddress}
+ * @memberof VerifiedBlockchain.prototype
+ * @method subscribeAddress
+ * @see {@link Blockchain#subscribeAddress}
  */
 VerifiedBlockchain.prototype.subscribeAddress = function (address, cb) {
   this._network.subscribeAddress(address)
@@ -158,8 +170,9 @@ VerifiedBlockchain.prototype.subscribeAddress = function (address, cb) {
 }
 
 /**
+ * @private
  * @param {number} height
- * @return {Q.Promise}
+ * @return {external:Q.Promise}
  */
 VerifiedBlockchain.prototype._waitHeight = function (height) {
   var deferreds = this._waitHeightDeferreds[height] || []
@@ -171,8 +184,9 @@ VerifiedBlockchain.prototype._waitHeight = function (height) {
 }
 
 /**
+ * @private
  * @param {number} chunkIndex
- * @return {Q.Promise<Buffer>}
+ * @return {external:Q.Promise<Buffer>}
  */
 VerifiedBlockchain.prototype._getVerifiedChunk = function (chunkIndex) {
   var self = this
@@ -203,7 +217,7 @@ VerifiedBlockchain.prototype._getVerifiedChunk = function (chunkIndex) {
 }
 
 /**
- * @typedef {Object} HeaderObject
+ * @typedef {Object} VerifiedBlockchain~HeaderObject
  * @property {number} version
  * @property {string} prevBlockHash
  * @property {string} merkleRoot
@@ -213,16 +227,18 @@ VerifiedBlockchain.prototype._getVerifiedChunk = function (chunkIndex) {
  */
 
 /**
+ * @private
  * @param {number} height
- * @return {Q.Promise<HeaderObject>}
+ * @return {external:Q.Promise<VerifiedBlockchain~HeaderObject>}
  */
 VerifiedBlockchain.prototype._getHeader = function (height) {
   return this._network.getHeader(height)
 }
 
 /**
+ * @private
  * @param {number} height
- * @return {Q.Promise<Buffer>}
+ * @return {external:Q.Promise<Buffer>}
  */
 VerifiedBlockchain.prototype._getVerifiedHeader = function (height) {
   verify.number(height)
@@ -258,18 +274,20 @@ VerifiedBlockchain.prototype._getVerifiedHeader = function (height) {
 }
 
 /**
+ * @private
  * @param {string} txId
  * @param {WalletState} [walletState]
- * @return {Q.Promise<Transaction>}
+ * @return {external:Q.Promise<external:coloredcoinjs-lib.bitcoin.Transaction>}
  */
 VerifiedBlockchain.prototype._getTx = function (txId, walletState) {
   return this._network.getTx(txId, walletState)
 }
 
 /**
+ * @private
  * @param {string} txId
  * @param {WalletState} [walletState]
- * @return {Q.Promise<Transaction>}
+ * @return {external:Q.Promise<external:coloredcoinjs-lib.bitcoin.Transaction>}
  */
 VerifiedBlockchain.prototype._getVerifiedTx = function (txId, walletState) {
   verify.txId(txId)
@@ -343,7 +361,8 @@ VerifiedBlockchain.prototype._getVerifiedTx = function (txId, walletState) {
 }
 
 /**
- * @return {Q.Promise}
+ * @private
+ * @return {external:Q.Promise}
  */
 VerifiedBlockchain.prototype._sync = function () {
   var self = this
@@ -366,7 +385,7 @@ VerifiedBlockchain.prototype._sync = function () {
   /**
    * @param {number} index
    * @param {Buffer[]} chain
-   * @return {Q.Promise<{bits: number, target: Buffer}>}
+   * @return {external:Q.Promise<{bits: number, target: Buffer}>}
    */
   function getTarget(index, chain) {
     chain = chain || []

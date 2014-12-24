@@ -8,11 +8,11 @@ var verify = require('../verify')
 
 
 /**
- * @typedef {Object} AddressStorageRecord
- * @param {number} account Always equal 0
- * @param {number} chain
- * @param {number} index
- * @param {string} pubKey Hex string
+ * @typedef {Object} AddressStorage~Record
+ * @property {number} account Always equal 0
+ * @property {number} chain
+ * @property {number} index
+ * @property {string} pubKey Hex string
  */
 
 /**
@@ -37,27 +37,29 @@ function AddressStorage() {
 inherits(AddressStorage, SyncStorage)
 
 /**
- * @return {AddressStorageRecord[]}
+ * @private
+ * @return {AddressStorage~Record[]}
  */
 AddressStorage.prototype._getRecords = function () {
   return this.addressesRecords
 }
 
 /**
- * @param {AddressStorageRecord[]} records
+ * @private
+ * @param {AddressStorage~Record[]} records
  */
 AddressStorage.prototype._saveRecords = function (records) {
   this.addressesRecords = records
   this.store.set(this.addressesDbKey, records)
 }
 
-/*
+/**
  * @param {Object} data
  * @param {number} data.chain
  * @param {number} data.index
  * @param {string} data.pubKey bitcoinjs-lib.ECPubKey in hex format
- * @return {AddressStorageRecord}
- * @throw {Error} If account, chain, index or pubKey exists
+ * @return {AddressStorage~Record}
+ * @throws {AlreadyExistsError} If account, chain, index or pubKey exists
  */
 AddressStorage.prototype.add = function (data) {
   verify.object(data)
@@ -89,7 +91,7 @@ AddressStorage.prototype.add = function (data) {
 
 /**
  * @param {number} [chain]
- * @return {AddressStorageRecord[]}
+ * @return {AddressStorage~Record[]}
  */
 AddressStorage.prototype.getAll = function (chain) {
   var records = this._getRecords()
