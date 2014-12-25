@@ -4,39 +4,40 @@ var createError = errors.createError || require('errno').create
 
 
 /**
- * ColoredCoinError
- *  +-- AlreadyExistsError
- *  +-- CoinColorValueError
- *  +-- IncompatibilityError
- *  |    +-- ColoredFeeEstimatorError
- *  |    +-- NetworkNotSupportVerificationMethodsError
- *  +-- InsufficientFundsError
- *  +-- MultiAssetTransactionNotSupportedError
- *  +-- MultiColorNotSupportedError
- *  +-- NetworkError
- *  |    +-- NetworkChainError
- *  |    +-- NetworkElectrumError
- *  |    +-- NetworkGetTxError
- *  |    +-- NetworkSendTxError
- *  +-- NotFoundError
- *  |    +-- AssetNotFoundError
- *  |    +-- ComposerFunctionNotFoundError
- *  |    +-- HeaderNotFoundError
- *  |    +-- TxNotFoundError
- *  +-- VerifiedBlockchainError
- *  |    +-- VerifyChunkError
- *  |    +-- VerifyHeaderError
- *  |    +-- VerifyTxError
- *  +-- ToposortError
- *  +-- TxTransformError
- *  |    +-- TxKindIsNotRecognizedError
- *  |    +-- TargetKindIsNotReachableError
- *  +-- VerifyTypeError
- *  |    +-- VerifyColorDefinitionTypeError
- *  |    +-- VerifyPowerError
- *  |    +-- VerifySeedHexError
- *  +-- WalletAlreadyInitializedError
- *  +-- WalletNotInitializedError
+ * Error
+ *  +-- ColoredCoinError
+ *       +-- AlreadyExistsError
+ *       +-- CoinColorValueError
+ *       +-- IncompatibilityError
+ *       |    +-- ColoredFeeEstimatorError
+ *       |    +-- NetworkNotSupportVerificationMethodsError
+ *       +-- InsufficientFundsError
+ *       +-- MultiAssetTransactionNotSupportedError
+ *       +-- MultiColorNotSupportedError
+ *       +-- NetworkError
+ *       |    +-- NetworkChainError
+ *       |    +-- NetworkElectrumError
+ *       |    +-- NetworkGetTxError
+ *       |    +-- NetworkSendTxError
+ *       +-- NotFoundError
+ *       |    +-- AssetNotFoundError
+ *       |    +-- ComposerFunctionNotFoundError
+ *       |    +-- HeaderNotFoundError
+ *       |    +-- TxNotFoundError
+ *       +-- VerifiedBlockchainError
+ *       |    +-- VerifyChunkError
+ *       |    +-- VerifyHeaderError
+ *       |    +-- VerifyTxError
+ *       +-- ToposortError
+ *       +-- TxTransformError
+ *       |    +-- TxKindIsNotRecognizedError
+ *       |    +-- TargetKindIsNotReachableError
+ *       +-- VerifyTypeError
+ *       |    +-- VerifyColorDefinitionTypeError
+ *       |    +-- VerifyPowerError
+ *       |    +-- VerifySeedHexError
+ *       +-- WalletAlreadyInitializedError
+ *       +-- WalletNotInitializedError
  */
 
 /**
@@ -271,5 +272,5 @@ module.exports = _.extend(errors, {
   VerifyPowerError: VerifyPowerError,
   VerifySeedHexError: VerifySeedHexError,
   WalletAlreadyInitializedError: WalletAlreadyInitializedError,
-  WalletNotInitializedError: WalletNotInitializedError,
+  WalletNotInitializedError: WalletNotInitializedError
 })

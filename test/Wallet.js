@@ -231,14 +231,14 @@ describe('Wallet', function () {
       var deferred = Q.defer()
       deferred.promise.done(done, done)
 
-      var seed = '421fc385fdae762b246b80e0212f77bb'
+      var seed = '421fc385fdae724b246b80e0212f77bb'
       wallet.initialize(seed)
       wallet.addAssetDefinition(seed, goldAsset)
       wallet.subscribeAndSyncAllAddresses(function (error) {
         expect(error).to.be.null
 
         var bitcoin = wallet.getAssetDefinitionByMoniker('bitcoin')
-        var targets = [{address: 'miFxiMoU4AmybucyCM5sXB8mPUVpEtP5E1', value: 10000}]
+        var targets = [{address: 'mkwmtrHX99ozTegy77wTgPZwodm4E2VbBr', value: 10000}]
 
         wallet.createTx(bitcoin, targets, function (error, tx) {
           expect(error).to.be.null

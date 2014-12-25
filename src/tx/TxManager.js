@@ -199,6 +199,7 @@ TxManager.prototype.sendTx = function (tx) {
     status: txStatus.dispatch,
     height: 0,
     timestamp: getCurrentTimestamp(),
+    isBlockTimestamp: false,
     tAddresses: [],
     rAddresses: []
   }
