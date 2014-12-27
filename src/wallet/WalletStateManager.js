@@ -325,6 +325,11 @@ WalletStateManager.prototype.getCoins = function (addresses) {
   return this._currentState.getCoinManager().getCoins(addresses)
 }
 
+WalletStateManager.prototype.getCurrentState = function () { 
+  return this._currentState 
+}
+
+
 /**
  * @param {AssetDefinition} [assetdef]
  * @return {HistoryEntry[]}

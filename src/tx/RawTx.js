@@ -3,6 +3,8 @@ var Q = require('q')
 
 var bitcoin = require('../bitcoin')
 var verify = require('../verify')
+var cclib = require('../cclib')
+var Coin = require('../coin').Coin
 
 
 /**
@@ -132,5 +134,66 @@ RawTx.prototype.toHex = function (allowIncomplete) {
   return this.toTransaction(allowIncomplete).toHex()
 }
 
+
+RawTx.prototype.getColorTargets = function(wallet, cb){
+  verify.function(cb)
+  var self = this
+  var network = wallet.getBitcoinNetwork()
+  var coinManager = wallet.getStateManager().getCurrentState().getCoinManager()
+  var tx = self.toTransaction()
+  Q.fcall(function () {
+    var promises = tx.outs.map(function (output, index) {
+      var script = output.script
+      var address = bitcoin.getAddressesFromOutputScript(script, network)[0]
+      var coin = new Coin(coinManager, {
+        txId: tx.getId(),
+        outIndex: index,
+        value: output.value,
+        script: script.toHex(),
+        address: address
+      })
+      return Q.ninvoke(coin, 'getMainColorValue').then(function (colorValue) {
+        return new cclib.ColorTarget(output.script.toHex(), colorValue)
+      })
+    })
+    return Q.all(promises).then(function (result) { return _.filter(result) })
+  }).done(
+    function (cts) { cb(null, cts) }, 
+    function (error) { cb(error) }
+  )
+}
+
+/**
+ * @param {Wallet} wallet
+ * @param {[external:coloredcoinjs-lib.ColorTarget]} colorTargets
+ * @param {boolean} [allowExtra=false]
+ */
+RawTx.prototype.satisfiesTargets = function(wallet, colorTargets, allowExtra, cb){
+  allowExtra = allowExtra || false
+  verify.boolean(allowExtra)
+  verify.function(cb)
+
+  this.getColorTargets(wallet, function(error, txColorTargets) {
+    if(!allowExtra && colorTargets.length != txColorTargets.length){
+      cb(null, false)
+    } else {
+      var unsatisfiedTargets = _.clone(colorTargets)
+      var equivalentColorTargets = function(a, b){
+        return (
+            a.getValue() == b.getValue() && a.getScript() == b.getScript() &&
+            a.getColorDefinition().getDesc() == b.getColorDefinition().getDesc()
+        )
+      }
+      colorTargets.forEach(function (colorTarget) {
+        txColorTargets.forEach(function (txColorTarget) {
+          if (equivalentColorTargets(colorTarget, txColorTarget)){
+            _.pull(unsatisfiedTargets, colorTarget)
+          }
+        })
+      })
+      cb(null, unsatisfiedTargets.length == 0)
+    }
+  })
+}
 
 module.exports = RawTx
