@@ -4,7 +4,6 @@ var Q = require('q')
 var bitcoin = require('../bitcoin')
 var verify = require('../verify')
 var cclib = require('../cclib')
-var Coin = require('../coin').Coin
 
 
 /**
@@ -116,7 +115,7 @@ RawTx.prototype.sign = function (wallet, seedHex, cb) {
  * @return {external:coloredcoinjs-lib.bitcoin.Transaction}
  */
 RawTx.prototype.toTransaction = function (allowIncomplete) {
-  allowIncomplete = allowIncomplete || false
+  allowIncomplete = _.isUndefined(allowIncomplete) ? false : allowIncomplete
   verify.boolean(allowIncomplete)
 
   if (allowIncomplete) {
@@ -134,66 +133,78 @@ RawTx.prototype.toHex = function (allowIncomplete) {
   return this.toTransaction(allowIncomplete).toHex()
 }
 
+/**
+ * @callback RawTx~getColorTargetsCallback
+ * @param {?Error} error
+ * @param {Array.<external:coloredcoinjs-lib.bitcoin.ColorTarget>} colorTargets
+ */
 
-RawTx.prototype.getColorTargets = function(wallet, cb){
+/**
+ * @param {Wallet} wallet
+ * @param {RawTx~getColorTargetsCallback} cb
+ */
+RawTx.prototype.getColorTargets = function (wallet, cb) {
+  verify.Wallet(wallet)
   verify.function(cb)
-  var self = this
-  var network = wallet.getBitcoinNetwork()
-  var coinManager = wallet.getStateManager().getCurrentState().getCoinManager()
-  var tx = self.toTransaction()
-  Q.fcall(function () {
-    var promises = tx.outs.map(function (output, index) {
-      var script = output.script
-      var address = bitcoin.getAddressesFromOutputScript(script, network)[0]
-      var coin = new Coin(coinManager, {
-        txId: tx.getId(),
-        outIndex: index,
-        value: output.value,
-        script: script.toHex(),
-        address: address
-      })
-      return Q.ninvoke(coin, 'getMainColorValue').then(function (colorValue) {
-        return new cclib.ColorTarget(output.script.toHex(), colorValue)
-      })
+
+  var tx = this.toTransaction(true)
+  Q.ninvoke(wallet.getStateManager(), 'getTxMainColorValues', tx).then(function (colorValues) {
+    return tx.outs.map(function (txOut, outIndex) {
+      return new cclib.ColorTarget(txOut.script.toHex(), colorValues[outIndex])
     })
-    return Q.all(promises).then(function (result) { return _.filter(result) })
+
   }).done(
-    function (cts) { cb(null, cts) }, 
+    function (colorTargets) { cb(null, colorTargets) },
     function (error) { cb(error) }
   )
 }
 
 /**
- * @param {Wallet} wallet
- * @param {[external:coloredcoinjs-lib.ColorTarget]} colorTargets
- * @param {boolean} [allowExtra=false]
+ * @callback RawTx~satisfiesTargetsCallback
+ * @param {?Error} error
+ * @param {boolean} isSatisfied
  */
-RawTx.prototype.satisfiesTargets = function(wallet, colorTargets, allowExtra, cb){
-  allowExtra = allowExtra || false
+
+/**
+ * @param {Wallet} wallet
+ * @param {Array.<external:coloredcoinjs-lib.ColorTarget>} colorTargets
+ * @param {boolean} [allowExtra=false]
+ * @param {RawTx~satisfiesTargetsCallback} cb
+ */
+RawTx.prototype.satisfiesTargets = function (wallet, colorTargets, allowExtra, cb) {
+  if (_.isFunction(allowExtra) && _.isUndefined(cb)) {
+    cb = allowExtra
+    allowExtra = undefined
+  }
+  allowExtra = _.isUndefined(allowExtra) ? false : allowExtra
+
+  verify.Wallet(wallet)
+  verify.array(colorTargets)
+  colorTargets.forEach(verify.ColorTarget)
   verify.boolean(allowExtra)
   verify.function(cb)
 
-  this.getColorTargets(wallet, function(error, txColorTargets) {
-    if(!allowExtra && colorTargets.length != txColorTargets.length){
-      cb(null, false)
-    } else {
-      var unsatisfiedTargets = _.clone(colorTargets)
-      var equivalentColorTargets = function(a, b){
-        return (
-            a.getValue() == b.getValue() && a.getScript() == b.getScript() &&
-            a.getColorDefinition().getDesc() == b.getColorDefinition().getDesc()
-        )
-      }
-      colorTargets.forEach(function (colorTarget) {
-        txColorTargets.forEach(function (txColorTarget) {
-          if (equivalentColorTargets(colorTarget, txColorTarget)){
-            _.pull(unsatisfiedTargets, colorTarget)
-          }
-        })
-      })
-      cb(null, unsatisfiedTargets.length == 0)
+  Q.ninvoke(this, 'getColorTargets', wallet).then(function (txColorTargets) {
+    var lengthSatisfy = (
+      (allowExtra && txColorTargets.length >= colorTargets.length) ||
+      (!allowExtra && txColorTargets.length === colorTargets.length)
+    )
+    if (!lengthSatisfy) {
+      return false
     }
-  })
+
+    function transformFn(ct) {
+      return ct.getScript() + ct.getColorDefinition().getDesc() + ct.getValue()
+    }
+
+    colorTargets = colorTargets.map(transformFn)
+    txColorTargets = txColorTargets.map(transformFn)
+    return _.difference(colorTargets, txColorTargets).length === 0
+
+  }).done(
+    function (isSatisfied) { cb(null, isSatisfied) },
+    function (error) { cb(error) }
+  )
 }
 
 module.exports = RawTx

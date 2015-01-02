@@ -86,7 +86,7 @@ describe('blockchain.NaiveBlockchain', function () {
   })
 
   it('send tx and wait touchAddress', function (done) {
-    var seed = '421fc385fdae762b346b80e0212f77ff'
+    var seed = '421fc385fdae762a344b80e0212f77ff'
     wallet.initialize(seed)
     wallet.subscribeAndSyncAllAddresses(function (error) {
       expect(error).to.be.null

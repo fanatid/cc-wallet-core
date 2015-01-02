@@ -150,6 +150,19 @@ WalletStateManager.prototype._attemptSendTx = function (txId, attempt) {
 }
 
 /**
+ * @param {WalletState} [walletState]
+ * @return {WalletState}
+ */
+WalletStateManager.prototype._resolveWalletState = function (walletState) {
+  if (_.isUndefined(walletState)) {
+    return this._currentState
+  }
+
+  verify.WalletState(walletState)
+  return walletState
+}
+
+/**
  * @callback WalletStateManager~execute
  * @param {WalletState} walletState
  * @return {Q.Promise<{commit: boolean}>}
@@ -236,7 +249,9 @@ WalletStateManager.prototype.historySync = function (address, entries) {
 
   entries = _.chain(entries)
     .uniq('txId')
-    .sortBy(function (entry) { return entry.height === 0 ? Infinity : entry.height })
+    .sortBy(function (entry) {
+      return entry.height === 0 ? Infinity : entry.height
+    })
     .value()
 
   var TxIdsForRemove = _.difference(self._currentState.getTxManager().getAllTxIds(address), _.pluck(entries, 'txId'))
@@ -307,35 +322,59 @@ WalletStateManager.prototype.sendTx = function (tx) {
 
 /**
  * @param {string} txId
- * @param {WalletState} [walletState=currentWalletState]
+ * @param {WalletState} [walletState]
  * @return {?Transaction}
  */
 WalletStateManager.prototype.getTx = function (txId, walletState) {
-  walletState = _.isUndefined(walletState) ? this._currentState : walletState
-  verify.WalletState(walletState)
-
+  walletState = this._resolveWalletState(walletState)
   return walletState.getTxManager().getTx(txId)
 }
 
 /**
+ * @callback WalletStateManager~getTxMainColorValuesCallback
+ * @param {?Error} error
+ * @param {external:coloredcoinjs-lib.ColorValue[]} colorValues
+ */
+
+/**
+ * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
+ * @param {WalletState} [walletState]
+ * @param {WalletStateManager~getTxMainColorValuesCallback} cb
+ */
+WalletStateManager.prototype.getTxMainColorValues = function (tx, walletState, cb) {
+  if (_.isFunction(walletState) && _.isUndefined(cb)) {
+    cb = walletState
+    walletState = undefined
+  }
+
+  verify.Transaction(tx)
+  walletState = this._resolveWalletState(walletState)
+  verify.function(cb)
+
+  walletState.getCoinManager().getTxMainColorValues(tx).done(
+    function (colorValues) { cb(null, colorValues) },
+    function (error) { cb(error) }
+  )
+}
+
+/**
  * @param {(string|string[])} addresses
+ * @param {WalletState} [walletState]
  * @return {Coin[]}
  */
-WalletStateManager.prototype.getCoins = function (addresses) {
-  return this._currentState.getCoinManager().getCoins(addresses)
+WalletStateManager.prototype.getCoins = function (addresses, walletState) {
+  walletState = this._resolveWalletState(walletState)
+  return walletState.getCoinManager().getCoins(addresses)
 }
-
-WalletStateManager.prototype.getCurrentState = function () { 
-  return this._currentState 
-}
-
 
 /**
  * @param {AssetDefinition} [assetdef]
+ * @param {WalletState} [walletState]
  * @return {HistoryEntry[]}
  */
-WalletStateManager.prototype.getHistory = function (assetdef) {
-  return this._currentState.getHistoryManager().getEntries(assetdef)
+WalletStateManager.prototype.getHistory = function (assetdef, walletState) {
+  walletState = this._resolveWalletState(walletState)
+  return walletState.getHistoryManager().getEntries(assetdef)
 }
 
 /**
