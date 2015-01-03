@@ -243,7 +243,7 @@ describe('Wallet', function () {
         wallet.createTx(bitcoin, targets, function (error, tx) {
           expect(error).to.be.null
 
-          wallet.transformTx(tx, 'signed', seed, function (error, tx) {
+          wallet.transformTx(tx, 'signed', {seedHex: seed}, function (error, tx) {
             expect(error).to.be.null
 
             wallet.on('updateTx', function (newTx) {
@@ -316,7 +316,7 @@ describe('Wallet', function () {
         wallet.createIssuanceTx('newEPOBC', 'epobc', 2, 10000, seed, function (error, tx) {
           expect(error).to.be.null
 
-          wallet.transformTx(tx, 'signed', seed, function (error, tx) {
+          wallet.transformTx(tx, 'signed', {seedHex: seed}, function (error, tx) {
             expect(error).to.be.null
 
             wallet.sendTx(tx, function (error) {

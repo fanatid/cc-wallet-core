@@ -602,26 +602,34 @@ Wallet.prototype.createIssuanceTx = function (moniker, pck, units, atoms, seedHe
 /**
  * @param {(ComposedTx|RawTx)} currentTx
  * @param {string} targetKind
- * @param {string} [seedHex]
+ * @param {Object} [opts]
+ * @param {string} [opts.seedHex]
+ * @param {number[]} [opts.signingOnly]
  * @param {Wallet~transformTx} cb
  * @throws {Error} If wallet not initialized or not currently seedHex
  */
-Wallet.prototype.transformTx = function (currentTx, targetKind, seedHex, cb) {
-  if (_.isUndefined(cb)) {
-    cb = seedHex
-    seedHex = undefined
+Wallet.prototype.transformTx = function (currentTx, targetKind, opts, cb) {
+  if (_.isFunction(opts) && _.isUndefined(cb)) {
+    cb = opts
+    opts = undefined
+  }
+  if (_.isString(opts)) {
+    console.warn('seedHex as string is deprecated for removal in 1.0.0, use Object')
+    opts = {seedHex: opts}
   }
 
   verify.function(cb)
 
   this.isInitializedCheck()
-
   if (targetKind === 'signed') {
-    this.getAddressManager().isCurrentSeedCheck(seedHex)
+    this.getAddressManager().isCurrentSeedCheck(opts.seedHex)
   }
 
-  Q.nfcall(tx.transformTx, currentTx, targetKind, {wallet: this, seedHex: seedHex})
-    .done(function (newTx) { cb(null, newTx) }, function (error) { cb(error) })
+  opts = _.extend(opts, {wallet: this})
+  Q.nfcall(tx.transformTx, currentTx, targetKind, opts).done(
+    function (newTx) { cb(null, newTx) },
+    function (error) { cb(error) }
+  )
 }
 
 /**

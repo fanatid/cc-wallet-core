@@ -98,7 +98,7 @@ describe('blockchain.NaiveBlockchain', function () {
       wallet.createTx(bitcoin, targets, function (error, tx) {
         expect(error).to.be.null
 
-        wallet.transformTx(tx, 'signed', seed, function (error, tx) {
+        wallet.transformTx(tx, 'signed', {seedHex: seed}, function (error, tx) {
           expect(error).to.be.null
 
           wallet.getBlockchain().on('touchAddress', function (address) {

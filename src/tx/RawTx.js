@@ -8,9 +8,17 @@ var cclib = require('../cclib')
 
 /**
  * @class RawTx
+ * @param {external:coloredcoin-jslib.bitcoin.TransactionBuilder} [txb]
  */
-function RawTx() {
-  this.txb = new bitcoin.TransactionBuilder()
+function RawTx(txb) {
+  if (_.isUndefined(txb)) {
+    txb = new bitcoin.TransactionBuilder()
+  }
+
+  // @todo Coming soon in coloredcoinjs-lib
+  // verify.TransactionBuilder(txb)
+
+  this.txb = txb
 }
 
 /**
@@ -20,17 +28,15 @@ function RawTx() {
 RawTx.fromComposedTx = function (composedTx) {
   verify.ComposedTx(composedTx)
 
-  var rawTx = new RawTx()
-
+  var txb = new bitcoin.TransactionBuilder()
   composedTx.getTxIns().forEach(function (txIn) {
-    rawTx.txb.addInput(txIn.txId, txIn.outIndex, txIn.sequence)
+    txb.addInput(txIn.txId, txIn.outIndex, txIn.sequence)
   })
-
   composedTx.getTxOuts().forEach(function (txOut) {
-    rawTx.txb.addOutput(bitcoin.Script.fromHex(txOut.script), txOut.value)
+    txb.addOutput(bitcoin.Script.fromHex(txOut.script), txOut.value)
   })
 
-  return rawTx
+  return new RawTx(txb)
 }
 
 /**
@@ -40,10 +46,8 @@ RawTx.fromComposedTx = function (composedTx) {
 RawTx.fromTransaction = function (tx) {
   verify.Transaction(tx)
 
-  var rawTx = new RawTx()
-  rawTx.txb = bitcoin.TransactionBuilder.fromTransaction(tx)
-
-  return rawTx
+  var txb = bitcoin.TransactionBuilder.fromTransaction(tx)
+  return new RawTx(txb)
 }
 
 /**
@@ -65,9 +69,15 @@ RawTx.fromHex = function (hex) {
 /**
  * @param {Wallet} wallet
  * @param {string} seedHex
+ * @param {number[]} signingOnly
  * @param {RawTx~signCallback} cb
  */
-RawTx.prototype.sign = function (wallet, seedHex, cb) {
+RawTx.prototype.sign = function (wallet, seedHex, signingOnly, cb) {
+  if (_.isFunction(signingOnly) && _.isUndefined(cb)) {
+    cb = signingOnly
+    signingOnly = undefined
+  }
+
   verify.Wallet(wallet)
   verify.hexString(seedHex)
   verify.function(cb)
@@ -76,6 +86,10 @@ RawTx.prototype.sign = function (wallet, seedHex, cb) {
   var addressManager = wallet.getAddressManager()
 
   var promises = self.txb.tx.ins.map(function (input, index) {
+    if (!_.isUndefined(signingOnly) && signingOnly.indexOf(index) === -1) {
+      return
+    }
+
     return Q.fcall(function () {
       if (!_.isUndefined(self.txb.prevOutScripts[index])) {
         return
@@ -206,5 +220,50 @@ RawTx.prototype.satisfiesTargets = function (wallet, colorTargets, allowExtra, c
     function (error) { cb(error) }
   )
 }
+
+/**
+ * @callback RawTx~getInputAddressesCallback
+ * @param {?Error} error
+ * @param {string[]} addresses
+ */
+
+/**
+ * @param {Wallet} wallet Wallet for blockchain access
+ * @param {number[]} [indexes] Scan only given indexes
+ * @param {RawTx~getInputAddressesCallback} cb
+ */
+RawTx.prototype.getInputAddresses = function (wallet, indexes, cb) {
+  if (_.isFunction(indexes) && _.isUndefined(cb)) {
+    cb = indexes
+    indexes = undefined
+  }
+  if (_.isUndefined(indexes)) {
+    indexes = _.range(this.txb.ins.length)
+  }
+
+  verify.Wallet(wallet)
+  verify.array(indexes)
+  indexes.forEach(verify.number)
+  verify.function(cb)
+
+  var tx = this.txb.buildIncomplete()
+  var getTxFn = wallet.getBlockchain().getTxFn()
+  Q.ninvoke(tx, 'ensureInputValues', getTxFn).then(function (tx) {
+    var bitcoinNetwork = wallet.getBitcoinNetwork()
+    return _.chain(tx.ins)
+      .filter(function () { return indexes.indexOf(arguments[2]) !== -1 })
+      .map(function (input) {
+        var script = input.prevTx.outs[input.index].script
+        return cclib.bitcoin.getAddressesFromOutputScript(script, bitcoinNetwork)
+      })
+      .flatten()
+      .value()
+
+  }).done(
+    function (addresses) { cb(null, addresses) },
+    function (error) { cb(error) }
+  )
+}
+
 
 module.exports = RawTx

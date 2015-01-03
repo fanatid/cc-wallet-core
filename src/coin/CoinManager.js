@@ -251,8 +251,8 @@ CoinManager.prototype.getCoinColorValue = function (coin, colorDefinition, cb) {
   verify.ColorDefinition(colorDefinition)
   verify.function(cb)
 
-  var bs = this._wallet.getBlockchain()
-  this._wallet.getColorData().getColorValue(coin.txId, coin.outIndex, colorDefinition, bs.getTx.bind(bs), cb)
+  this._wallet.getColorData().getColorValue(coin.txId, coin.outIndex,
+    colorDefinition, this._wallet.getBlockchain().getTxFn(), cb)
 }
 
 /**

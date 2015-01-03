@@ -196,7 +196,7 @@ function transformRawTx(rawTx, targetKind, opts, cb) {
       throw new errors.TargetKindIsNotReachableError('RawTx to ' + targetKind)
     }
 
-    return Q.ninvoke(rawTx, 'sign', opts.wallet, opts.seedHex)
+    return Q.ninvoke(rawTx, 'sign', opts.wallet, opts.seedHex, opts.signingOnly)
 
   }).then(function () {
     var allowIncomplete = (targetKind === 'partially-signed')
@@ -225,6 +225,7 @@ function transformRawTx(rawTx, targetKind, opts, cb) {
  * @param {Object} [opts] Required if targetKind is signed
  * @param {string} [opts.seedHex]
  * @param {Wallet} [opts.wallet]
+ * @param {number[]} [opts.signingOnly] Sign only given indexes
  * @param {transformTx~callback} cb
  */
 function transformTx(tx, targetKind, opts, cb) {

@@ -110,7 +110,7 @@ HistoryManager.prototype.addTx = function (tx) {
   var self = this
   var txId = tx.getId()
 
-  var bs = self._wallet.getBlockchain()
+  var getTxFn = self._wallet.getBlockchain().getTxFn()
   var walletAddresses = self._wallet.getAllAddresses()
   var network = self._wallet.getBitcoinNetwork()
   var colorValues = {}
@@ -119,8 +119,8 @@ HistoryManager.prototype.addTx = function (tx) {
   var myInsCount = 0
   var myOutsCount = 0
 
-  return Q.ninvoke(tx, 'ensureInputValues', bs.getTx.bind(bs)).then(function (ensuredInputsTx) {
-    tx = ensuredInputsTx
+  return Q.ninvoke(tx, 'ensureInputValues', getTxFn).then(function (ensuredTx) {
+    tx = ensuredTx
     return Q.all(tx.ins.map(function (input) {
       // @todo Add multisig support (multi-address)
       var address = bitcoin.getAddressesFromOutputScript(

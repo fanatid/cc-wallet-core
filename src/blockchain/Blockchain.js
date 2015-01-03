@@ -69,6 +69,13 @@ Blockchain.prototype.getTx = function () {
 }
 
 /**
+ * @return {Blockchain~getTx}
+ */
+Blockchain.prototype.getTxFn = function () {
+  return this.getTx.bind(this)
+}
+
+/**
  * @callback Blockchain~sendTxCallback
  * @param {?Error} error
  * @param {string} txId
