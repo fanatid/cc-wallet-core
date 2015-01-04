@@ -160,7 +160,7 @@ function Wallet(opts) {
   self.blockchain.on('newHeight', function (height) { self.emit('newHeight', height) })
 
   self.aManager.on('newAddress', function (address) { self.emit('newAddress', address) })
-  self.aManager.on('newAsset', function (assetdef) { self.emit('newAsset', assetdef) })
+  self.adManager.on('newAsset', function (assetdef) { self.emit('newAsset', assetdef) })
 
   self.walletStateManager.on('error', function (error) { self.emit('error', error) })
   self.walletStateManager.on('syncStart', function () { self._syncEnter() })
