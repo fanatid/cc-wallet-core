@@ -342,7 +342,7 @@ describe('Wallet', function () {
       {event: 'error', prop: 'txFetcher'},
       {event: 'newHeight', prop: 'blockchain'},
       {event: 'newAddress', prop: 'aManager'},
-      {event: 'newAsset', prop: 'aManager'}
+      {event: 'newAsset', prop: 'adManager'}
     ]
 
     fixtures.forEach(function (fixture) {

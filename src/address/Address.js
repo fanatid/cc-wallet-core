@@ -33,25 +33,17 @@ function Address(addressManager, record, network, assetDefinition) {
 }
 
 /**
- * @param {AssetDefinition} assetdef
  * @param {string} address
- * @return {?string}
+ * @return {string}
  */
-Address.getBitcoinAddress = function (assetdef, address) {
-  verify.AssetDefinition(assetdef)
+Address.getBitcoinAddress = function (address) {
+  if (address instanceof require('../asset').AssetDefinition) {
+    console.warn('assetdef, address in arguments deprecated for removal in 1.0.0, use only address')
+    address = arguments[1]
+  }
+
   verify.string(address)
-
-  var colordefs = assetdef.getColorDefinitions()
-  var isBitcoinAsset = colordefs.length === 1 && colordefs[0].getColorType() === 'uncolored'
-  if (isBitcoinAsset) {
-    return address
-  }
-
-  if (assetdef.getId() !== address.split('@')[0]) {
-    return null
-  }
-
-  return address.split('@')[1]
+  return _.last(address.split('@'))
 }
 
 /**
@@ -80,9 +72,14 @@ Address.checkColorAddress = function (assetdef, address) {
   verify.AssetDefinition(assetdef)
   verify.string(address)
 
-  address = Address.getBitcoinAddress(assetdef, address)
-  if (address === null) {
-    return false
+  var colordefs = assetdef.getColorDefinitions()
+  var isBitcoinAsset = colordefs.length === 1 && colordefs[0].getColorType() === 'uncolored'
+  if (!isBitcoinAsset || address.split('@').length > 1) {
+    if (assetdef.getId() !== address.split('@')[0]) {
+      return false
+    }
+
+    address = address.split('@')[1]
   }
 
   return Address.checkAddress(address)
