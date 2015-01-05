@@ -98,6 +98,7 @@ var verify = require('../verify')
  * @param {string} [opts.blockchain=VerifiedBlockchain]
  * @param {number} [opts.storageSaveTimeout=1000] In milliseconds
  * @param {boolean} [opts.spendUnconfirmedCoins=false]
+ * @param {Object[]} [opts.systemAssetDefinitions]
  */
 function Wallet(opts) {
   opts = _.extend({

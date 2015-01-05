@@ -113,6 +113,7 @@ CoinManager.prototype.addTx = function (tx) {
       .map(function (cv) { return cv.getColorDefinition().getDesc() })
       .uniq()
       .map(function (desc) { return assetDefinitionManager.getByDesc(desc) })
+      .filter() // @todo This ignore new colors
       .uniq(function (assetdef) { return assetdef.getId() })
       .forEach(function (assetdef) {
         self.emit('touchAsset', assetdef)
