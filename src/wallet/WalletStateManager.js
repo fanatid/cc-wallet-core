@@ -44,6 +44,11 @@ var txStatus = require('../const').txStatus
  */
 
 /**
+ * @event WalletStateManager#newColor
+ * @param {string} desc
+ */
+
+/**
  * @event WalletStateManager#touchAsset
  * @param {AssetDefinition} assetdef
  */
@@ -200,6 +205,9 @@ WalletStateManager.prototype.execute = function (fn) {
     })
     walletState.getCoinManager().on('touchAddress', function (address) {
       events.add('touchAddress' + address, ['touchAddress', address])
+    })
+    walletState.getCoinManager().on('newColor', function (colorDesc) {
+      events.add('newColor' + colorDesc, ['newColor', colorDesc])
     })
     walletState.getCoinManager().on('touchAsset', function (assetdef) {
       events.add('touchAsset' + assetdef.getId(), ['touchAsset', assetdef])

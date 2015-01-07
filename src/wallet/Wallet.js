@@ -61,6 +61,11 @@ var verify = require('../verify')
  */
 
 /**
+ * @event Wallet#newColor
+ * @param {string} desc
+ */
+
+/**
  * @event Wallet#touchAsset
  * @param {AssetDefinition} assetdef
  */
@@ -170,6 +175,7 @@ function Wallet(opts) {
   self.walletStateManager.on('updateTx', function (tx) { self.emit('updateTx', tx) })
   self.walletStateManager.on('revertTx', function (tx) { self.emit('revertTx', tx) })
   self.walletStateManager.on('touchAddress', function (address) { self.emit('touchAddress', address) })
+  self.walletStateManager.on('newColor', function (desc) { self.emit('newColor', desc) })
   self.walletStateManager.on('touchAsset', function (assetdef) { self.emit('touchAsset', assetdef) })
   self.walletStateManager.on('historyUpdate', function () { self.emit('historyUpdate') })
 

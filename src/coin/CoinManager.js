@@ -18,6 +18,11 @@ var verify = require('../verify')
  */
 
 /**
+ * @event CoinManager#newColor
+ * @param {string} desc
+ */
+
+/**
  * @event CoinManager#touchAsset
  * @param {AssetDefinition} asset
  */
@@ -112,8 +117,15 @@ CoinManager.prototype.addTx = function (tx) {
     _.chain(colorValues)
       .map(function (cv) { return cv.getColorDefinition().getDesc() })
       .uniq()
-      .map(function (desc) { return assetDefinitionManager.getByDesc(desc) })
-      .filter() // @todo This ignore new colors
+      .map(function (desc) {
+        var assetdef = assetDefinitionManager.getByDesc(desc)
+        if (assetdef !== null) {
+          return assetdef
+        }
+
+        self.emit('newColor', desc)
+      })
+      .filter()
       .uniq(function (assetdef) { return assetdef.getId() })
       .forEach(function (assetdef) {
         self.emit('touchAsset', assetdef)
