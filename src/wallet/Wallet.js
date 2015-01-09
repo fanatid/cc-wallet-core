@@ -441,7 +441,7 @@ Wallet.prototype.getBalance = function (assetdef, cb) {
   Q.fcall(function () {
     var coinQuery = self.getCoinQuery()
     coinQuery = coinQuery.includeUnconfirmed()
-    coinQuery = coinQuery.onlyColoredAs(assetdef.getColorSet().getColorDefinitions())
+    coinQuery = coinQuery.onlyColoredAs(assetdef.getColorDefinitions())
     coinQuery = coinQuery.onlyAddresses(self.getAllAddresses(assetdef))
 
     return Q.ninvoke(coinQuery, 'getCoins')
@@ -515,7 +515,7 @@ Wallet.prototype.getHistory = function (assetdef) {
 /**
  * @typedef {Object} rawTarget
  * @property {number} value Target value in satoshi
- * @property {string} [address] Target address
+ * @property {string} address Target address
  */
 
 /**
@@ -532,6 +532,11 @@ Wallet.prototype.getHistory = function (assetdef) {
  */
 Wallet.prototype.createTx = function (assetdef, rawTargets, cb) {
   verify.array(rawTargets)
+  rawTargets.forEach(function (rawTarget) {
+    verify.object(rawTarget)
+    verify.number(rawTarget.value)
+    verify.string(rawTarget.address)
+  })
   verify.function(cb)
 
   var self = this
@@ -545,8 +550,10 @@ Wallet.prototype.createTx = function (assetdef, rawTargets, cb) {
   })
 
   var assetTx = new tx.AssetTx(self, assetTargets)
-  Q.nfcall(tx.transformTx, assetTx, 'composed')
-    .done(function (composedTx) { cb(null, composedTx) }, function (error) { cb(error) })
+  Q.nfcall(tx.transformTx, assetTx, 'composed').done(
+    function (composedTx) { cb(null, composedTx) },
+    function (error) { cb(error) }
+  )
 }
 
 /**

@@ -1,6 +1,8 @@
 var _ = require('lodash')
+var Q = require('q')
 
 var util = require('./cclib').util
+var verify = require('./verify')
 
 
 /**
@@ -91,7 +93,55 @@ function SyncMixin() {
 }
 
 
+/**
+ * @callback createCoins~callback
+ * @param {?Error} error
+ */
+
+/**
+ * @param {Wallet} wallet Wallet for create, transfrom and sending tx
+ * @param {Object} opts Issue coins options
+ * @param {AssetDefinition} opts.assetdef Asset definition of new coins
+ * @param {number} opts.count How many coins needed
+ * @param {number} [opts.totalAmount] Value in satoshi for all coins
+ * @param {number} [opts.coinValue] Value in satoshi for every coin, preferred
+ *     value than totalAmount
+ * @param {string} opt.seed Seed in hex format
+ * @param {createCoins~callback} cb Callback function
+ */
+function createCoins(wallet, opts, cb) {
+  verify.Wallet(wallet)
+  verify.object(opts)
+  verify.AssetDefinition(opts.assetdef)
+  verify.number(opts.count)
+  if (_.isUndefined(opts.coinValue)) {
+    verify.number(opts.totalAmount)
+    opts.coinValue = ~~(opts.totalAmount / opts.count)
+  }
+  verify.number(opts.coinValue)
+  verify.string(opts.seed)
+  verify.function(cb)
+
+  var address = wallet.getSomeAddress(opts.assetdef)
+  var targets = _.range(opts.count).map(function () {
+    return {value: opts.coinValue, address: address}
+  })
+
+  Q.ninvoke(wallet, 'createTx', opts.assetdef, targets).then(function (tx) {
+    return Q.ninvoke(wallet, 'transformTx', tx, 'signed', {seedHex: opts.seed})
+
+  }).then(function (tx) {
+    return Q.ninvoke(wallet, 'sendTx', tx)
+
+  }).done(
+    function () { cb(null) },
+    function (error) { cb(error) }
+  )
+}
+
+
 module.exports = _.extend(util, {
   OrderedMap: OrderedMap,
-  SyncMixin: SyncMixin
+  SyncMixin: SyncMixin,
+  createCoins: createCoins
 })
