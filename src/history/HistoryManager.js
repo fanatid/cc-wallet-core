@@ -153,7 +153,8 @@ HistoryManager.prototype.addTx = function (tx) {
     }))
 
   }).then(function () {
-    return self._walletState.getCoinManager().getTxMainColorValues(tx).then(function (txColorValues) {
+    var wsm = self._wallet.getStateManager()
+    return Q.ninvoke(wsm, 'getTxMainColorValues', tx, self._walletState).then(function (txColorValues) {
       txColorValues.forEach(function (colorValue, index) {
         var colorTarget = new cclib.ColorTarget(tx.outs[index].script.toHex(), colorValue)
 

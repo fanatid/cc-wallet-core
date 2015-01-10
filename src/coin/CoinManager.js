@@ -113,7 +113,8 @@ CoinManager.prototype.addTx = function (tx) {
     })
 
   var assetDefinitionManager = self._wallet.getAssetDefinitionManager()
-  return self.getTxMainColorValues(tx).then(function (colorValues) {
+  var wsm = self._wallet.getStateManager()
+  return Q.ninvoke(wsm, 'getTxMainColorValues', tx, self._walletState).then(function (colorValues) {
     _.chain(colorValues)
       .map(function (cv) { return cv.getColorDefinition().getDesc() })
       .uniq()
@@ -172,11 +173,13 @@ CoinManager.prototype.revertTx = function (tx) {
     })
 
   var assetDefinitionManager = self._wallet.getAssetDefinitionManager()
-  return self.getTxMainColorValues(tx).then(function (colorValues) {
+  var wsm = self._wallet.getStateManager()
+  return Q.ninvoke(wsm, 'getTxMainColorValues', tx, self._walletState).then(function (colorValues) {
     _.chain(colorValues)
       .map(function (cv) { return cv.getColorDefinition().getDesc() })
       .uniq()
       .map(function (desc) { return assetDefinitionManager.getByDesc(desc) })
+      .filter()
       .uniq(function (assetdef) { return assetdef.getId() })
       .forEach(function (assetdef) {
         self.emit('touchAsset', assetdef)
@@ -305,49 +308,6 @@ CoinManager.prototype.getCoinMainColorValue = function (coin, cb) {
     return coinColorValue
 
   }).done(function (coinColorValue) { cb(null, coinColorValue) }, function (error) { cb(error) })
-}
-
-/**
- * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
- * @return {external:Q.Promise<external:coloredcoinjs-lib.ColorValue[]>}
- */
-CoinManager.prototype.getTxMainColorValues = function (tx) {
-  var self = this
-
-  var colorDefinitions = self._wallet.getColorDefinitionManager().getAllColorDefinitions()
-  return Q.all(colorDefinitions.map(function (colorDefinition) {
-    var blockchain = self._wallet.getBlockchain()
-    function getTxFn(txId, cb) {
-      blockchain.getTx(txId, self._walletState, cb)
-    }
-
-    return Q.ninvoke(self._wallet.getColorData(), 'getTxColorValues', tx, colorDefinition, getTxFn)
-
-  })).then(function (colorValuess) {
-    var nullColorValues = Array.apply(null, Array(tx.outs.length)).map(function () { return null })
-    var colorValues = colorValuess.reduce(function (colorValues1, colorValues2) {
-      return colorValues1.map(function (cv, index) {
-        if (cv !== null) {
-          if (colorValues2[index] !== null) {
-            throw new errors.CoinColorValueError(tx.getId() + ':' + index + ' have more than one ColorValue')
-          }
-
-          return cv
-        }
-
-        return colorValues2[index]
-      })
-    }, nullColorValues)
-
-    var uncolored = cclib.ColorDefinitionManager.getUncolored()
-    return colorValues.map(function (cv, index) {
-      if (cv !== null) {
-        return cv
-      }
-
-      return new cclib.ColorValue(uncolored, tx.outs[index].value)
-    })
-  })
 }
 
 
