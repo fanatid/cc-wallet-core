@@ -96,8 +96,8 @@ OperationalTx.prototype.getDustThreshold = function () {
  * @param {external:coloredcoinjs-lib.ColorValue} utxoColorValue
  */
 
-/*
- * @param {external:coloredcoinjs-lib.ColorValue}
+/**
+ * @param {external:coloredcoinjs-lib.ColorValue} colorValue
  * @param {?Object} feeEstimator
  * @param {OperationalTx~selectCoinsCallback} cb
  */
@@ -136,6 +136,7 @@ OperationalTx.prototype.selectCoins = function (colorValue, feeEstimator, cb) {
       requiredSum = requiredSum.plus(feeEstimator.estimateRequiredFee({extraTxIns: coins.length}))
     }
 
+    /** @todo Better algorithm */
     var promise = Q()
     coins.forEach(function (coin) {
       promise = promise.then(function () {

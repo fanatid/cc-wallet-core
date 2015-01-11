@@ -99,18 +99,18 @@ Coin.prototype.isAvailable = function () {
  */
 
 /**
- * @param {external:coloredcoinjs-lib.ColorDefinition} colorDefinition
+ * @param {external:coloredcoinjs-lib.ColorDefinition} colordef
  * @param {Coin~getColorValueCallback} cb
  */
-Coin.prototype.getColorValue = function (colorDefinition, cb) {
-  this.coinManager.getCoinColorValue(this, colorDefinition, cb)
+Coin.prototype.getColorValue = function (colordef, cb) {
+  this.coinManager._wallet.getStateManager().getCoinColorValue(this.toRawCoin(), colordef, cb)
 }
 
 /**
  * @param {Coin~getColorValueCallback} cb
  */
 Coin.prototype.getMainColorValue = function (cb) {
-  this.coinManager.getCoinMainColorValue(this, cb)
+  this.coinManager._wallet.getStateManager().getCoinMainColorValue(this.toRawCoin(), cb)
 }
 
 /**

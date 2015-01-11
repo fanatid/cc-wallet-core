@@ -120,7 +120,7 @@ AssetDefinitionStorage.prototype.getByDesc = function (desc) {
   return _.isUndefined(record) ? null : _.cloneDeep(record)
 }
 
-/*
+/**
  * @return {AssetDefinition~Record[]}
  */
 AssetDefinitionStorage.prototype.getAll = function () {

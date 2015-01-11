@@ -17,7 +17,7 @@ function HistoryTarget(assetValue, script, network) {
   this.assetValue = assetValue
   this.script = script
   script = bitcoin.Script.fromHex(script)
-  this.addresses = bitcoin.getAddressesFromOutputScript(script, network)
+  this.addresses = bitcoin.util.getAddressesFromScript(script, network)
 }
 
 /**

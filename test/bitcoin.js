@@ -20,17 +20,17 @@ describe('bitcoin', function () {
   var buffer = new Buffer(headerHex, 'hex')
 
   it('header2buffer', function () {
-    var result = bitcoin.header2buffer(header)
+    var result = bitcoin.util.header2buffer(header)
     expect(result.toString('hex')).to.equal(buffer.toString('hex'))
   })
 
   it('buffer2header', function () {
-    var result = bitcoin.buffer2header(buffer)
+    var result = bitcoin.util.buffer2header(buffer)
     expect(result).to.deep.equal(header)
   })
 
   it('headerHash', function () {
-    var result = bitcoin.headerHash(buffer).toString('hex')
+    var result = bitcoin.util.headerHash(buffer).toString('hex')
     expect(result).to.equal('00000000000011add760c47b4b7309191e58c48a27ca26b76c15ca44ad563151')
   })
 })

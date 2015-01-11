@@ -24,19 +24,27 @@ var verify = require('./verify')
  */
 
 /**
+ * @deprecated Already exists in coloredcoinjs-lib
  * @param {Buffer} s
  * @return {string}
  */
 bitcoin.hashEncode = function (s) {
-  return Array.prototype.reverse.call(new Buffer(s)).toString('hex')
+  console.warn('bitcoin.hashEncode deprecated for removal in v1.0.0, use ' +
+               'bitcoin.util.hashEncode')
+
+  return bitcoin.util.hashEncode(s)
 }
 
 /**
+ * @deprecated Already exists in coloredcoinjs-lib
  * @param {string} s
  * @return {Buffer}
  */
 bitcoin.hashDecode = function (s) {
-  return Array.prototype.reverse.call(new Buffer(s, 'hex'))
+  console.warn('bitcoin.hashDecode deprecated for removal in v1.0.0, use ' +
+               'bitcoin.util.hashDecode')
+
+  return bitcoin.util.hashDecode(s)
 }
 
 /**
@@ -47,7 +55,7 @@ bitcoin.hashDecode = function (s) {
  * @return {string}
  */
 function revHex(s) {
-  return bitcoin.hashDecode(s).toString('hex')
+  return bitcoin.util.hashDecode(s).toString('hex')
 }
 
 /**
@@ -64,7 +72,7 @@ function revHex(s) {
  * @param {Header} header
  * @return {Buffer}
  */
-bitcoin.header2buffer = function (header) {
+bitcoin.util.header2buffer = function (header) {
   verify.object(header)
   verify.number(header.version)
   verify.string(header.prevBlockHash)
@@ -86,11 +94,18 @@ bitcoin.header2buffer = function (header) {
   return buffer
 }
 
+bitcoin.header2buffer = function (header) {
+  console.warn('bitcoin.header2buffer deprecated for removal in v1.0.0, use ' +
+               'bitcoin.util.header2buffer')
+
+  return bitcoin.util.header2buffer(header)
+}
+
 /**
  * @param {Buffer} buffer
  * @return {Header}
  */
-bitcoin.buffer2header = function (buffer) {
+bitcoin.util.buffer2header = function (buffer) {
   verify.buffer(buffer)
   verify.length(buffer, 80)
 
@@ -104,13 +119,27 @@ bitcoin.buffer2header = function (buffer) {
   }
 }
 
+bitcoin.buffer2header = function (buffer) {
+  console.warn('bitcoin.buffer2header deprecated for removal in v1.0.0, use ' +
+               'bitcoin.util.buffer2header')
+
+  return bitcoin.util.buffer2header(buffer)
+}
+
 
 /**
  * @param {Buffer} buffer
  * @return {Buffer}
  */
-bitcoin.headerHash = function (buffer) {
+bitcoin.util.headerHash = function (buffer) {
   return Array.prototype.reverse.call(bitcoin.crypto.hash256(buffer))
+}
+
+bitcoin.headerHash = function (buffer) {
+  console.warn('bitcoin.headerHash deprecated for removal in v1.0.0, use ' +
+               'bitcoin.util.headerHash')
+
+  return bitcoin.util.headerHash(buffer)
 }
 
 

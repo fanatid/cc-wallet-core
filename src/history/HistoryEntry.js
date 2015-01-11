@@ -2,6 +2,7 @@ var verify = require('../verify')
 var historyEntryType = require('../const').historyEntryType
 
 
+/** @todo Add tx status */
 /**
  * @class HistoryEntry
  *

@@ -4,7 +4,6 @@ var inherits = require('util').inherits
 var _ = require('lodash')
 var Q = require('q')
 
-var cclib = require('../cclib')
 var txStatus = require('../const').txStatus
 var bitcoin = require('../bitcoin')
 var errors = require('../errors')
@@ -82,7 +81,7 @@ CoinManager.prototype.addTx = function (tx) {
   var txId = tx.getId()
 
   tx.ins.forEach(function (input) {
-    var txId = Array.prototype.reverse.call(new Buffer(input.hash)).toString('hex')
+    var txId = bitcoin.util.hashEncode(input.hash)
     self._spend[txId] = _.union(self._spend[txId], [input.index]).sort()
   })
 
@@ -91,7 +90,7 @@ CoinManager.prototype.addTx = function (tx) {
 
   _.chain(tx.outs)
     .map(function (output, index) {
-      var outputAddresses = bitcoin.getAddressesFromOutputScript(output.script, network)
+      var outputAddresses = bitcoin.util.getAddressesFromScript(output.script, network)
       var touchedAddresses = _.intersection(outputAddresses, walletAddresses)
       if (touchedAddresses.length > 0) {
         self._coins.push({
@@ -151,7 +150,7 @@ CoinManager.prototype.revertTx = function (tx) {
   var txId = tx.getId()
 
   tx.ins.forEach(function (input) {
-    var txId = Array.prototype.reverse.call(new Buffer(input.hash)).toString('hex')
+    var txId = bitcoin.util.hashEncode(input.hash)
     self._spend[txId] = _.without(self._spend[txId], input.index)
     if (self._spend[txId].length === 0) {
       delete self._spend[txId]
@@ -259,55 +258,33 @@ CoinManager.prototype.isCoinAvailable = function (coin) {
 
 /**
  * @param {Coin} coin
- * @param {external:coloredcoinjs-lib.ColorDefinition} colorDefinition
+ * @param {external:coloredcoinjs-lib.ColorDefinition} colordef
  * @param {CoinManager~getCoinColorValueCallback} cb
  */
-CoinManager.prototype.getCoinColorValue = function (coin, colorDefinition, cb) {
+CoinManager.prototype.getCoinColorValue = function (coin, colordef, cb) {
+  console.warn('CoinManager.getCoinColorValue deprecated for removal ' +
+               'in 1.0.0, use WalletStateManager.getCoinColorValue')
+
   verify.Coin(coin)
-  verify.ColorDefinition(colorDefinition)
+  verify.ColorDefinition(colordef)
   verify.function(cb)
 
-  this._wallet.getColorData().getColorValue(coin.txId, coin.outIndex,
-    colorDefinition, this._wallet.getBlockchain().getTxFn(), cb)
+  this._wallet.getStateManager().getCoinColorValue(coin.toRawCoin(), colordef, cb)
 }
 
 /**
+ * @deprecated Use WalletStateManager.getCoinMainColorValue
  * @param {Coin} coin
  * @param {CoinManager~getCoinColorValueCallback} cb
  */
 CoinManager.prototype.getCoinMainColorValue = function (coin, cb) {
+  console.warn('CoinManager.getCoinMainColorValue deprecated for removal ' +
+               'in 1.0.0, use WalletStateManager.getCoinMainColorValue')
+
   verify.Coin(coin)
   verify.function(cb)
 
-  var cdManager = this._wallet.getColorDefinitionManager()
-
-  Q.fcall(function () {
-    var coinColorValue = null
-
-    var promises = cdManager.getAllColorDefinitions().map(function (colorDefinition) {
-      return Q.ninvoke(coin, 'getColorValue', colorDefinition).then(function (colorValue) {
-        if (coinColorValue !== null && colorValue !== null) {
-          var rawCoin = coin.toRawCoin()
-          var msg = rawCoin.txId + ':' + rawCoin.outIndex + ' have more than one ColorValue'
-          throw new errors.CoinColorValueError(msg)
-        }
-
-        if (coinColorValue === null) {
-          coinColorValue = colorValue
-        }
-      })
-    })
-
-    return Q.all(promises).then(function () { return coinColorValue })
-
-  }).then(function (coinColorValue) {
-    if (coinColorValue === null) {
-      coinColorValue = new cclib.ColorValue(cclib.ColorDefinitionManager.getUncolored(), coin.value)
-    }
-
-    return coinColorValue
-
-  }).done(function (coinColorValue) { cb(null, coinColorValue) }, function (error) { cb(error) })
+  this._wallet.getStateManager().getCoinMainColorValue(coin.toRawCoin(), cb)
 }
 
 

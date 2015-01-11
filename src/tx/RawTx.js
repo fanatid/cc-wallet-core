@@ -15,8 +15,7 @@ function RawTx(txb) {
     txb = new bitcoin.TransactionBuilder()
   }
 
-  // @todo Coming soon in coloredcoinjs-lib
-  // verify.TransactionBuilder(txb)
+  verify.TransactionBuilder(txb)
 
   this.txb = txb
 }
@@ -95,8 +94,7 @@ RawTx.prototype.sign = function (wallet, seedHex, signingOnly, cb) {
         return
       }
 
-      var txId = Array.prototype.reverse.call(new Buffer(input.hash)).toString('hex')
-
+      var txId = bitcoin.util.hashEncode(input.hash)
       return Q.fcall(function () {
         return wallet.getStateManager().getTx(txId)
 
@@ -110,7 +108,7 @@ RawTx.prototype.sign = function (wallet, seedHex, signingOnly, cb) {
       })
 
     }).then(function () {
-      var addresses = bitcoin.getAddressesFromOutputScript(self.txb.prevOutScripts[index], wallet.getBitcoinNetwork())
+      var addresses = bitcoin.util.getAddressesFromScript(self.txb.prevOutScripts[index], wallet.getBitcoinNetwork())
       addresses.forEach(function (address) {
         var privKey = addressManager.getPrivKeyByAddress(address, seedHex)
         if (privKey !== null) {
@@ -254,7 +252,7 @@ RawTx.prototype.getInputAddresses = function (wallet, indexes, cb) {
       .filter(function () { return indexes.indexOf(arguments[2]) !== -1 })
       .map(function (input) {
         var script = input.prevTx.outs[input.index].script
-        return cclib.bitcoin.getAddressesFromOutputScript(script, bitcoinNetwork)
+        return bitcoin.util.getAddressesFromScript(script, bitcoinNetwork)
       })
       .flatten()
       .value()

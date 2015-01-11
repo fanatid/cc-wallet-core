@@ -32,16 +32,16 @@ function toposort(entries, txManager) {
     }
 
     txManager.getTx(entry.txId).ins.forEach(function (input) {
-      var inputId = Array.prototype.reverse.call(new Buffer(input.hash)).toString('hex')
-      if (_.isUndefined(entriesTxIds[inputId])) {
+      var inputTxId = bitcoin.util.hashEncode(input.hash)
+      if (_.isUndefined(entriesTxIds[inputTxId])) {
         return
       }
 
-      if (entriesTxIds[inputId].txId === topEntry.txId) {
+      if (entriesTxIds[inputTxId].txId === topEntry.txId) {
         throw new errors.ToposortError('Graph is cyclical')
       }
 
-      sort(entriesTxIds[inputId], topEntry)
+      sort(entriesTxIds[inputTxId], topEntry)
     })
 
     resultTxIds[entry.txId] = true
@@ -123,7 +123,7 @@ HistoryManager.prototype.addTx = function (tx) {
     tx = ensuredTx
     return Q.all(tx.ins.map(function (input) {
       // @todo Add multisig support (multi-address)
-      var address = bitcoin.getAddressesFromOutputScript(
+      var address = bitcoin.util.getAddressesFromScript(
         input.prevTx.outs[input.index].script, self._wallet.getBitcoinNetwork())[0]
 
       if (walletAddresses.indexOf(address) === -1) {
@@ -158,7 +158,7 @@ HistoryManager.prototype.addTx = function (tx) {
       txColorValues.forEach(function (colorValue, index) {
         var colorTarget = new cclib.ColorTarget(tx.outs[index].script.toHex(), colorValue)
 
-        var touchedAddresses = bitcoin.getAddressesFromOutputScript(tx.outs[index].script, network)
+        var touchedAddresses = bitcoin.util.getAddressesFromScript(tx.outs[index].script, network)
         if (_.intersection(walletAddresses, touchedAddresses).length === 0) {
           return otherColorTargets.push(colorTarget)
         }

@@ -77,8 +77,8 @@ Network.prototype._setCurrentHeight = util.makeSerial(function (newHeight) {
   var self = this
 
   return self.getHeader(newHeight).then(function (header) {
-    header = bitcoin.header2buffer(header)
-    self._currentBlockHash = bitcoin.headerHash(header)
+    header = bitcoin.util.header2buffer(header)
+    self._currentBlockHash = bitcoin.util.headerHash(header)
     self._currentHeight = newHeight
     self.emit('newHeight', newHeight)
 
