@@ -5,6 +5,7 @@ var Q = require('q')
 var cclib = require('../cclib')
 var errors = require('../errors')
 var verify = require('../verify')
+var getUncolored = cclib.ColorDefinitionManager.getUncolored
 
 
 /**
@@ -76,17 +77,18 @@ OperationalTx.prototype.isMonoColor = function () {
 OperationalTx.prototype.getRequiredFee = function (txSize) {
   verify.number(txSize)
 
-  var baseFee = 10000
-  var feeValue = Math.ceil((txSize * baseFee) / 1000)
+  var feePerKb = this.wallet.getBitcoinNetwork().feePerKb
+  var feeValue = Math.ceil(feePerKb * txSize / 1000)
 
-  return new cclib.ColorValue(new cclib.UncoloredColorDefinition(), feeValue)
+  return new cclib.ColorValue(getUncolored(), feeValue)
 }
 
 /**
  * @return {external:coloredcoinjs-lib.ColorValue}
  */
 OperationalTx.prototype.getDustThreshold = function () {
-  return new cclib.ColorValue(new cclib.UncoloredColorDefinition(), 5500)
+  var dustValue = this.wallet.getBitcoinNetwork().dustThreshold
+  return new cclib.ColorValue(getUncolored(), dustValue)
 }
 
 /**
