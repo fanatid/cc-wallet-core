@@ -37,9 +37,10 @@ function CoinManager(wallet, walletState, rawStorage) {
   verify.Wallet(wallet)
   verify.WalletState(walletState)
   verify.object(rawStorage)
-  rawStorage = _.defaults(rawStorage, {'coins': [], 'spend': {}})
 
   events.EventEmitter.call(this)
+
+  rawStorage = _.defaults(rawStorage, {coins: [], spend: {}, version: 1})
 
   this._wallet = wallet
   this._walletState = walletState

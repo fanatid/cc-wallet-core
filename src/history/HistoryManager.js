@@ -70,12 +70,13 @@ function HistoryManager(wallet, walletState, rawStorage) {
   verify.WalletState(walletState)
   verify.object(rawStorage)
 
-  var self = this
-  events.EventEmitter.call(self)
+  events.EventEmitter.call(this)
 
-  self._wallet = wallet
-  self._walletState = walletState
-  self._historyRecords = rawStorage
+  rawStorage = _.defaults(rawStorage, {records: [], version: 1})
+
+  this._wallet = wallet
+  this._walletState = walletState
+  this._historyRecords = rawStorage.records
 }
 
 inherits(HistoryManager, events.EventEmitter)

@@ -59,8 +59,10 @@ function TxManager(wallet, walletState, rawStorage) {
 
   events.EventEmitter.call(this)
 
+  rawStorage = _.defaults(rawStorage, {records: {}, version: 1})
+
   this._wallet = wallet
-  this._txRecords = rawStorage
+  this._txRecords = rawStorage.records
 }
 
 inherits(TxManager, events.EventEmitter)

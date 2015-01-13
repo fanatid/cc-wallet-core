@@ -18,18 +18,16 @@ function WalletState(wallet) {
 
   SyncStorage.apply(this, Array.prototype.slice.call(arguments))
 
-  this._stateDBKey = this.globalPrefix + 'state'
+  this._stateDBKey = this.globalPrefix + 'stateV2'
+  this._state = _.defaults(this.store.get(this._stateDBKey) || {}, {
+    TxManager: {},
+    CoinManager: {},
+    HistoryManager: {}
+  })
 
-  this._state = this.store.get(this._stateDBKey) || {}
-  this._state = _.defaults(this._state, {'tx': {}, 'coin': {}, 'history': []})
-
-  if (_.isUndefined(this.store.get(this._stateDBKey + '_version'))) {
-    this.store.set(this._stateDBKey + '_version', 1)
-  }
-
-  this._txManager = new TxManager(wallet, this, this._state.tx)
-  this._coinManager = new CoinManager(wallet, this, this._state.coin)
-  this._historyManager = new HistoryManager(wallet, this, this._state.history)
+  this._txManager = new TxManager(wallet, this, this._state.TxManager)
+  this._coinManager = new CoinManager(wallet, this, this._state.CoinManager)
+  this._historyManager = new HistoryManager(wallet, this, this._state.HistoryManager)
 }
 
 inherits(WalletState, SyncStorage)
@@ -59,7 +57,6 @@ WalletState.prototype.save = function () {
  */
 WalletState.prototype.clear = function () {
   this.store.remove(this._stateDBKey)
-  this.store.remove(this._stateDBKey + '_version')
 }
 
 

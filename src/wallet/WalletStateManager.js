@@ -482,6 +482,7 @@ WalletStateManager.prototype.getCoinMainColorValue = function (coin, walletState
 
 /**
  * @todo
+ * Opts: height, timestamp, fromNow
  */
 WalletStateManager.prototype.freezeCoins = function () {}
 
