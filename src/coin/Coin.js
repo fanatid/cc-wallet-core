@@ -13,6 +13,13 @@ var verify = require('../verify')
  */
 
 /**
+ * @todo
+ * Remove CoinManager
+ * Allow isSpent, isValud, isAvailable as functions and booleans
+ * Add cache for Coins to CoinManager
+ */
+
+/**
  * @class Coin
  * @param {CoinManager} coinManager
  * @param {Coin~RawCoin} rawCoin

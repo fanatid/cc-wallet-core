@@ -51,27 +51,6 @@ function CoinManager(wallet, walletState, rawStorage) {
 inherits(CoinManager, events.EventEmitter)
 
 /**
- * @private
- * @param {Coin~RawCoin} record
- * @return {Coin}
- */
-CoinManager.prototype._record2Coin = function (record) {
-  var txData = this._walletState.getTxManager().getTxData(record.txId)
-  if (txData === null) {
-    throw new errors.TxNotFoundError('TxId: ' + record.txId)
-  }
-
-  var opts = {
-    isSpent: (this._spend[record.txId] || []).indexOf(record.outIndex) !== -1,
-    isValid: txStatus.isValid(txData.status),
-    isAvailable: txStatus.isAvailable(txData.status)
-  }
-
-  return new Coin(this, record, opts)
-}
-
-/**
- * @private
  * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
  * @return {external:Q.Promise}
  */
@@ -99,7 +78,8 @@ CoinManager.prototype.addTx = function (tx) {
           outIndex: index,
           value: output.value,
           script: output.script.toHex(),
-          addresses: touchedAddresses
+          addresses: touchedAddresses,
+          lockTime: 0
         })
 
         return touchedAddresses
@@ -192,7 +172,9 @@ CoinManager.prototype.revertTx = function (tx) {
  * @return {Coin[]}
  */
 CoinManager.prototype.getCoins = function (addresses) {
-  var rawCoins = this._coins
+  var self = this
+
+  var rawCoins = self._coins
   if (!_.isUndefined(addresses)) {
     if (!_.isArray(addresses)) {
       addresses = [addresses]
@@ -205,15 +187,30 @@ CoinManager.prototype.getCoins = function (addresses) {
     })
   }
 
-  var record2Coin = this._record2Coin.bind(this)
+  // var currentHeight = self._wallet.getBlockchain().getCurrentHeight()
+  // var currentTimestamp =
+
   var coins = rawCoins.map(function (record) {
-    return record2Coin({
+    record = {
       txId: record.txId,
       outIndex: record.outIndex,
       value: record.value,
       script: record.script,
       address: record.addresses[0]
-    })
+    }
+
+    var txData = self._walletState.getTxManager().getTxData(record.txId)
+    if (txData === null) {
+      throw new errors.TxNotFoundError('TxId: ' + record.txId)
+    }
+
+    var opts = {
+      isSpent: (self._spend[record.txId] || []).indexOf(record.outIndex) !== -1,
+      isValid: txStatus.isValid(txData.status),
+      isAvailable: txStatus.isAvailable(txData.status)
+    }
+
+    return new Coin(self, record, opts)
   })
 
   return coins

@@ -11,16 +11,11 @@ var txStatus = require('../const').txStatus
 
 
 /**
- * @const {number} TxManager~TimezoneOffset
- */
-var TimezoneOffset = new Date().getTimezoneOffset() * 60
-
-/**
  * @name TxManager~getCurrentTimestamp
  * @return {number}
  */
 function getCurrentTimestamp() {
-  return Math.round(Date.now() / 1000) + TimezoneOffset
+  return Math.round(Date.now() / 1000)
 }
 
 
@@ -107,7 +102,7 @@ TxManager.prototype.addTx = function (tx, data) {
     }
 
     return Q.ninvoke(self._wallet.getBlockchain(), 'getBlockTime', record.height).then(function (ts) {
-      record.timestamp = ts + TimezoneOffset
+      record.timestamp = ts
       record.isBlockTimestamp = true
     })
 
