@@ -3,6 +3,8 @@ var _ = require('lodash')
 var verify = require('../verify')
 
 
+/** @todo Remove Address from rawCoin */
+
 /**
  * @typedef Coin~RawCoin
  * @property {string} txId
@@ -16,7 +18,6 @@ var verify = require('../verify')
  * @todo
  * Remove CoinManager
  * Allow isSpent, isValud, isAvailable as functions and booleans
- * Add cache for Coins to CoinManager
  */
 
 /**
@@ -67,6 +68,13 @@ Coin.prototype.toRawCoin = function () {
 }
 
 /**
+ * @return {string}
+ */
+Coin.prototype.toString = function () {
+  return this.txId + ':' + this.outIndex
+}
+
+/**
  * @return {boolean}
  */
 Coin.prototype.isSpent = function () {
@@ -100,6 +108,11 @@ Coin.prototype.isAvailable = function () {
 }
 
 /**
+ * @todo
+ */
+Coin.prototype.isFrozen = function () {}
+
+/**
  * @callback Coin~getColorValueCallback
  * @param {?Error} error
  * @param {external:coloredcoinjs-lib.ColorValue} colorValue
@@ -121,11 +134,14 @@ Coin.prototype.getMainColorValue = function (cb) {
 }
 
 /**
- * @return {string}
+ * @todo
  */
-Coin.prototype.toString = function () {
-  return this.txId + ':' + this.outIndex
-}
+Coin.prototype.freeze = function () {}
+
+/**
+ * @todo
+ */
+Coin.prototype.unfreeze = function () {}
 
 
 module.exports = Coin

@@ -78,7 +78,7 @@ function WalletStateManager(wallet) {
   self._executeQueue = []
 
   self._currentState.getTxManager().getAllTxIds().filter(function (txId) {
-    if (self._currentState.getTxManager().getTxData(txId).status === txStatus.dispatch) {
+    if (self._currentState.getTxManager().getTxStatus(txId) === txStatus.dispatch) {
       self._attemptSendTx(txId)
     }
   })
@@ -248,6 +248,7 @@ WalletStateManager.prototype.execute = function (fn) {
 
     }).catch(function (error) {
       self.emit('error', error)
+      throw error
 
     }).then(function (result) {
       if (!_.isObject(result) || result.commit !== true) {
@@ -273,6 +274,8 @@ WalletStateManager.prototype.execute = function (fn) {
 }
 
 /**
+ * Adds tx to local storage and trying to send to network through remote service
+ *
  * @param {Transaction} tx
  * @return {Q.Promise}
  */
@@ -284,6 +287,119 @@ WalletStateManager.prototype.sendTx = function (tx) {
     promise = promise.then(function () { return walletState.getHistoryManager().addTx(tx) })
     return promise.then(function () { return {commit: true} })
   })
+}
+
+/**
+ * Syncing history entries (received from a remote service for a given address)
+ *  with local history
+ *
+ * @param {string} address
+ * @param {Array.<{txId: string, height: number}>} entries
+ * @return {Q.Promise}
+ */
+WalletStateManager.prototype.historySync = function (address, entries) {
+  var self = this
+
+  entries = _.chain(entries)
+    .uniq('txId')
+    .sortBy(function (entry) {
+      return entry.height === 0 ? Infinity : entry.height
+    })
+    .value()
+
+  var TxIdsForRemove = _.difference(self._currentState.getTxManager().getAllTxIds(address), _.pluck(entries, 'txId'))
+  var promises = TxIdsForRemove.map(function (txId) {
+    return self.execute(function (walletState) {
+      var tx = walletState.getTxManager().getTx(txId)
+      if (tx === null) {
+        return Q({commit: false})
+      }
+
+      var promise = Q()
+      promise = promise.then(function () { return walletState.getTxManager().revertTx(tx, address) })
+      promise = promise.then(function () { return walletState.getCoinManager().revertTx(tx) })
+      promise = promise.then(function () { return walletState.getHistoryManager().revertTx(tx) })
+      return promise.then(function () { return {commit: true} })
+    })
+  })
+
+  promises = promises.concat(entries.map(function (entry) {
+    return self.execute(function (walletState) {
+      var status = entry.height === 0 ? txStatus.unconfirmed : txStatus.confirmed
+
+      var tx = walletState.getTxManager().getTx(entry.txId)
+      if (tx !== null) {
+        var txHeight = walletState.getTxManager().getTxData(entry.txId).height
+        var isTouchedAddress = walletState.getTxManager().isTouchedAddress(entry.txId, address)
+        if (txHeight === entry.height && isTouchedAddress) {
+          return Q({commit: false})
+        }
+
+        var promise = Q()
+        promise = promise.then(function () {
+          return walletState.getTxManager().updateTx(tx, {status: status, height: entry.height, tAddress: address})
+        })
+        promise = promise.then(function () { return walletState.getCoinManager().updateTx(tx) })
+        promise = promise.then(function () { return walletState.getHistoryManager().updateTx(tx) })
+        return promise.then(function () { return {commit: true} })
+      }
+
+      return Q.ninvoke(self._wallet.getBlockchain(), 'getTx', entry.txId).then(function (tx) {
+        var promise = Q()
+        promise = promise.then(function () {
+          return walletState.getTxManager().addTx(tx, {status: status, height: entry.height, tAddresses: address})
+        })
+        promise = promise.then(function () { return walletState.getCoinManager().addTx(tx) })
+        promise = promise.then(function () { return walletState.getHistoryManager().addTx(tx) })
+        return promise.then(function () { return {commit: true} })
+      })
+    })
+  }))
+
+  return Q.all(promises)
+}
+
+/**
+ * @callback WalletStateManager~freezeUnfreezeCallback
+ * @param {?Error} error
+ */
+
+/**
+ * @param {Array.<{txId: string, outIndex: number}>} coins
+ * @param {Object} opts Freeze options
+ * @param {number} [opts.height] Freeze until height is not be reached
+ * @param {number} [opts.timestamp] Freeze until timestamp is not be reached
+ * @param {number} [opts.fromNow] As timestamp that equal (Date.now() + fromNow)
+ * @param {WalletStateManager~freezeUnfreezeCallback} cb
+ */
+WalletStateManager.prototype.freezeCoins = function (coins, opts, cb) {
+  verify.function(cb)
+
+  this.execute(function (walletState) {
+    walletState.getCoinManager().freezeCoins(coins, opts)
+    return {commit: true}
+
+  }).done(
+    function () { cb(null) },
+    function (error) { cb(error) }
+  )
+}
+
+/**
+ * @param {Array.<{txId: string, outIndex: number}>} coins
+ * @param {WalletStateManager~freezeUnfreezeCallback} cb
+ */
+WalletStateManager.prototype.unfreezeCoins = function (coins, cb) {
+  verify.function(cb)
+
+  this.execute(function (walletState) {
+    walletState.getCoinManager().unfreezeCoins(coins)
+    return {commit: true}
+
+  }).done(
+    function () { cb(null) },
+    function (error) { cb(error) }
+  )
 }
 
 /**
@@ -404,6 +520,49 @@ WalletStateManager.prototype.getCoins = function (addresses, walletState) {
 }
 
 /**
+ * @param {{txId: string, outIndex: number}} coin
+ * @param {WalletState} [walletState]
+ * @return {boolean}
+ */
+WalletStateManager.prototype.isCoinSpent = function (coin, walletState) {
+  walletState = this._resolveWalletState(walletState)
+  return walletState.getCoinManager().isCoinSpent(coin)
+}
+
+/**
+ * @param {{txId: string}} coin
+ * @param {WalletState} [walletState]
+ * @return {boolean}
+ * @throws {TxNotFoundError} If tx for given coin not found
+ */
+WalletStateManager.prototype.isCoinValid = function (coin, walletState) {
+  walletState = this._resolveWalletState(walletState)
+  return walletState.getCoinManager().isCoinValid(coin)
+}
+
+/**
+ * @param {{txId: string}} coin
+ * @param {WalletState} [walletState]
+ * @return {boolean}
+ * @throws {TxNotFoundError} If tx for given coin not found
+ */
+WalletStateManager.prototype.isCoinAvailable = function (coin, walletState) {
+  walletState = this._resolveWalletState(walletState)
+  return walletState.getCoinManager().isCoinAvailable(coin)
+}
+
+/**
+ * @param {{txId: string, outIndex: number}} coin
+ * @param {WalletState} [walletState]
+ * @return {boolean}
+ * @throws {CoinNotFoundError} If coin for given txId:outIndex not found
+ */
+WalletStateManager.prototype.isCoinFrozen = function (coin, walletState) {
+  walletState = this._resolveWalletState(walletState)
+  return walletState.getCoinManager().isCoinFrozen(coin)
+}
+
+/**
  * @callback WalletStateManager~getCoinColorValueCallback
  * @param {?Error} error
  * @param {ColorValue} colorValue
@@ -478,84 +637,6 @@ WalletStateManager.prototype.getCoinMainColorValue = function (coin, walletState
     function (colorValue) { cb(null, colorValue) },
     function (error) { cb(error) }
   )
-}
-
-/**
- * @todo
- * Opts: height, timestamp, fromNow
- */
-WalletStateManager.prototype.freezeCoins = function () {}
-
-/**
- * @todo
- */
-WalletStateManager.prototype.unfreezeCoins = function () {}
-
-/**
- * @param {string} address
- * @param {Array.<{txId: string, height: number}>} entries
- * @return {Q.Promise}
- */
-WalletStateManager.prototype.historySync = function (address, entries) {
-  var self = this
-
-  entries = _.chain(entries)
-    .uniq('txId')
-    .sortBy(function (entry) {
-      return entry.height === 0 ? Infinity : entry.height
-    })
-    .value()
-
-  var TxIdsForRemove = _.difference(self._currentState.getTxManager().getAllTxIds(address), _.pluck(entries, 'txId'))
-  var promises = TxIdsForRemove.map(function (txId) {
-    return self.execute(function (walletState) {
-      var tx = walletState.getTxManager().getTx(txId)
-      if (tx === null) {
-        return Q({commit: false})
-      }
-
-      var promise = Q()
-      promise = promise.then(function () { return walletState.getTxManager().revertTx(tx, address) })
-      promise = promise.then(function () { return walletState.getCoinManager().revertTx(tx) })
-      promise = promise.then(function () { return walletState.getHistoryManager().revertTx(tx) })
-      return promise.then(function () { return {commit: true} })
-    })
-  })
-
-  promises = promises.concat(entries.map(function (entry) {
-    return self.execute(function (walletState) {
-      var status = entry.height === 0 ? txStatus.unconfirmed : txStatus.confirmed
-
-      var tx = walletState.getTxManager().getTx(entry.txId)
-      if (tx !== null) {
-        var txHeight = walletState.getTxManager().getTxData(entry.txId).height
-        var isTouchedAddress = walletState.getTxManager().isTouchedAddress(entry.txId, address)
-        if (txHeight === entry.height && isTouchedAddress) {
-          return Q({commit: false})
-        }
-
-        var promise = Q()
-        promise = promise.then(function () {
-          return walletState.getTxManager().updateTx(tx, {status: status, height: entry.height, tAddress: address})
-        })
-        promise = promise.then(function () { return walletState.getCoinManager().updateTx(tx) })
-        promise = promise.then(function () { return walletState.getHistoryManager().updateTx(tx) })
-        return promise.then(function () { return {commit: true} })
-      }
-
-      return Q.ninvoke(self._wallet.getBlockchain(), 'getTx', entry.txId).then(function (tx) {
-        var promise = Q()
-        promise = promise.then(function () {
-          return walletState.getTxManager().addTx(tx, {status: status, height: entry.height, tAddresses: address})
-        })
-        promise = promise.then(function () { return walletState.getCoinManager().addTx(tx) })
-        promise = promise.then(function () { return walletState.getHistoryManager().addTx(tx) })
-        return promise.then(function () { return {commit: true} })
-      })
-    })
-  }))
-
-  return Q.all(promises)
 }
 
 /**

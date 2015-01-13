@@ -168,10 +168,56 @@ CoinManager.prototype.revertTx = function (tx) {
 }
 
 /**
+ * @param {Array.<{txId: string, outIndex: number}>} coins
+ * @param {Object} opts Freeze options
+ * @param {number} [opts.height] Freeze until height is not be reached
+ * @param {number} [opts.timestamp] Freeze until timestamp is not be reached
+ * @param {number} [opts.fromNow] As timestamp that equal (Date.now() + fromNow)
+ * @throws {CoinNotFoundError} If coin for given txId:outIndex not found
+ */
+CoinManager.prototype.freezeCoins = function (coins, opts) {
+  verify.array(coins)
+  coins.forEach(function (coin) {
+    verify.object(coin)
+    verify.txId(coin.txId)
+    verify.outIndex(coin.outIndex)
+  })
+  verify.object(opts)
+  if (!_.isUndefined(opts.fromNow)) {
+    opts.timestamp = Date.now() + opts.fromNow
+  }
+
+  var lockTime = opts.height || opts.timestamp || opts.fromNow + Date.now()
+  verify.number(lockTime)
+  if (lockTime < 0) {
+    var errMsg = 'freezeCoins: lockTime must be greater than or equal zero'
+    throw new errors.VerifyTypeError(errMsg)
+  }
+
+  coins.forEach(function (coin) {
+    var record = _.find(this._coins, coin)
+    if (_.isUndefined(record)) {
+      throw new errors.CoinNotFoundError('Coin: ' + coin.txId + ':' + coin.outIndex)
+    }
+
+    record.lockTime = lockTime
+  })
+}
+
+/**
+ * @param {Array.<{txId: string, outIndex: number}>} coins
+ * @throws {CoinNotFoundError} If coin for given txId:outIndex not found
+ */
+CoinManager.prototype.unfreezeCoins = function (coins) {
+  this.freezeCoin(coins, {height: 0})
+}
+
+/**
  * @param {(string|string[])} [addresses]
  * @return {Coin[]}
  */
 CoinManager.prototype.getCoins = function (addresses) {
+  /** @todo Add coin cache */
   var self = this
 
   var rawCoins = self._coins
@@ -187,8 +233,6 @@ CoinManager.prototype.getCoins = function (addresses) {
     })
   }
 
-  // var currentHeight = self._wallet.getBlockchain().getCurrentHeight()
-  // var currentTimestamp =
 
   var coins = rawCoins.map(function (record) {
     record = {
@@ -217,72 +261,77 @@ CoinManager.prototype.getCoins = function (addresses) {
 }
 
 /**
- * @param {Coin} coin
+ * @param {{txId: string, outIndex: number}} coin
  * @return {boolean}
  */
 CoinManager.prototype.isCoinSpent = function (coin) {
-  verify.Coin(coin)
+  verify.object(coin)
+  verify.txId(coin.txId)
+  verify.number(coin.outIndex)
 
   return (this._spend[coin.txId] || []).indexOf(coin.outIndex) !== -1
 }
 
 /**
- * @param {Coin} coin
+ * @param {{txId: string} coin
  * @return {boolean}
+ * @throws {TxNotFoundError} If tx for given coin not found
  */
 CoinManager.prototype.isCoinValid = function (coin) {
-  verify.Coin(coin)
+  verify.object(coin)
+  verify.txId(coin.txId)
 
-  var txData = this._walletState.getTxManager().getTxData(coin.txId)
-  return txData !== null && txStatus.isValid(txData.status)
+  var coinTxStatus = this._walletState.getTxManager().getTxStatus(coin.txId)
+  if (coinTxStatus === null) {
+    throw new errors.TxNotFoundError('TxId: ' + coin.txId)
+  }
+
+  return txStatus.isValid(coinTxStatus)
 }
 
 /**
- * @param {Coin} coin
+ * @param {{txId: string} coin
  * @return {boolean}
+ * @throws {TxNotFoundError} If tx for given coin not found
  */
 CoinManager.prototype.isCoinAvailable = function (coin) {
   verify.Coin(coin)
+  verify.object(coin)
 
-  var txData = this._walletState.getTxManager().getTxData(coin.txId)
-  return txData !== null && txStatus.isAvailable(txData.status)
+  var coinTxStatus = this._walletState.getTxManager().getTxStatus(coin.txId)
+  if (coinTxStatus === null) {
+    throw new errors.TxNotFoundError('TxId: ' + coin.txId)
+  }
+
+  return txStatus.isAvailable(coinTxStatus)
 }
 
 /**
- * @callback CoinManager~getCoinColorValueCallback
- * @param {?Error} error
- * @param {external:coloredcoinjs-lib.ColorValue} colorValue
+ * @param {{txId: string, outIndex: number}} coin
+ * @return {boolean}
+ * @throws {CoinNotFoundError} If coin for given txId:outIndex not found
  */
+CoinManager.prototype.isCoinFrozen = function (coin) {
+  verify.object(coin)
+  verify.txId(coin.txId)
+  verify.number(coin.outIndex)
 
-/**
- * @param {Coin} coin
- * @param {external:coloredcoinjs-lib.ColorDefinition} colordef
- * @param {CoinManager~getCoinColorValueCallback} cb
- */
-CoinManager.prototype.getCoinColorValue = function (coin, colordef, cb) {
-  console.warn('CoinManager.getCoinColorValue deprecated for removal ' +
-               'in 1.0.0, use WalletStateManager.getCoinColorValue')
+  var record = _.find(this._coins, coin)
+  if (_.isUndefined(record)) {
+    throw new errors.CoinNotFoundError('Coin: ' + coin.txId + ':' + coin.outIndex)
+  }
 
-  verify.Coin(coin)
-  verify.ColorDefinition(colordef)
-  verify.function(cb)
+  if (record.lockTime === 0) {
+    return false
+  }
 
-  this._wallet.getStateManager().getCoinColorValue(coin.toRawCoin(), colordef, cb)
-}
+  if (record.lockTime < 500000000) {
+    var currentHeight = this._wallet.getBlockchain().getCurrentHeight()
+    return record.lockTime > currentHeight
+  }
 
-/**
- * @deprecated Use WalletStateManager.getCoinMainColorValue
- * @param {Coin} coin
- * @param {CoinManager~getCoinColorValueCallback} cb
- */
-CoinManager.prototype.getCoinMainColorValue = function (coin, cb) {
-  console.warn('CoinManager.getCoinMainColorValue deprecated for removal ' +
-               'in 1.0.0, use WalletStateManager.getCoinMainColorValue')
-
-  verify.Coin(coin)
-  verify.function(cb)
-
-  this._wallet.getStateManager().getCoinMainColorValue(coin.toRawCoin(), cb)
+  var currentTimestamp = Math.round(Date.now() / 1000)
+  return record.lockTime > currentTimestamp
 }
 
 

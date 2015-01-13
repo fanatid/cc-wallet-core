@@ -21,6 +21,7 @@ var createError = errors.createError || require('errno').create
  *       |    +-- NetworkSendTxError
  *       +-- NotFoundError
  *       |    +-- AssetNotFoundError
+ *       |    +-- CoinNotFoundError
  *       |    +-- ComposerFunctionNotFoundError
  *       |    +-- HeaderNotFoundError
  *       |    +-- TxNotFoundError
@@ -146,6 +147,12 @@ var NotFoundError = createError('NotFoundError', ColoredCoinError)
 var AssetNotFoundError = createError('AssetNotFoundError', NotFoundError)
 
 /**
+ * @class CoinNotFoundError
+ * @extends {NotFoundError}
+ */
+var CoinNotFoundError = createError('CoinNotFoundError', NotFoundError)
+
+/**
  * @class ComposerFunctionNotFoundError
  * @extends {NotFoundError}
  */
@@ -257,6 +264,7 @@ module.exports = _.extend(errors, {
   NetworkSendTxError: NetworkSendTxError,
   NotFoundError: NotFoundError,
   AssetNotFoundError: AssetNotFoundError,
+  CoinNotFoundError: CoinNotFoundError,
   ComposerFunctionNotFoundError: ComposerFunctionNotFoundError,
   HeaderNotFoundError: HeaderNotFoundError,
   TxNotFoundError: TxNotFoundError,

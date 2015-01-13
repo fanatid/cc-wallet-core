@@ -214,7 +214,9 @@ TxManager.prototype.getAllTxIds = function (addresses) {
     return _.keys(this._txRecords)
   }
 
-  if (!_.isArray(addresses)) { addresses = [addresses] }
+  if (!_.isArray(addresses)) {
+    addresses = [addresses]
+  }
   verify.array(addresses)
   addresses.forEach(verify.string)
 
