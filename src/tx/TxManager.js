@@ -240,6 +240,8 @@ TxManager.prototype.getTx = function (txId) {
 }
 
 /**
+ * Get status, height, timestamp and isBlockTimestamp for given txId
+ *
  * @param {string} txId
  * @return {?{
  *   status: number,
@@ -251,17 +253,30 @@ TxManager.prototype.getTx = function (txId) {
 TxManager.prototype.getTxData = function (txId) {
   verify.txId(txId)
 
-  var record = this._txRecords[txId]
-  if (_.isUndefined(record)) {
-    return null
+  var record = this._txRecords[txId] || null
+  if (record !== null) {
+    record = {
+      status: record.status,
+      height: record.height,
+      timestamp: record.timestamp,
+      isBlockTimestamp: record.isBlockTimestamp
+    }
   }
 
-  return {
-    status: record.status,
-    height: record.height,
-    timestamp: record.timestamp,
-    isBlockTimestamp: record.isBlockTimestamp
-  }
+  return record
+}
+
+/**
+ * Get status for given txId
+ *
+ * @param {string} txId
+ * @return {?number}
+ */
+TxManager.prototype.getTxStatus = function (txId) {
+  verify.txId(txId)
+
+  var record = this._txRecords[txId] || null
+  return record !== null ? record.status : record
 }
 
 /**
