@@ -17,20 +17,6 @@ function isBitcoinNetwork(thing) {
   return _.some(networks, function (network) { return _.isEqual(network, thing) })
 }
 
-function isHexSymbol(sym) { return '0123456789abcdefABCDEF'.indexOf(sym) !== -1 }
-function isRawCoin(thing) {
-  return (
-    _.isObject(thing) &&
-    _.isString(thing.txId) &&
-    thing.txId.length === 64 &&
-    thing.txId.split('').every(isHexSymbol) &&
-    _.isNumber(thing.outIndex) &&
-    _.isNumber(thing.value) &&
-    _.isString(thing.script) &&
-    _.isString(thing.address)
-  )
-}
-
 
 var functions = {
   buffer: Buffer.isBuffer,
@@ -60,7 +46,6 @@ var functions = {
   VerifiedBlockchainStorage: createInstanceCheck(
     function () { return require('./blockchain').VerifiedBlockchainStorage }),
 
-  rawCoin: isRawCoin,
   Coin: createInstanceCheck(function () { return require('./coin').Coin }),
   CoinQuery: createInstanceCheck(function () { return require('./coin').CoinQuery }),
   CoinManager: createInstanceCheck(function () { return require('./coin').CoinManager }),
@@ -107,7 +92,6 @@ var expected = {
   VerifiedBlockchain: 'VerifiedBlockchain',
   VerifiedBlockchainStorage: 'VerifiedBlockchainStorage',
 
-  rawCoin: 'raw Coin Object',
   Coin: 'Coin',
   CoinQuery: 'CoinQuery',
   CoinManager: 'CoinManager',

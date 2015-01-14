@@ -235,7 +235,7 @@ CoinManager.prototype.getCoins = function (addresses) {
 
 
   var coins = rawCoins.map(function (record) {
-    record = {
+    var rawCoin = {
       txId: record.txId,
       outIndex: record.outIndex,
       value: record.value,
@@ -243,18 +243,7 @@ CoinManager.prototype.getCoins = function (addresses) {
       address: record.addresses[0]
     }
 
-    var txData = self._walletState.getTxManager().getTxData(record.txId)
-    if (txData === null) {
-      throw new errors.TxNotFoundError('TxId: ' + record.txId)
-    }
-
-    var opts = {
-      isSpent: (self._spend[record.txId] || []).indexOf(record.outIndex) !== -1,
-      isValid: txStatus.isValid(txData.status),
-      isAvailable: txStatus.isAvailable(txData.status)
-    }
-
-    return new Coin(self, record, opts)
+    return new Coin(rawCoin, self._wallet)
   })
 
   return coins
@@ -295,8 +284,8 @@ CoinManager.prototype.isCoinValid = function (coin) {
  * @throws {TxNotFoundError} If tx for given coin not found
  */
 CoinManager.prototype.isCoinAvailable = function (coin) {
-  verify.Coin(coin)
   verify.object(coin)
+  verify.txId(coin.txId)
 
   var coinTxStatus = this._walletState.getTxManager().getTxStatus(coin.txId)
   if (coinTxStatus === null) {

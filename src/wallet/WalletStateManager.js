@@ -178,6 +178,7 @@ WalletStateManager.prototype._resolveWalletState = function (walletState) {
  * Create getTxFn with given WalletState
  *     or use current WalletState if given undefined
  *
+ * @private
  * @param {WalletState} [walletState]
  * @return {Blockchain~getTx}
  */

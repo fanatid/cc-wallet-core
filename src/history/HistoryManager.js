@@ -9,7 +9,6 @@ var bitcoin = require('../bitcoin')
 var errors = require('../errors')
 var AssetValue = require('../asset').AssetValue
 var HistoryTarget = require('./HistoryTarget')
-var Coin = require('../coin').Coin
 var HistoryEntry = require('./HistoryEntry')
 var verify = require('../verify')
 var historyEntryType = require('../const').historyEntryType
@@ -111,6 +110,7 @@ HistoryManager.prototype.addTx = function (tx) {
   var self = this
   var txId = tx.getId()
 
+  var wsm = self._wallet.getStateManager()
   var getTxFn = self._wallet.getBlockchain().getTxFn()
   var walletAddresses = self._wallet.getAllAddresses()
   var network = self._wallet.getBitcoinNetwork()
@@ -133,15 +133,13 @@ HistoryManager.prototype.addTx = function (tx) {
 
       myInsCount += 1
 
-      var coin = new Coin(self._walletState.getCoinManager(), {
+      var coin = {
         txId: input.prevTx.getId(),
         outIndex: input.index,
-        value: input.prevTx.outs[input.index].value,
-        script: input.prevTx.outs[input.index].script.toHex(),
-        address: address
-      })
+        value: input.prevTx.outs[input.index].value
+      }
 
-      return Q.ninvoke(coin, 'getMainColorValue').then(function (cv) {
+      return Q.ninvoke(wsm, 'getCoinMainColorValue', coin).then(function (cv) {
         var cid = cv.getColorId()
         if (_.isUndefined(colorValues[cid])) {
           colorValues[cid] = cv.neg()

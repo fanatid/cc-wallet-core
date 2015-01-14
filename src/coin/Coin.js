@@ -1,12 +1,15 @@
 var _ = require('lodash')
+var Q = require('q')
 
+var cclib = require('../cclib')
+var errors = require('../errors')
 var verify = require('../verify')
 
 
-/** @todo Remove Address from rawCoin */
+/** @todo Remove Address from rawCoin, because it can be reached via script */
 
 /**
- * @typedef Coin~RawCoin
+ * @typedef {Object} Coin~RawCoin
  * @property {string} txId
  * @property {number} outIndex
  * @property {number} value
@@ -15,56 +18,95 @@ var verify = require('../verify')
  */
 
 /**
- * @todo
- * Remove CoinManager
- * Allow isSpent, isValud, isAvailable as functions and booleans
+ * @typedef {Object} Coin~MethodsManager
+ * @property {WalletStateManager#freeze} [freeze]
+ * @property {WalletStateManager#unfreeze} [unfreeze]
+ * @property {(boolean|WalletStateManager#isSpent)} [isSpent]
+ * @property {(boolean|WalletStateManager#isValid)} [isValid]
+ * @property {(boolean|WalletStateManager#isAvailable)} [isAvailable]
+ * @property {(boolean|WalletStateManager#isFrozen)} [isFrozen]
+ * @property {(external:coloredcoinjs-lib.ColorValue|WalletStateManager#getColorValue)} [getColorValue]
+ * @property {(external:coloredcoinjs-lib.ColorValue|WalletStateManager#getMainColorValue)} [getMainColorValue]
  */
+
+function functionPropTest(obj, fName) {
+  if (!_.isUndefined(obj[fName])) {
+    verify.function(obj[fName])
+  }
+}
+
+function booleanPropTest(obj, fName) {
+  if (_.isBoolean(obj[fName])) {
+    obj[fName] = _.constant(obj[fName])
+  }
+
+  if (!_.isUndefined(obj[fName])) {
+    verify.function(obj[fName])
+  }
+}
+
+function colorValuePropTest(obj, fName) {
+  if (obj[fName] instanceof cclib.ColorValue) {
+    var value = obj[fName]
+    obj[fName] = function () { _.last(arguments)(null, value) }
+  }
+
+  if (!_.isUndefined(obj[fName])) {
+    verify.function(obj[fName])
+  }
+}
+
 
 /**
+ * Represent tx output and provide some useful methods
+ *
  * @class Coin
- * @param {CoinManager} coinManager
  * @param {Coin~RawCoin} rawCoin
- * @param {Object} [opts]
- * @param {boolean} [opts.isSpent]
- * @param {boolean} [opts.isValid]
- * @param {boolean} [opts.isAvailable]
+ * @param {(Wallet|WalletStateManager|Coin~MethodsManager)} [methodsManager]
  */
-function Coin(coinManager, rawCoin, opts) {
-  verify.CoinManager(coinManager)
-  verify.rawCoin(rawCoin)
-  if (!_.isUndefined(opts)) {
-    verify.object(opts)
-    verify.boolean(opts.isSpent)
-    verify.boolean(opts.isValid)
-    verify.boolean(opts.isAvailable)
+function Coin(rawCoin, methodsManager) {
+  // verify rawCoin
+  verify.object(rawCoin)
+  verify.txId(rawCoin.txId)
+  verify.number(rawCoin.outIndex)
+  verify.number(rawCoin.value)
+  verify.hexString(rawCoin.script)
+  verify.string(rawCoin.address)
+
+  // verify methodsManager
+  if (_.isUndefined(methodsManager)) {
+    methodsManager = {}
   }
-
-  this.coinManager = coinManager
-
-  this.txId = rawCoin.txId
-  this.outIndex = rawCoin.outIndex
-  this.value = rawCoin.value
-  this.script = rawCoin.script
-  this.address = rawCoin.address
-
-  if (!_.isUndefined(opts)) {
-    this._isSpent = opts.isSpent
-    this._isValid = opts.isValid
-    this._isAvailable = opts.isAvailable
+  verify.object(methodsManager)
+  if (_.isFunction(methodsManager.getStateManager)) {
+    methodsManager = methodsManager.getStateManager()
   }
+  functionPropTest(methodsManager, 'freeze')
+  functionPropTest(methodsManager, 'unfreeze')
+  booleanPropTest(methodsManager, 'isSpent')
+  booleanPropTest(methodsManager, 'isValid')
+  booleanPropTest(methodsManager, 'isAvailable')
+  booleanPropTest(methodsManager, 'isFrozen')
+  colorValuePropTest(methodsManager, 'getColorValue')
+  colorValuePropTest(methodsManager, 'getMainColorValue')
+
+  // init coin
+  var self = this
+
+  self._rawCoin = _.clone(rawCoin)
+  self._methodsManager = methodsManager
+  self._cachedProps = {}
+
+  _.forEach(rawCoin, function (value, key) {
+    Object.defineProperty(self, key, {value: value})
+  })
 }
 
 /**
  * @return {Coin~RawCoin}
  */
 Coin.prototype.toRawCoin = function () {
-  return {
-    txId: this.txId,
-    outIndex: this.outIndex,
-    value: this.value,
-    script: this.script,
-    address: this.address
-  }
+  return _.clone(this._rawCoin)
 }
 
 /**
@@ -75,42 +117,107 @@ Coin.prototype.toString = function () {
 }
 
 /**
- * @return {boolean}
+ * @private
+ * @param {string} methodName
+ * @return {NotImplementedError}
  */
-Coin.prototype.isSpent = function () {
-  if (!_.isUndefined(this._isSpent)) {
-    return this._isSpent
-  }
-
-  return this.coinManager.isCoinSpent(this)
+Coin.prototype._createNotImplementedError = function (methodName) {
+  var msg = methodName + ' not implemented for coin ' + this
+  return new errors.NotImplementedError(msg)
 }
 
 /**
- * @return {boolean}
+ * @callback Coin~freezeUnfreezeCallback
+ * @param {?Error} error
  */
-Coin.prototype.isValid = function () {
-  if (!_.isUndefined(this._isValid)) {
-    return this._isValid
+
+/**
+ * @param {Object} opts Freeze options
+ * @param {number} [opts.height] Freeze until height is not be reached
+ * @param {number} [opts.timestamp] Freeze until timestamp is not be reached
+ * @param {number} [opts.fromNow] As timestamp that equal (Date.now() + fromNow)
+ * @param {Coin~freezeUnfreezeCallback} cb
+ */
+Coin.prototype.freeze = function (opts, cb) {
+  if (_.isUndefined(this._methodsManager.freeze)) {
+    return cb(this._createNotImplementedError('methodsManager.freeze'))
   }
 
-  return this.coinManager.isCoinValid(this)
+  this._methodsManager.freeze([this.toRawCoin()], opts, cb)
 }
 
 /**
- * @return {boolean}
+ * @param {Coin~freezeUnfreezeCallback} cb
  */
-Coin.prototype.isAvailable = function () {
-  if (!_.isUndefined(this._isAvailable)) {
-    return this._isAvailable
+Coin.prototype.unfreeze = function (cb) {
+  if (_.isUndefined(this._methodsManager.unfreeze)) {
+    return cb(this._createNotImplementedError('methodsManager.unfreeze'))
   }
 
-  return this.coinManager.isCoinAvailable(this)
+  this._methodsManager.unfreeze([this.toRawCoin()], cb)
 }
 
 /**
- * @todo
+ * @private
+ * @param {string} methodName
+ * @param {Object} [opts]
+ * @param {boolean} [opts.cache=true]
+ * @return {boolean}
+ * @throws {NotImplementedError}
  */
-Coin.prototype.isFrozen = function () {}
+Coin.prototype._booleanPropMethod = function (methodName, opts) {
+  opts = _.extend({cache: true}, opts)
+
+  verify.string(methodName)
+  verify.object(opts)
+  verify.boolean(opts.cache)
+
+  if (opts.cache === false || _.isUndefined(this._cachedProps[methodName])) {
+    if (_.isUndefined(this._methodsManager[methodName])) {
+      throw this._createNotImplementedError('methodsManager.' + methodName)
+    }
+
+    this._cachedProps[methodName] = this._methodsManager[methodName](this.toRawCoin())
+  }
+
+  return this._cachedProps[methodName]
+}
+
+/**
+ * @param {Object} opts
+ * @param {boolean} [opts.cache=true]
+ * @return {boolean}
+ */
+Coin.prototype.isSpent = function (opts) {
+  return this._booleanPropMethod('isCoinSpent', opts)
+}
+
+/**
+ * @param {Object} opts
+ * @param {boolean} [opts.cache=true]
+ * @return {boolean}
+ */
+Coin.prototype.isValid = function (opts) {
+  return this._booleanPropMethod('isCoinValid', opts)
+}
+
+/**
+ * @param {Object} opts
+ * @param {boolean} [opts.cache=true]
+ * @return {boolean}
+ */
+Coin.prototype.isAvailable = function (opts) {
+  return this._booleanPropMethod('isCoinAvailable', opts)
+}
+
+/**
+ * @param {Object} opts
+ * @param {boolean} [opts.cache=true]
+ * @return {boolean}
+ */
+Coin.prototype.isFrozen = function (opts) {
+  return this._booleanPropMethod('isCoinFrozen', opts)
+}
 
 /**
  * @callback Coin~getColorValueCallback
@@ -119,29 +226,68 @@ Coin.prototype.isFrozen = function () {}
  */
 
 /**
+ * @private
+ * @param {string} methodName
+ * @param {?external:coloredcoinjs-lib.ColorDefinition} colordef
+ * @param {Object} [opts]
+ * @param {boolean} [opts.cache=true]
+ * @param {Coin~getColorValueCallback} cb
+ */
+Coin.prototype._colorValuePropMethod = function (methodName, colordef, opts, cb) {
+  if (_.isFunction(opts) && _.isUndefined(cb)) {
+    cb = opts
+    opts = undefined
+  }
+  opts = _.extend({cache: true}, opts)
+
+  verify.string(methodName)
+  verify.object(opts)
+  verify.boolean(opts.cache)
+
+  if (opts.cache === false || _.isUndefined(this._cachedProps[methodName])) {
+    var error = null
+    if (_.isUndefined(this._methodsManager[methodName])) {
+      error = this._createNotImplementedError('methodsManager.' + methodName)
+    }
+
+    var args = [this._methodsManager, methodName, this.toRawCoin()]
+    if (colordef !== null) {
+      args.push(colordef)
+    }
+
+    this._cachedProps[methodName] = Q.fcall(function () {
+      if (error !== null) {
+        throw error
+      }
+
+      return Q.ninvoke.apply(null, args)
+    })
+  }
+
+  this._cachedProps[methodName].done(
+    function (colorValue) { cb(null, colorValue) },
+    function (error) { cb(error) }
+  )
+}
+
+/**
  * @param {external:coloredcoinjs-lib.ColorDefinition} colordef
+ * @param {Object} [opts]
+ * @param {boolean} [opts.cache=true]
  * @param {Coin~getColorValueCallback} cb
  */
-Coin.prototype.getColorValue = function (colordef, cb) {
-  this.coinManager._wallet.getStateManager().getCoinColorValue(this.toRawCoin(), colordef, cb)
+Coin.prototype.getColorValue = function (colordef, opts, cb) {
+  this._colorValuePropMethod('getCoinColorValue', colordef, opts, cb)
 }
 
 /**
+ * @param {Object} [opts]
+ * @param {boolean} [opts.cache=true]
  * @param {Coin~getColorValueCallback} cb
  */
-Coin.prototype.getMainColorValue = function (cb) {
-  this.coinManager._wallet.getStateManager().getCoinMainColorValue(this.toRawCoin(), cb)
+Coin.prototype.getMainColorValue = function (opts, cb) {
+  this._colorValuePropMethod('getCoinMainColorValue', null, opts, cb)
 }
-
-/**
- * @todo
- */
-Coin.prototype.freeze = function () {}
-
-/**
- * @todo
- */
-Coin.prototype.unfreeze = function () {}
 
 
 module.exports = Coin
