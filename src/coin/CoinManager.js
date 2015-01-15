@@ -182,11 +182,8 @@ CoinManager.prototype.freezeCoins = function (coins, opts) {
     verify.txId(coin.txId)
     verify.outIndex(coin.outIndex)
   })
-  verify.object(opts)
-  if (!_.isUndefined(opts.fromNow)) {
-    opts.timestamp = Date.now() + opts.fromNow
-  }
 
+  verify.object(opts)
   var lockTime = opts.height || opts.timestamp || opts.fromNow + Date.now()
   verify.number(lockTime)
   if (lockTime < 0) {
@@ -217,7 +214,6 @@ CoinManager.prototype.unfreezeCoins = function (coins) {
  * @return {Coin[]}
  */
 CoinManager.prototype.getCoins = function (addresses) {
-  /** @todo Add coin cache */
   var self = this
 
   var rawCoins = self._coins

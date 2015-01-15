@@ -428,6 +428,7 @@ WalletStateManager.prototype.getTx = function (txId, walletState) {
  * @param {WalletStateManager~getTxColorValuesCallback} cb
  */
 WalletStateManager.prototype.getTxColorValues = function (tx, colordef, walletState, cb) {
+  // tx, colordef, function, undefined -> tx, colordef, undefined, function
   if (_.isFunction(walletState) && _.isUndefined(cb)) {
     cb = walletState
     walletState = undefined
@@ -467,6 +468,7 @@ WalletStateManager.prototype.getTxColorValues = function (tx, colordef, walletSt
  * @param {WalletStateManager~getTxColorValuesCallback} cb
  */
 WalletStateManager.prototype.getTxMainColorValues = function (tx, walletState, cb) {
+  // tx, function, undefined -> tx, undefined, function
   if (_.isFunction(walletState) && _.isUndefined(cb)) {
     cb = walletState
     walletState = undefined
@@ -578,6 +580,7 @@ WalletStateManager.prototype.isCoinFrozen = function (coin, walletState) {
  * @param {WalletStateManager~getCoinColorValueCallback} cb
  */
 WalletStateManager.prototype.getCoinColorValue = function (coin, colordef, walletState, cb) {
+  // coin, colordef, function, undefined -> coin, colordef, undefined, function
   if (_.isFunction(walletState) && _.isUndefined(cb)) {
     cb = walletState
     walletState = undefined
@@ -603,6 +606,7 @@ WalletStateManager.prototype.getCoinColorValue = function (coin, colordef, walle
  * @param {WalletStateManager~getCoinColorValueCallback} cb
  */
 WalletStateManager.prototype.getCoinMainColorValue = function (coin, walletState, cb) {
+  // coin, function, undefined -> coin, undefined, function
   if (_.isFunction(walletState) && _.isUndefined(cb)) {
     cb = walletState
     walletState = undefined
