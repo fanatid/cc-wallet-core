@@ -1,16 +1,19 @@
+var _ = require('lodash')
+
 var verify = require('../verify')
 var HISTORY_ENTRY_TYPE = require('../const').HISTORY_ENTRY_TYPE
 
 
-/** @todo Add tx status */
 /**
  * @class HistoryEntry
  *
  * @param {Object} data
  * @param {external:coloredcoinjs-lib.bitcoin.Transaction} data.tx
- * @param {number} data.height
- * @param {number} data.timestamp
- * @param {boolean} data.isBlockTimestamp
+ * @param {Object} data.txData
+ * @param {number} data.txData.status
+ * @param {number} data.txData.height
+ * @param {number} data.txData.timestamp
+ * @param {boolean} data.txData.isBlockTimestamp
  * @param {AssetValue[]} data.values
  * @param {HistoryTarget[]} data.targets
  * @param {number} data.entryType
@@ -18,23 +21,20 @@ var HISTORY_ENTRY_TYPE = require('../const').HISTORY_ENTRY_TYPE
 function HistoryEntry(data) {
   verify.object(data)
   verify.Transaction(data.tx)
-  verify.number(data.height)
-  verify.number(data.timestamp)
-  verify.boolean(data.isBlockTimestamp)
+  verify.object(data.txData)
+  verify.number(data.txData.status)
+  verify.number(data.txData.height)
+  verify.number(data.txData.timestamp)
+  verify.boolean(data.txData.isBlockTimestamp)
   verify.array(data.values)
   data.values.forEach(verify.AssetValue)
   verify.array(data.targets)
   data.targets.forEach(verify.HistoryTarget)
   verify.number(data.entryType)
 
-  this._tx = data.tx
-  this.txId = data.tx.getId()
-  this.height = data.height
-  this.timestamp = data.timestamp
-  this._isBlockTimestamp = data.isBlockTimestamp
-  this.values = data.values
-  this.targets = data.targets
-  this.entryType = data.entryType
+  // Make clone deep? Colud damage values, targets
+  this._data = data
+  this._data.txId = this._data.tx.getId()
 }
 
 /**
@@ -43,96 +43,108 @@ function HistoryEntry(data) {
 HistoryEntry.prototype.isEqual = function (historyEntry) {
   verify.HistoryEntry(historyEntry)
 
-  return (
-    this.getTxId() === historyEntry.getTxId() &&
-    this.getBlockHeight() === historyEntry.getBlockHeight() &&
-    this.getTimestamp() === historyEntry.getTimestamp() &&
-    this.isBlockTimestamp() === historyEntry.isBlockTimestamp()
-  )
+  function getData(he) {
+    return {
+      txId:             he.getTxId(),
+      status:           he.getTxStatus(),
+      height:           he.getBlockHeight(),
+      timestamp:        he.getTimestamp(),
+      isBlockTimestamp: he.isBlockTimestamp()
+    }
+  }
+
+  return _.isEqual(getData(this), getData(historyEntry))
 }
 
 /**
  * @return {external:coloredcoinjs-lib.bitcoin.Transaction}
  */
 HistoryEntry.prototype.getTx = function () {
-  return this._tx
+  return this._data.tx
 }
 
 /**
  * @return {string}
  */
 HistoryEntry.prototype.getTxId = function () {
-  return this.txId
+  return this._data.txId
+}
+
+/**
+ * @return {number}
+ */
+HistoryEntry.prototype.getTxStatus = function () {
+  return this._data.txData.status
 }
 
 /**
  * @return {number}
  */
 HistoryEntry.prototype.getBlockHeight = function () {
-  return this.height
+  return this._data.txData.height
 }
 
 /**
  * @return {number}
  */
 HistoryEntry.prototype.getTimestamp = function () {
-  return this.timestamp
+  return this._data.txData.timestamp
 }
 
 /**
  * @return {boolean}
  */
 HistoryEntry.prototype.isBlockTimestamp = function () {
-  return this._isBlockTimestamp
+  return this._data.txData.isBlocTimestamp
 }
 
 /**
  * @return {AssetValue[]}
  */
 HistoryEntry.prototype.getValues = function () {
-  return this.values
+  return this._data.values
 }
 
 /**
  * @return {AssetTarget[]}
  */
 HistoryEntry.prototype.getTargets = function () {
-  return this.targets
+  return this._data.targets
 }
 
 /**
  * @return {number}
  */
 HistoryEntry.prototype.getEntryType = function () {
-  return this.entryType
+  return this._data.entryType
 }
 
 /**
  * @return {boolean}
  */
 HistoryEntry.prototype.isSend = function () {
-  return this.entryType === HISTORY_ENTRY_TYPE.send
+  return this.getEntryType() === HISTORY_ENTRY_TYPE.send
 }
 
 /**
  * @return {boolean}
  */
 HistoryEntry.prototype.isReceive = function () {
-  return this.entryType === HISTORY_ENTRY_TYPE.receive
+  return this.getEntryType() === HISTORY_ENTRY_TYPE.receive
 }
 
 /**
  * @return {boolean}
  */
 HistoryEntry.prototype.isPaymentToYourself = function () {
-  return this.entryType === HISTORY_ENTRY_TYPE.payment2yourself
+  return this.getEntryType() === HISTORY_ENTRY_TYPE.payment2yourself
 }
 
 /**
  * @return {boolean}
  */
 HistoryEntry.prototype.isIssue = function () {
-  return this.entryType === HISTORY_ENTRY_TYPE.issue
+  return this.getEntryType() === HISTORY_ENTRY_TYPE.issue
 }
 
 

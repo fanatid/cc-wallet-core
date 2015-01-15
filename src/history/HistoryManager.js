@@ -285,7 +285,6 @@ HistoryManager.prototype.getEntries = function (assetdef) {
       return new HistoryTarget(assetValue, rt.script, bitcoinNetwork)
     })
 
-    /**
     var entry = new HistoryEntry({
       tx: tx,
       txData: txManager.getTxData(record.txId),
@@ -293,19 +292,6 @@ HistoryManager.prototype.getEntries = function (assetdef) {
       targets: historyTargets,
       entryType: record.entryType
     })
-    */
-/** */
-    var txData = txManager.getTxData(record.txId)
-    var entry = new HistoryEntry({
-      tx: tx,
-      height: txData.height,
-      timestamp: txData.timestamp,
-      isBlockTimestamp: txData.isBlockTimestamp,
-      values: _.values(assetValues),
-      targets: historyTargets,
-      entryType: record.entryType
-    })
-/** */
 
     return entry
   })

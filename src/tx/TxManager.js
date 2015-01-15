@@ -246,9 +246,9 @@ TxManager.prototype.getTx = function (txId) {
  *
  * @param {string} txId
  * @return {?{
- *   status: number,
- *   height: number,
- *   timestamp: number,
+ *   status:           number,
+ *   height:           number,
+ *   timestamp:        number,
  *   isBlockTimestamp: boolean
  * }}
  */
