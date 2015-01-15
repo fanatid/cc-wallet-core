@@ -4,10 +4,19 @@
   "description": "",
   "main": "./src/index.js",
   "keywords": [],
+  "author": "Fomichev Kirill <fanatid@ya.ru>",
   "contributors": [
     {
-      "name": "Fomichev Kirill",
-      "email": "fanatid@ya.ru"
+      "name": "Henrik Hjelte",
+      "email": "henrik@henrikhjelte.com"
+    },
+    {
+      "name": "Alex Mizrahi",
+      "email": "alex.mizrahi@gmail.com"
+    },
+    {
+      "name": "Fabian Barkhau",
+      "email": "fabian.barkhau@gmail.com"
     }
   ],
   "repository": {
