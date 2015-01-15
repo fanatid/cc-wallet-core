@@ -1,6 +1,7 @@
 module.exports = {
   bitcoin: require('./bitcoin'),
   cclib: require('./cclib'),
+  const: require('./const'),
   errors: require('./errors'),
   util: require('./util'),
   verify: require('./verify'),

@@ -4,7 +4,7 @@ var inherits = require('util').inherits
 var _ = require('lodash')
 var Q = require('q')
 
-var txStatus = require('../const').txStatus
+var TX_STATUS = require('../const').TX_STATUS
 var bitcoin = require('../bitcoin')
 var errors = require('../errors')
 var Coin = require('./Coin')
@@ -271,7 +271,7 @@ CoinManager.prototype.isCoinValid = function (coin) {
     throw new errors.TxNotFoundError('TxId: ' + coin.txId)
   }
 
-  return txStatus.isValid(coinTxStatus)
+  return TX_STATUS.isValid(coinTxStatus)
 }
 
 /**
@@ -288,7 +288,7 @@ CoinManager.prototype.isCoinAvailable = function (coin) {
     throw new errors.TxNotFoundError('TxId: ' + coin.txId)
   }
 
-  return txStatus.isAvailable(coinTxStatus)
+  return TX_STATUS.isAvailable(coinTxStatus)
 }
 
 /**

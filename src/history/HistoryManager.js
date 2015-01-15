@@ -11,7 +11,7 @@ var AssetValue = require('../asset').AssetValue
 var HistoryTarget = require('./HistoryTarget')
 var HistoryEntry = require('./HistoryEntry')
 var verify = require('../verify')
-var historyEntryType = require('../const').historyEntryType
+var HISTORY_ENTRY_TYPE = require('../const').HISTORY_ENTRY_TYPE
 
 
 /**
@@ -185,12 +185,12 @@ HistoryManager.prototype.addTx = function (tx) {
       return {desc: ct.getColorDefinition().getDesc(), value: ct.getValue(), script: ct.getScript()}
     })
 
-    var entryType = historyEntryType.send
+    var entryType = HISTORY_ENTRY_TYPE.send
     if (myInsCount === 0) {
-      entryType = historyEntryType.receive
+      entryType = HISTORY_ENTRY_TYPE.receive
 
     } else if (myInsCount === tx.ins.length && myOutsCount === tx.outs.length) {
-      entryType = historyEntryType.payment2yourself
+      entryType = HISTORY_ENTRY_TYPE.payment2yourself
 
     }
 
@@ -285,6 +285,16 @@ HistoryManager.prototype.getEntries = function (assetdef) {
       return new HistoryTarget(assetValue, rt.script, bitcoinNetwork)
     })
 
+    /**
+    var entry = new HistoryEntry({
+      tx: tx,
+      txData: txManager.getTxData(record.txId),
+      values: _.values(assetValues),
+      targets: historyTargets,
+      entryType: record.entryType
+    })
+    */
+/** */
     var txData = txManager.getTxData(record.txId)
     var entry = new HistoryEntry({
       tx: tx,
@@ -295,6 +305,7 @@ HistoryManager.prototype.getEntries = function (assetdef) {
       targets: historyTargets,
       entryType: record.entryType
     })
+/** */
 
     return entry
   })

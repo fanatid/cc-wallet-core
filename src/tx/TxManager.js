@@ -7,7 +7,7 @@ var Q = require('q')
 var Transaction = require('../bitcoin').Transaction
 var errors = require('../errors')
 var verify = require('../verify')
-var txStatus = require('../const').txStatus
+var TX_STATUS = require('../const').TX_STATUS
 
 
 /**
@@ -65,7 +65,7 @@ inherits(TxManager, events.EventEmitter)
 /**
  * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
  * @param {Object} data
- * @param {number} [data.status=txStatus.unknown]
+ * @param {number} [data.status=TX_STATUS.unknown]
  * @param {number} data.height
  * @param {string} data.tAddresses
  * @return {external:Q.Promise}
@@ -73,7 +73,7 @@ inherits(TxManager, events.EventEmitter)
 TxManager.prototype.addTx = function (tx, data) {
   verify.Transaction(tx)
   verify.object(data)
-  if (_.isUndefined(data.status)) { data.status = txStatus.unknown }
+  if (_.isUndefined(data.status)) { data.status = TX_STATUS.unknown }
   verify.number(data.status)
   verify.number(data.height)
   verify.string(data.tAddresses)
@@ -136,8 +136,8 @@ TxManager.prototype.updateTx = function (tx, data) {
   var savedRecord = _.cloneDeep(record)
 
   var mutableStatus = !(
-    data.status === txStatus.unconfirmed &&
-    [txStatus.dispatch, txStatus.pending].indexOf(record.status) !== -1
+    data.status === TX_STATUS.unconfirmed &&
+    [TX_STATUS.dispatch, TX_STATUS.pending].indexOf(record.status) !== -1
   )
   if (mutableStatus && data.status !== record.status) {
     record.status = data.status
@@ -174,7 +174,7 @@ TxManager.prototype.revertTx = function (tx, rAddress) {
 
   record.rAddresses = _.union(record.rAddresses, [rAddress]).sort()
   if (_.isEqual(record.rAddresses, record.tAddresses)) {
-    record.status = txStatus.invalid
+    record.status = TX_STATUS.invalid
     this.emit('revertTx', tx)
   }
 }
@@ -193,7 +193,7 @@ TxManager.prototype.sendTx = function (tx) {
 
   this._txRecords[txId] = {
     rawTx: tx.toHex(),
-    status: txStatus.dispatch,
+    status: TX_STATUS.dispatch,
     height: 0,
     timestamp: getCurrentTimestamp(),
     isBlockTimestamp: false,

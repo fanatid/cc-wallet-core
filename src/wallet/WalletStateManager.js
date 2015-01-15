@@ -10,7 +10,7 @@ var getUncolored = cclib.ColorDefinitionManager.getUncolored
 var errors = require('../errors')
 var util = require('../util')
 var verify = require('../verify')
-var txStatus = require('../const').txStatus
+var TX_STATUS = require('../const').TX_STATUS
 
 
 /**
@@ -78,7 +78,7 @@ function WalletStateManager(wallet) {
   self._executeQueue = []
 
   self._currentState.getTxManager().getAllTxIds().filter(function (txId) {
-    if (self._currentState.getTxManager().getTxStatus(txId) === txStatus.dispatch) {
+    if (self._currentState.getTxManager().getTxStatus(txId) === TX_STATUS.dispatch) {
       self._attemptSendTx(txId)
     }
   })
@@ -119,7 +119,7 @@ WalletStateManager.prototype._attemptSendTx = function (txId, attempt) {
    */
   function updateTx(status) {
     self.execute(function (walletState) {
-      var methodName = status === txStatus.invalid ? 'revertTx' : 'updateTx'
+      var methodName = status === TX_STATUS.invalid ? 'revertTx' : 'updateTx'
 
       return Q.fcall(function () {
         return walletState.getTxManager().updateTx(tx, {status: status})
@@ -141,13 +141,13 @@ WalletStateManager.prototype._attemptSendTx = function (txId, attempt) {
 
   Q.ninvoke(self._wallet.getBlockchain(), 'sendTx', tx).done(
     function () {
-      updateTx(txStatus.pending)
+      updateTx(TX_STATUS.pending)
     },
     function (error) {
       self.emit('error', error)
 
       if (attempt >= 5) {
-        return updateTx(txStatus.invalid)
+        return updateTx(TX_STATUS.invalid)
       }
 
       var timeout = 15000 * Math.pow(2, attempt)
@@ -326,7 +326,7 @@ WalletStateManager.prototype.historySync = function (address, entries) {
 
   promises = promises.concat(entries.map(function (entry) {
     return self.execute(function (walletState) {
-      var status = entry.height === 0 ? txStatus.unconfirmed : txStatus.confirmed
+      var status = entry.height === 0 ? TX_STATUS.unconfirmed : TX_STATUS.confirmed
 
       var tx = walletState.getTxManager().getTx(entry.txId)
       if (tx !== null) {

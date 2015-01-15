@@ -1,5 +1,5 @@
 var verify = require('../verify')
-var historyEntryType = require('../const').historyEntryType
+var HISTORY_ENTRY_TYPE = require('../const').HISTORY_ENTRY_TYPE
 
 
 /** @todo Add tx status */
@@ -111,28 +111,28 @@ HistoryEntry.prototype.getEntryType = function () {
  * @return {boolean}
  */
 HistoryEntry.prototype.isSend = function () {
-  return this.entryType === historyEntryType.send
+  return this.entryType === HISTORY_ENTRY_TYPE.send
 }
 
 /**
  * @return {boolean}
  */
 HistoryEntry.prototype.isReceive = function () {
-  return this.entryType === historyEntryType.receive
+  return this.entryType === HISTORY_ENTRY_TYPE.receive
 }
 
 /**
  * @return {boolean}
  */
 HistoryEntry.prototype.isPaymentToYourself = function () {
-  return this.entryType === historyEntryType.payment2yourself
+  return this.entryType === HISTORY_ENTRY_TYPE.payment2yourself
 }
 
 /**
  * @return {boolean}
  */
 HistoryEntry.prototype.isIssue = function () {
-  return this.entryType === historyEntryType.issue
+  return this.entryType === HISTORY_ENTRY_TYPE.issue
 }
 
 

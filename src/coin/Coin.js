@@ -102,7 +102,10 @@ function Coin(rawCoin, methodsManager) {
   self._cachedProps = {}
 
   _.forEach(rawCoin, function (value, key) {
-    Object.defineProperty(self, key, {value: value})
+    Object.defineProperty(self, key, {
+      enumerable: true,
+      value: value
+    })
   })
 }
 
