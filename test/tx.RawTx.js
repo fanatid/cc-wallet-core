@@ -8,7 +8,7 @@ var Wallet = cccore.Wallet
 var RawTx = cccore.tx.RawTx
 
 var fixtures = require('./fixtures/tx.RawTx.json')
-var btcHexTx = fixtures.tx.uncolored2 // mainnet, 2 uncolored outputs
+var btcHexTx = fixtures.tx.uncolored2.raw // mainnet, 2 uncolored outputs
 var mnemonic = fixtures.wallet.alice.mnemonic
 var password = fixtures.wallet.alice.password
 
@@ -56,6 +56,25 @@ describe('tx.RawTx', function () {
       expect(colorValue).to.be.instanceof(ColorValue)
       expect(colorValue.isUncolored()).to.true
       expect(colorValue.getValue()).to.equal(34210)
+      done()
+    })
+  })
+
+  it('getSentColorValues', function (done) {
+    rawTx.getSentColorValues(wallet, seed, function(error, sent){
+      expect(error).to.be.null
+      expect(sent).to.be.an('array').with.to.have.length(2)
+
+      colorValue = sent[0]
+      expect(colorValue).to.be.instanceof(ColorValue)
+      expect(colorValue.isUncolored()).to.true
+      expect(colorValue.getValue()).to.equal(50000)
+
+      colorValue = sent[1]
+      expect(colorValue).to.be.instanceof(ColorValue)
+      expect(colorValue.isUncolored()).to.true
+      expect(colorValue.getValue()).to.equal(38610)
+
       done()
     })
   })

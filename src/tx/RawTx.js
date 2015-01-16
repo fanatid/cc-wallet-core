@@ -4,6 +4,7 @@ var Q = require('q')
 var bitcoin = require('../bitcoin')
 var verify = require('../verify')
 var cclib = require('../cclib')
+var Coin = require('../coin').Coin
 
 
 /**
@@ -172,16 +173,67 @@ RawTx.prototype.getColorTargets = function (wallet, cb) {
   )
 }
 
-RawTx.prototype.getSentColorValues = function (wallet, seedHex, cb) {
+function _isWalletAddress(wallet, seedHex, script){ // TODO move to wallet
+  verify.Wallet(wallet)
+  verify.hexString(seedHex)
 
+  var walletControlled = false
+  var network = wallet.getBitcoinNetwork()
+  var addressManager = wallet.getAddressManager()
+  var addresses = cclib.bitcoin.getAddressesFromOutputScript(script, network)
+  addresses.forEach(function (address) {
+    if (addressManager.getPrivKeyByAddress(address, seedHex) !== null) {
+      walletControlled = true
+    }
+  })
+  return walletControlled
 }
 
-RawTx.prototype.getDeltaColorValues = function (wallet, seedHex, cb) {
+RawTx.prototype.getSentColorValues = function (wallet, seedHex, cb) {
+  verify.Wallet(wallet)
+  verify.function(cb)
+  var getTxFn = wallet.getBlockchain().getTxFn()
+  var tx = this.txb.buildIncomplete()
+  Q.ninvoke(tx, 'ensureInputValues', getTxFn).then(function (tx) {
 
+    return Q.all(
+      _.chain(tx.ins)
+
+      .filter(function(input){
+        var script = input.prevTx.outs[input.index].script
+        return _isWalletAddress(wallet, seedHex, script)
+      })
+
+      .map(function(input){
+        var script = input.prevTx.outs[input.index].script
+        var network = wallet.getBitcoinNetwork()
+        var addresses = bitcoin.getAddressesFromOutputScript(script, network)
+        return addresses.map(function(address){
+          var walletState = wallet.getStateManager().getCurrentState()
+          var coin = new Coin(walletState.getCoinManager(), {
+            txId: input.prevTx.getId(),
+            outIndex: input.index,
+            value: input.prevTx.outs[input.index].value,
+            script: input.prevTx.outs[input.index].script.toHex(),
+            address: address
+          })
+          return Q.ninvoke(coin, 'getMainColorValue')
+        })
+      })
+
+      .flatten()
+      .value()
+    )
+
+  }).done(
+    function (colorValues) { cb(null, colorValues) },
+    function (error) { cb(error) }
+  )
 }
 
 RawTx.prototype.getReceivedColorValues = function (wallet, seedHex, cb) {
   verify.Wallet(wallet)
+  verify.hexString(seedHex)
   verify.function(cb)
 
   var tx = this.toTransaction(true)
@@ -189,19 +241,11 @@ RawTx.prototype.getReceivedColorValues = function (wallet, seedHex, cb) {
   .then(function (colorValues) {
 
     var received = []
-    var addressManager = wallet.getAddressManager()
     tx.outs.forEach(function (txOut, outIndex) {
-    
-      var script = txOut.script
       var colorValue = colorValues[outIndex]
-      var network = wallet.getBitcoinNetwork()
-      var addresses = cclib.bitcoin.getAddressesFromOutputScript(script, network)
-      addresses.forEach(function (address) {
-        if (addressManager.getPrivKeyByAddress(address, seedHex) !== null) {
-          return received.push(colorValue)
-        }
-      })
-
+      if(_isWalletAddress(wallet, seedHex, txOut.script)){
+        received.push(colorValue)
+      }
     })
     return received 
 
@@ -209,6 +253,14 @@ RawTx.prototype.getReceivedColorValues = function (wallet, seedHex, cb) {
     function (colorValues) { cb(null, colorValues) },
     function (error) { cb(error) }
   )
+
+}
+
+RawTx.prototype.getDeltaColorValues = function (wallet, seedHex, cb) {
+
+
+
+
 
 }
 

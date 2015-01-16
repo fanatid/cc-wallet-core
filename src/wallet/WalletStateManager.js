@@ -665,5 +665,8 @@ WalletStateManager.prototype.clear = function () {
   })
 }
 
+WalletStateManager.prototype.getCurrentState = function(){
+  return this._currentState
+}
 
 module.exports = WalletStateManager
