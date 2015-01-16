@@ -94,6 +94,48 @@ function SyncMixin() {
 
 
 /**
+ * @param {Object} [enumObj]
+ * @param {Object} obj
+ * @return {Object}
+ */
+function updateEnum(enumObj, obj) {
+  var props = _.chain(obj)
+    .map(function (value, name) {
+      if (_.isObject(value)) {
+        Object.freeze(value)
+      }
+
+      var methodName = 'is' + name[0].toUpperCase() + name.slice(1)
+      var method = function (thing) {
+        if (_.isArray(value)) {
+          return value.indexOf(thing) !== -1
+        }
+
+        return thing === value
+      }
+
+      return [
+        [name, {enumerable: true, value: value}],
+        [methodName, {enumerable: true, value: method}]
+      ]
+    })
+    .flatten(true)
+    .zipObject()
+    .value()
+
+  return Object.defineProperties(enumObj, props)
+}
+
+/**
+ * @param {Object} obj
+ * @return {Object}
+ */
+function createEnum(obj) {
+  return updateEnum({}, obj)
+}
+
+
+/**
  * @callback createCoins~callback
  * @param {?Error} error
  */
@@ -143,5 +185,9 @@ function createCoins(wallet, opts, cb) {
 module.exports = _.extend(util, {
   OrderedMap: OrderedMap,
   SyncMixin: SyncMixin,
+  enum: {
+    create: createEnum,
+    update: updateEnum
+  },
   createCoins: createCoins
 })

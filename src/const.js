@@ -1,26 +1,11 @@
-var _ = require('lodash')
+var util = require('./util')
 
-
-/**
- * @param {Object} obj
- * @return {Object}
- */
-function createEnum(obj) {
-  var props = _.chain(obj)
-    .map(function (value, name) {
-      return [name, {enumerable: true, value: value}]
-    })
-    .zipObject()
-    .value()
-
-  return Object.defineProperties({}, props)
-}
 
 /**
  * @readonly
  * @enum {number}
  */
-var TX_STATUS = createEnum({
+var TX_STATUS = util.enum.create({
   unknown:     0, // Unknown status :-)
   unconfirmed: 1, // As pending only transaction was pushed not from us
   confirmed:   2, // Transaction in blockchain
@@ -29,39 +14,18 @@ var TX_STATUS = createEnum({
   dispatch:    5  // Transaction must be sent to network
 })
 
-Object.defineProperties(TX_STATUS, {
-  valid: {
-    enumerable: true,
-    value: [
-      TX_STATUS.unconfirmed,
-      TX_STATUS.confirmed,
-      TX_STATUS.pending,
-      TX_STATUS.dispatch
-    ]
-  },
-  available: {
-    enumerable: true,
-    value: [
-      TX_STATUS.confirmed,
-      TX_STATUS.pending,
-      TX_STATUS.dispatch
-    ]
-  }
-})
-
-Object.defineProperties(TX_STATUS, {
-  isValid: {
-    enumerable: true,
-    value: function (status) {
-      return TX_STATUS.valid.indexOf(status) !== -1
-    }
-  },
-  isAvailable: {
-    enumerable: true,
-    value: function (status) {
-      return TX_STATUS.available.indexOf(status) !== -1
-    }
-  }
+util.enum.update(TX_STATUS, {
+  valid: [
+    TX_STATUS.unconfirmed,
+    TX_STATUS.confirmed,
+    TX_STATUS.pending,
+    TX_STATUS.dispatch
+  ],
+  available: [
+    TX_STATUS.confirmed,
+    TX_STATUS.pending,
+    TX_STATUS.dispatch
+  ]
 })
 
 
@@ -69,7 +33,7 @@ Object.defineProperties(TX_STATUS, {
  * @readonly
  * @enum {number}
  */
-var HISTORY_ENTRY_TYPE = createEnum({
+var HISTORY_ENTRY_TYPE = util.enum.create({
   send:             1,
   receive:          2,
   payment2yourself: 3,

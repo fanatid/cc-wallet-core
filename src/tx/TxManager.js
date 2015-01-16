@@ -135,11 +135,11 @@ TxManager.prototype.updateTx = function (tx, data) {
 
   var savedRecord = _.cloneDeep(record)
 
-  var mutableStatus = !(
-    data.status === TX_STATUS.unconfirmed &&
-    [TX_STATUS.dispatch, TX_STATUS.pending].indexOf(record.status) !== -1
+  var immutableStatus = (
+    TX_STATUS.isUnconfirmed(data.status) &&
+    (TX_STATUS.isDispatch(record.status) || TX_STATUS.isPending(record.status))
   )
-  if (mutableStatus && data.status !== record.status) {
+  if (!immutableStatus && data.status !== record.status) {
     record.status = data.status
   }
 

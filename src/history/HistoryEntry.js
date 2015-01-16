@@ -123,28 +123,28 @@ HistoryEntry.prototype.getEntryType = function () {
  * @return {boolean}
  */
 HistoryEntry.prototype.isSend = function () {
-  return this.getEntryType() === HISTORY_ENTRY_TYPE.send
+  return HISTORY_ENTRY_TYPE.isSend(this.getEntryType())
 }
 
 /**
  * @return {boolean}
  */
 HistoryEntry.prototype.isReceive = function () {
-  return this.getEntryType() === HISTORY_ENTRY_TYPE.receive
+  return HISTORY_ENTRY_TYPE.isReceive(this.getEntryType())
 }
 
 /**
  * @return {boolean}
  */
 HistoryEntry.prototype.isPaymentToYourself = function () {
-  return this.getEntryType() === HISTORY_ENTRY_TYPE.payment2yourself
+  return HISTORY_ENTRY_TYPE.isPayment2yourself(this.getEntryType())
 }
 
 /**
  * @return {boolean}
  */
 HistoryEntry.prototype.isIssue = function () {
-  return this.getEntryType() === HISTORY_ENTRY_TYPE.issue
+  return HISTORY_ENTRY_TYPE.isIssue(this.getEntryType())
 }
 
 

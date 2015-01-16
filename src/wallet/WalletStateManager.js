@@ -78,7 +78,8 @@ function WalletStateManager(wallet) {
   self._executeQueue = []
 
   self._currentState.getTxManager().getAllTxIds().filter(function (txId) {
-    if (self._currentState.getTxManager().getTxStatus(txId) === TX_STATUS.dispatch) {
+    var txStatus = self._currentState.getTxManager().getTxStatus(txId)
+    if (TX_STATUS.isDispatch(txStatus)) {
       self._attemptSendTx(txId)
     }
   })
@@ -119,7 +120,7 @@ WalletStateManager.prototype._attemptSendTx = function (txId, attempt) {
    */
   function updateTx(status) {
     self.execute(function (walletState) {
-      var methodName = status === TX_STATUS.invalid ? 'revertTx' : 'updateTx'
+      var methodName = TX_STATUS.isInvalid(status) ? 'revertTx' : 'updateTx'
 
       return Q.fcall(function () {
         return walletState.getTxManager().updateTx(tx, {status: status})
