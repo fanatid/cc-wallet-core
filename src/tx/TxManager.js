@@ -139,15 +139,15 @@ TxManager.prototype.updateTx = function (tx, data) {
     TX_STATUS.isUnconfirmed(data.status) &&
     (TX_STATUS.isDispatch(record.status) || TX_STATUS.isPending(record.status))
   )
-  if (!immutableStatus && data.status !== record.status) {
+  if (!immutableStatus && !_.isUndefined(data.status) && data.status !== record.status) {
     record.status = data.status
   }
 
-  if (data.height !== record.height) {
+  if (!_.isUndefined(data.height) && data.height !== record.height) {
     record.height = data.height
   }
 
-  if (record.tAddresses.indexOf(data.tAddress) === -1) {
+  if (!_.isUndefined(data.tAddress) && record.tAddresses.indexOf(data.tAddress) === -1) {
     record.tAddresses = record.tAddresses.concat([data.tAddress]).sort()
   }
 
