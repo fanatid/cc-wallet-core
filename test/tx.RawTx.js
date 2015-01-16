@@ -48,7 +48,7 @@ describe('tx.RawTx', function () {
     expect(rawTx.toTransaction().toHex()).to.equal(btcHexTx)
   })
 
-  it('getReceivedColorValues', function (done) {
+  it('getReceivedColorValues uncolored', function (done) {
     rawTx.getReceivedColorValues(wallet, seed, function(error, received){
       expect(error).to.be.null
       expect(received).to.be.an('array').with.to.have.length(1)
@@ -60,7 +60,7 @@ describe('tx.RawTx', function () {
     })
   })
 
-  it('getSentColorValues', function (done) {
+  it('getSentColorValues uncolored', function (done) {
     rawTx.getSentColorValues(wallet, seed, function(error, sent){
       expect(error).to.be.null
       expect(sent).to.be.an('array').with.to.have.length(2)
@@ -79,7 +79,21 @@ describe('tx.RawTx', function () {
     })
   })
 
-  describe('getColorTargets', function () {
+  it('getDeltaColorValues uncolored', function (done) {
+    rawTx.getDeltaColorValues(wallet, seed, function(error, colorValues){
+      expect(error).to.be.null
+      expect(colorValues).to.be.an('array').with.to.have.length(1)
+
+      colorValue = colorValues[0]
+      expect(colorValue).to.be.instanceof(ColorValue)
+      expect(colorValue.isUncolored()).to.true
+      expect(colorValue.getValue()).to.equal(-54400)
+
+      done()
+    })
+  })
+
+  describe('getColorTargets uncolored', function () {
     it('gets uncolored targets', function (done) {
       rawTx.getColorTargets(wallet, function (error, colorTargets) {
         expect(error).to.be.null

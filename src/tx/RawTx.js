@@ -258,10 +258,40 @@ RawTx.prototype.getReceivedColorValues = function (wallet, seedHex, cb) {
 
 RawTx.prototype.getDeltaColorValues = function (wallet, seedHex, cb) {
 
+  verify.Wallet(wallet)
+  verify.hexString(seedHex)
+  verify.function(cb)
 
-
-
-
+  Q.all([
+    Q.ninvoke(this, 'getSentColorValues', wallet, seedHex)
+    .then(function (colorValues) {
+      return colorValues.map(function(colorValue){
+        return colorValue.neg()
+      })
+    }),
+    Q.ninvoke(this, 'getReceivedColorValues', wallet, seedHex)
+  ])
+  .then(function(colorValues){
+    return _.chain(colorValues).flatten().value()
+  })
+  .then(function(colorValues){
+    var deltas = {}
+    colorValues.forEach(function(colorValue){
+      var delta = deltas[colorValue.getColorDefinition()]
+      if (delta){
+        deltas[colorValue.getColorDefinition()] = delta.plus(colorValue)
+      } else {
+        deltas[colorValue.getColorDefinition()] = colorValue
+      }
+    })
+    return Object.keys(deltas).map(function (colorDefinition){
+      return deltas[colorDefinition]
+    })
+  })
+  .done(
+    function (colorValues) { cb(null, colorValues) },
+    function (error) { cb(error) }
+  )
 }
 
 /**
