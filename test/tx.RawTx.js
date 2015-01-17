@@ -15,30 +15,23 @@ var password = fixtures.wallet.alice.password
 
 describe('tx.RawTx', function () {
   var rawTx
-  var seed
   var wallet
 
   beforeEach(function (done) {
     localStorage.clear()
-    seed = BIP39.mnemonicToSeedHex(mnemonic, password)
+    rawTx = RawTx.fromHex(btcHexTx)
     wallet = new Wallet({
       testnet: true,
       blockchain: 'NaiveBlockchain',
       storageSaveTimeout: 0,
       spendUnconfirmedCoins: true
     })
-    wallet.initialize(seed)
-    wallet.network.on('connect', function(error){
-      if (error){
-        done(error)
-      } else {
-        wallet.subscribeAndSyncAllAddresses(done)
-      }
-    })
-    rawTx = RawTx.fromHex(btcHexTx)
+    wallet.initialize(BIP39.mnemonicToSeedHex(mnemonic, password))
+    wallet.subscribeAndSyncAllAddresses(done)
   })
 
   afterEach(function () {
+    rawTx = undefined
     wallet.removeListeners()
     wallet.clearStorage()
     wallet = undefined
@@ -48,46 +41,44 @@ describe('tx.RawTx', function () {
     expect(rawTx.toTransaction().toHex()).to.equal(btcHexTx)
   })
 
-  it('getReceivedColorValues uncolored', function (done) {
-    rawTx.getReceivedColorValues(wallet, seed, function(error, received){
+  it('getSentColorValues uncolored', function (done) {
+    rawTx.getSentColorValues(wallet, function (error, sentColorValues) {
       expect(error).to.be.null
-      expect(received).to.be.an('array').with.to.have.length(1)
-      colorValue = received[0]
-      expect(colorValue).to.be.instanceof(ColorValue)
-      expect(colorValue.isUncolored()).to.true
-      expect(colorValue.getValue()).to.equal(34210)
+      expect(sentColorValues).to.be.an('array').with.to.have.length(2)
+
+      expect(sentColorValues[0]).to.be.instanceof(ColorValue)
+      expect(sentColorValues[0].isUncolored()).to.true
+      expect(sentColorValues[0].getValue()).to.equal(50000)
+
+      expect(sentColorValues[1]).to.be.instanceof(ColorValue)
+      expect(sentColorValues[1].isUncolored()).to.true
+      expect(sentColorValues[1].getValue()).to.equal(38610)
+
       done()
     })
   })
 
-  it('getSentColorValues uncolored', function (done) {
-    rawTx.getSentColorValues(wallet, seed, function(error, sent){
+  it('getReceivedColorValues uncolored', function (done) {
+    rawTx.getReceivedColorValues(wallet, function (error, receivedColorValues) {
       expect(error).to.be.null
-      expect(sent).to.be.an('array').with.to.have.length(2)
+      expect(receivedColorValues).to.be.an('array').with.to.have.length(1)
 
-      colorValue = sent[0]
-      expect(colorValue).to.be.instanceof(ColorValue)
-      expect(colorValue.isUncolored()).to.true
-      expect(colorValue.getValue()).to.equal(50000)
-
-      colorValue = sent[1]
-      expect(colorValue).to.be.instanceof(ColorValue)
-      expect(colorValue.isUncolored()).to.true
-      expect(colorValue.getValue()).to.equal(38610)
+      expect(receivedColorValues[0]).to.be.instanceof(ColorValue)
+      expect(receivedColorValues[0].isUncolored()).to.true
+      expect(receivedColorValues[0].getValue()).to.equal(34210)
 
       done()
     })
   })
 
   it('getDeltaColorValues uncolored', function (done) {
-    rawTx.getDeltaColorValues(wallet, seed, function(error, colorValues){
+    rawTx.getDeltaColorValues(wallet, function (error, colorValues) {
       expect(error).to.be.null
       expect(colorValues).to.be.an('array').with.to.have.length(1)
 
-      colorValue = colorValues[0]
-      expect(colorValue).to.be.instanceof(ColorValue)
-      expect(colorValue.isUncolored()).to.true
-      expect(colorValue.getValue()).to.equal(-54400)
+      expect(colorValues[0]).to.be.instanceof(ColorValue)
+      expect(colorValues[0].isUncolored()).to.true
+      expect(colorValues[0].getValue()).to.equal(-54400)
 
       done()
     })
