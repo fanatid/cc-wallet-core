@@ -5,8 +5,6 @@ var CoinList = require('./CoinList')
 var verify = require('../verify')
 
 
-/** @todo Add freeze */
-
 /**
  * @class CoinQuery
  *
@@ -18,6 +16,8 @@ var verify = require('../verify')
  * @param {boolean} [query.onlySpent=false]
  * @param {boolean} [query.includeUnconfirmed=false]
  * @param {boolean} [query.onlyUnconfirmed=false]
+ * @param {boolean} [query.includeFrozen=false]
+ * @param {boolean} [query.onlyFrozen=false]
  */
 function CoinQuery(wallet, query) {
   verify.Wallet(wallet)
@@ -32,7 +32,10 @@ function CoinQuery(wallet, query) {
     onlySpent: false,
 
     includeUnconfirmed: false,
-    onlyUnconfirmed: false
+    onlyUnconfirmed: false,
+
+    includeFrozen: false,
+    onlyFrozen: false
   }, query)
 }
 
@@ -110,6 +113,22 @@ CoinQuery.prototype.onlyUnconfirmed = function () {
 }
 
 /**
+ * @return {CoinQuery}
+ */
+CoinQuery.prototype.includeFrozen = function () {
+  var query = _.extend(_.cloneDeep(this.query), {includeFrozen: true})
+  return new CoinQuery(this._wallet, query)
+}
+
+/**
+ * @return {CoinQuery}
+ */
+CoinQuery.prototype.onlyFrozen = function () {
+  var query = _.extend(_.cloneDeep(this.query), {onlyFrozen: true})
+  return new CoinQuery(this._wallet, query)
+}
+
+/**
  * @callback CoinQuery~getCoinsCallback
  * @param {?Error} error
  * @param {CoinList} coinList
@@ -152,6 +171,14 @@ CoinQuery.prototype.getCoins = function (cb) {
         return
       }
       if (!self.query.onlyUnconfirmed && !self.query.includeUnconfirmed && !coin.isAvailable()) {
+        return
+      }
+
+      // filter include/only frozen coins
+      if (self.query.onlyFrozen && !coin.isFrozen()) {
+        return
+      }
+      if (!self.query.onlyFrozen && !self.query.includeFrozen && coin.isFrozen()) {
         return
       }
 

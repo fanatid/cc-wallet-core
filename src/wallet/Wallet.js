@@ -441,6 +441,7 @@ Wallet.prototype.getBalance = function (assetdef, cb) {
   Q.fcall(function () {
     var coinQuery = self.getCoinQuery()
     coinQuery = coinQuery.includeUnconfirmed()
+    coinQuery = coinQuery.includeFrozen()
     coinQuery = coinQuery.onlyColoredAs(assetdef.getColorDefinitions())
     coinQuery = coinQuery.onlyAddresses(self.getAllAddresses(assetdef))
 
