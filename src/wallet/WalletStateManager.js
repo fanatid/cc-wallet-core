@@ -379,7 +379,7 @@ WalletStateManager.prototype.freezeCoins = function (coins, opts, cb) {
 
   this.execute(function (walletState) {
     walletState.getCoinManager().freezeCoins(coins, opts)
-    return {commit: true}
+    return Q({commit: true})
 
   }).done(
     function () { cb(null) },
@@ -396,7 +396,7 @@ WalletStateManager.prototype.unfreezeCoins = function (coins, cb) {
 
   this.execute(function (walletState) {
     walletState.getCoinManager().unfreezeCoins(coins)
-    return {commit: true}
+    return Q({commit: true})
 
   }).done(
     function () { cb(null) },

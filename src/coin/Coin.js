@@ -23,8 +23,8 @@ function isWalletState(walletState) {
 
 /**
  * @typedef {Object} Coin~MethodsManager
- * @property {WalletStateManager#freeze} [freeze]
- * @property {WalletStateManager#unfreeze} [unfreeze]
+ * @property {WalletStateManager#freezeCoins} [freezeCoins]
+ * @property {WalletStateManager#unfreezeCoins} [unfreezeCoins]
  * @property {(boolean|WalletStateManager#isSpent)} [isSpent]
  * @property {(boolean|WalletStateManager#isValid)} [isValid]
  * @property {(boolean|WalletStateManager#isAvailable)} [isAvailable]
@@ -85,8 +85,8 @@ function Coin(rawCoin, methodsManager) {
   if (_.isFunction(methodsManager.getStateManager)) {
     methodsManager = methodsManager.getStateManager()
   }
-  functionPropTest(methodsManager, 'freeze')
-  functionPropTest(methodsManager, 'unfreeze')
+  functionPropTest(methodsManager, 'freezeCoins')
+  functionPropTest(methodsManager, 'unfreezeCoins')
   booleanPropTest(methodsManager, 'isSpent')
   booleanPropTest(methodsManager, 'isValid')
   booleanPropTest(methodsManager, 'isAvailable')
@@ -146,22 +146,22 @@ Coin.prototype._createNotImplementedError = function (methodName) {
  * @param {Coin~freezeUnfreezeCallback} cb
  */
 Coin.prototype.freeze = function (opts, cb) {
-  if (_.isUndefined(this._methodsManager.freeze)) {
+  if (_.isUndefined(this._methodsManager.freezeCoins)) {
     return cb(this._createNotImplementedError('methodsManager.freeze'))
   }
 
-  this._methodsManager.freeze([this.toRawCoin()], opts, cb)
+  this._methodsManager.freezeCoins([this.toRawCoin()], opts, cb)
 }
 
 /**
  * @param {Coin~freezeUnfreezeCallback} cb
  */
 Coin.prototype.unfreeze = function (cb) {
-  if (_.isUndefined(this._methodsManager.unfreeze)) {
+  if (_.isUndefined(this._methodsManager.unfreezeCoins)) {
     return cb(this._createNotImplementedError('methodsManager.unfreeze'))
   }
 
-  this._methodsManager.unfreeze([this.toRawCoin()], cb)
+  this._methodsManager.unfreezeCoins([this.toRawCoin()], cb)
 }
 
 /**

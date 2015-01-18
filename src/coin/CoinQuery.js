@@ -5,6 +5,8 @@ var CoinList = require('./CoinList')
 var verify = require('../verify')
 
 
+/** @todo Add freeze */
+
 /**
  * @class CoinQuery
  *

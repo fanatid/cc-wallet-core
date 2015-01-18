@@ -180,7 +180,7 @@ CoinManager.prototype.freezeCoins = function (coins, opts) {
   coins.forEach(function (coin) {
     verify.object(coin)
     verify.txId(coin.txId)
-    verify.outIndex(coin.outIndex)
+    verify.number(coin.outIndex)
   })
 
   verify.object(opts)
@@ -191,8 +191,9 @@ CoinManager.prototype.freezeCoins = function (coins, opts) {
     throw new errors.VerifyTypeError(errMsg)
   }
 
+  var findRecord = _.partial(_.find, this._coins)
   coins.forEach(function (coin) {
-    var record = _.find(this._coins, coin)
+    var record = findRecord({txId: coin.txId, outIndex: coin.outIndex})
     if (_.isUndefined(record)) {
       throw new errors.CoinNotFoundError('Coin: ' + coin.txId + ':' + coin.outIndex)
     }
@@ -301,7 +302,7 @@ CoinManager.prototype.isCoinFrozen = function (coin) {
   verify.txId(coin.txId)
   verify.number(coin.outIndex)
 
-  var record = _.find(this._coins, coin)
+  var record = _.find(this._coins, {txId: coin.txId, outIndex: coin.outIndex})
   if (_.isUndefined(record)) {
     throw new errors.CoinNotFoundError('Coin: ' + coin.txId + ':' + coin.outIndex)
   }
