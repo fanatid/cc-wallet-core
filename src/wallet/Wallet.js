@@ -450,21 +450,13 @@ Wallet.prototype.getBalance = function (assetdef, cb) {
     return Q.ninvoke(coinList, 'getValues')
 
   }).then(function (values) {
-    var result = {}
-
-    function getValue(name) {
-      if (values[name].length > 0) {
-        result[name] = values[name][0].getValue()
-      } else {
-        result[name] = 0
-      }
-    }
-
-    getValue('total')
-    getValue('available')
-    getValue('unconfirmed')
-
-    return result
+    return _.chain(['total', 'available', 'unconfirmed'])
+      .map(function (name) {
+        var value = values[name].length === 1 ? values[name][0].getValue() : 0
+        return [name, value]
+      })
+      .zipObject()
+      .value()
 
   }).done(function (result) { cb(null, result) }, function (error) { cb(error) })
 }
