@@ -28,6 +28,7 @@ var functions = {
 
   Wallet: createInstanceCheck(function () { return require('./wallet').Wallet }),
   WalletState: createInstanceCheck(function () { return require('./wallet').WalletState }),
+  WalletStateStorage: createInstanceCheck(function () { return require('./wallet').WalletStateStorage }),
   WalletStateManager: createInstanceCheck(function () { return require('./wallet').WalletStateManager }),
 
   Address: createInstanceCheck(function () { return require('./address').Address }),
@@ -75,6 +76,7 @@ var expected = {
 
   Wallet: 'Wallet',
   WalletState: 'WalletState',
+  WalletStateStorage: 'WalletStateStorage',
   WalletStateManager: 'WalletStateManager',
 
   Address: 'Address',

@@ -11,6 +11,7 @@ var coin = require('../coin')
 var ConfigStorage = require('../ConfigStorage')
 var network = require('../network')
 var tx = require('../tx')
+var WalletStateStorage = require('./WalletStateStorage')
 var WalletStateManager = require('./WalletStateManager')
 
 var cclib = require('../cclib')
@@ -154,7 +155,8 @@ function Wallet(opts) {
     })
   }
 
-  self.walletStateManager = new WalletStateManager(self)
+  self.walletStateStorage = new WalletStateStorage(self)
+  self.walletStateManager = new WalletStateManager(self, self.walletStateStorage)
 
   self.txFetcher = new tx.TxFetcher(self)
 

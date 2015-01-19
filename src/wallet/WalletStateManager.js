@@ -65,16 +65,19 @@ var TX_STATUS = require('../const').TX_STATUS
  * @extends events.EventEmitter
  * @mixes SyncMixin
  * @param {Wallet} wallet
+ * @param {WalletStateStorage} stateStorage
  */
-function WalletStateManager(wallet) {
+function WalletStateManager(wallet, stateStorage) {
   verify.Wallet(wallet)
+  verify.WalletStateStorage(stateStorage)
 
   var self = this
   events.EventEmitter.call(self)
   util.SyncMixin.call(self)
 
   self._wallet = wallet
-  self._currentState = new WalletState(self._wallet)
+  self._stateStorage = stateStorage
+  self._currentState = new WalletState(self._wallet, self._stateStorage)
   self._executeQueue = []
 
   self._currentState.getTxManager().getAllTxIds().filter(function (txId) {
@@ -215,7 +218,7 @@ WalletStateManager.prototype.execute = function (fn) {
   }
 
   return _.last(self._executeQueue).promise.then(function () {
-    var walletState = new WalletState(self._wallet)
+    var walletState = new WalletState(self._wallet, self._stateStorage)
 
     var events = new util.OrderedMap()
     walletState.getTxManager().on('addTx', function (tx) {
@@ -257,7 +260,7 @@ WalletStateManager.prototype.execute = function (fn) {
         return
       }
 
-      walletState.save()
+      walletState.save({saveNow: result.saveNow || false})
       self._currentState = walletState
 
       events.getVals().forEach(function (args) {
@@ -287,7 +290,7 @@ WalletStateManager.prototype.sendTx = function (tx) {
     promise = promise.then(function () { return walletState.getTxManager().sendTx(tx) })
     promise = promise.then(function () { return walletState.getCoinManager().addTx(tx) })
     promise = promise.then(function () { return walletState.getHistoryManager().addTx(tx) })
-    return promise.then(function () { return {commit: true} })
+    return promise.then(function () { return {commit: true, saveNow: true} })
   })
 }
 
@@ -661,7 +664,7 @@ WalletStateManager.prototype.clear = function () {
   var self = this
   self.once('syncStop', function () {
     self._currentState.clear()
-    self._currentState = new WalletState(self._wallet)
+    self._currentState = new WalletState(self._wallet, self._stateStorage)
   })
 }
 
