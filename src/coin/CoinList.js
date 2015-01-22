@@ -45,7 +45,7 @@ CoinList.prototype.getValues = function (cb) {
 
   var self = this
   if (self._getValuesCache !== null) {
-    return process.nextTick(function () { cb(null, self._getValuesCache) })
+    return setImmediate(cb, null, self._getValuesCache)
   }
 
   if (self._getValuesPromise === null) {

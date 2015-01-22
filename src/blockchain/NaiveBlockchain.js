@@ -66,7 +66,7 @@ NaiveBlockchain.prototype.getBlockTime = function (height, cb) {
 
   var header = self._headerCache.get(height)
   if (!_.isUndefined(header)) {
-    return process.nextTick(function () { cb(null, header) })
+    return setImmediate(cb, null, header)
   }
 
   if (_.isUndefined(self._getHeaderRunning[height])) {
@@ -103,7 +103,7 @@ NaiveBlockchain.prototype.getTx = function (txId, walletState, cb) {
 
   var tx = self._txCache.get(txId)
   if (!_.isUndefined(tx)) {
-    return process.nextTick(function () { cb(null, tx) })
+    return setImmediate(cb, null, tx)
   }
 
   if (_.isUndefined(self._getTxRunning[txId])) {

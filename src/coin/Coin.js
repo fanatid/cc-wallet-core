@@ -29,8 +29,8 @@ function isWalletState(walletState) {
  * @property {(boolean|WalletStateManager#isValid)} [isValid]
  * @property {(boolean|WalletStateManager#isAvailable)} [isAvailable]
  * @property {(boolean|WalletStateManager#isFrozen)} [isFrozen]
- * @property {(external:coloredcoinjs-lib.ColorValue|WalletStateManager#getColorValue)} [getColorValue]
- * @property {(external:coloredcoinjs-lib.ColorValue|WalletStateManager#getMainColorValue)} [getMainColorValue]
+ * @property {(external:coloredcoinjs-lib.ColorValue|WalletStateManager#getCoinColorValue)} [getColorValue]
+ * @property {(external:coloredcoinjs-lib.ColorValue|WalletStateManager#getCoinMainColorValue)} [getMainColorValue]
  */
 
 function functionPropTest(obj, fName) {
