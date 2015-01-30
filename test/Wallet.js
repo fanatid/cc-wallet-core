@@ -51,8 +51,7 @@ describe('Wallet', function () {
     localStorage.clear()
     wallet = new Wallet({
       testnet: true,
-      blockchain: 'NaiveBlockchain',
-      storageSaveTimeout: 0,
+      blockchain: 'Naive',
       spendUnconfirmedCoins: true
     })
   }
@@ -264,8 +263,7 @@ describe('Wallet', function () {
       wallet = new Wallet({
         masterKey: '421fc385fdae762b346b80e0212f77bd',
         testnet: true,
-        blockchain: 'NaiveBlockchain',
-        storageSaveTimeout: 0,
+        blockchain: 'Naive',
         spendUnconfirmedCoins: true
       })
 
@@ -325,33 +323,6 @@ describe('Wallet', function () {
             })
           })
         })
-      })
-    })
-  })
-
-  describe('events (fake)', function () {
-    this.timeout(1000)
-    function CustomMessage() {}
-
-    beforeEach(setup)
-    afterEach(cleanup)
-
-    var fixtures = [
-      {event: 'error', prop: 'network'},
-      {event: 'error', prop: 'blockchain'},
-      {event: 'error', prop: 'txFetcher'},
-      {event: 'newHeight', prop: 'blockchain'},
-      {event: 'newAddress', prop: 'aManager'},
-      {event: 'newAsset', prop: 'adManager'}
-    ]
-
-    fixtures.forEach(function (fixture) {
-      it(fixture.prop + ' ' + fixture.event, function (done) {
-        wallet.on(fixture.event, function (msg) {
-          expect(msg).to.be.instanceof(CustomMessage)
-          done()
-        })
-        wallet[fixture.prop].emit(fixture.event, new CustomMessage())
       })
     })
   })

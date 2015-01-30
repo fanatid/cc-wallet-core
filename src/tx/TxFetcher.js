@@ -53,10 +53,11 @@ TxFetcher.prototype.historySync = function (address, cb) {
   verify.function(cb)
 
   var wallet = this._wallet
-  Q.ninvoke(wallet.getBlockchain(), 'getHistory', address).then(function (entries) {
-    return wallet.getStateManager().historySync(address, entries)
-
-  }).done(function () { cb(null) }, function (error) { cb(error) })
+  wallet.getBlockchain().getHistory(address)
+    .then(function (entries) {
+      return wallet.getStateManager().historySync(address, entries)
+    })
+    .then(function () { cb(null) }, function (error) { cb(error) })
 }
 
 /**
@@ -72,11 +73,12 @@ TxFetcher.prototype.subscribeAndSyncAddress = function (address, cb) {
     return cb(null)
   }
 
-  Q.ninvoke(self._wallet.getBlockchain(), 'subscribeAddress', address).then(function () {
-    self._subscribedAddresses[address] = true
-    return Q.ninvoke(self, 'historySync', address)
-
-  }).done(function () { cb(null) }, function (error) { cb(error) })
+  self._wallet.getBlockchain().subscribeAddress(address)
+    .then(function () {
+      self._subscribedAddresses[address] = true
+      return Q.ninvoke(self, 'historySync', address)
+    })
+    .then(function () { cb(null) }, function (error) { cb(error) })
 }
 
 /**

@@ -22,8 +22,7 @@ describe('tx.RawTx', function () {
     rawTx = RawTx.fromHex(btcHexTx)
     wallet = new Wallet({
       testnet: true,
-      blockchain: 'NaiveBlockchain',
-      storageSaveTimeout: 0,
+      blockchain: 'Naive',
       spendUnconfirmedCoins: true
     })
     wallet.initialize(BIP39.mnemonicToSeedHex(mnemonic, password))

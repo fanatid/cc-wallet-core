@@ -3,13 +3,12 @@ var inherits = require('util').inherits
 
 var _ = require('lodash')
 var Q = require('q')
+var blockchainjs = require('blockchainjs')
 
 var address = require('../address')
 var asset = require('../asset')
-var blockchain = require('../blockchain')
 var coin = require('../coin')
 var ConfigStorage = require('../ConfigStorage')
-var network = require('../network')
 var tx = require('../tx')
 var WalletStateStorage = require('./WalletStateStorage')
 var WalletStateManager = require('./WalletStateManager')
@@ -93,50 +92,51 @@ var verify = require('../verify')
  */
 
 /**
+ * @typedef Wallet~NetworkObject
+ * @property {string} name Network name from blockchainjs
+ * @property {*[]} args Arguments for network
+ */
+
+/**
  * @class Wallet
  * @extends events.EventEmitter
  * @mixes SyncMixin
  *
  * @param {Object} opts
  * @param {boolean} [opts.testnet=false]
- * @param {string} [opts.network=Electrum]
- * @param {Object} [opts.networkOpts]
- * @param {string} [opts.blockchain=VerifiedBlockchain]
- * @param {number} [opts.storageSaveTimeout=1000] In milliseconds
- * @param {boolean} [opts.spendUnconfirmedCoins=false]
+ * @param {number} [opts.crosscheck=1]
+ * @param {Wallet~NetworkObject[]} [opts.networks=[{name: 'ElectrumJS', args: [{testnet: false}]}]]
+ * @param {{name: string}} [opts.blockchain={name: 'Naive'}] Blockchain name from blockchainjs
+ * @param {boolean} [opts.spendUnconfirmedCoins=false] Allow spend unconfirmed coins
  * @param {Object[]} [opts.systemAssetDefinitions]
  */
 function Wallet(opts) {
+  opts = _.extend({testnet: false}, opts)
   opts = _.extend({
-    testnet: false,
-    network: 'Electrum',
-    blockchain: 'VerifiedBlockchain',
-    storageSaveTimeout: 1000,
+    crosscheck: 1,
+    networks: [{name: 'ElectrumJS', args: [{testnet: opts.testnet}]}],
+    blockchain: {name: 'Naive'},
     spendUnconfirmedCoins: false
   }, opts)
+
+  // add verify checks
 
   var self = this
   events.EventEmitter.call(self)
   util.SyncMixin.call(self)
-
-  verify.boolean(opts.testnet)
-  verify.string(opts.network)
-  opts.networkOpts = _.extend({testnet: opts.testnet}, opts.networkOpts)
-  verify.boolean(opts.networkOpts.testnet)
-  verify.string(opts.blockchain)
-  verify.number(opts.storageSaveTimeout)
-  verify.boolean(opts.spendUnconfirmedCoins)
 
   self.bitcoinNetwork = opts.testnet ? bitcoin.networks.testnet : bitcoin.networks.bitcoin
   self._spendUnconfirmedCoins = opts.spendUnconfirmedCoins
 
   self.config = new ConfigStorage()
 
-  self.network = new network[opts.network](self, opts.networkOpts)
-  self.blockchainStorage = new blockchain.VerifiedBlockchainStorage()
-  var BlockchainCls = blockchain[opts.blockchain]
-  self.blockchain = new BlockchainCls(
-    self.network, {testnet: opts.testnet, storage: self.blockchainStorage})
+  self.networks = opts.networks.map(function (opts) {
+    var args = [null].concat(opts.args)
+    var Network = Function.prototype.bind.apply(blockchainjs.network[opts.name], args)
+    return new Network()
+  })
+  self.networkSwitcher = new blockchainjs.network.Switcher(self.networks, {crosscheck: opts.crosscheck})
+  self.blockchain = new blockchainjs.blockchain[opts.blockchain](self.networkSwitcher)
 
   self.cdStorage = new cclib.ColorDefinitionStorage()
   self.cdManager = new cclib.ColorDefinitionManager(self.cdStorage)
@@ -161,7 +161,7 @@ function Wallet(opts) {
   self.txFetcher = new tx.TxFetcher(self)
 
   // events
-  self.network.on('error', function (error) { self.emit('error', error) })
+  self.networkSwitcher.on('error', function (error) { self.emit('error', error) })
   self.blockchain.on('error', function (error) { self.emit('error', error) })
   self.txFetcher.on('error', function (error) { self.emit('error', error) })
 
@@ -660,7 +660,8 @@ Wallet.prototype.sendTx = function (tx, cb) {
  */
 Wallet.prototype.removeListeners = function () {
   this.removeAllListeners()
-  this.network.removeAllListeners()
+  this.networks.forEach(function (network) { network.removeAllListeners() })
+  this.networkSwitcher.removeAllListeners()
   this.blockchain.removeAllListeners()
   this.aManager.removeAllListeners()
   this.adManager.removeAllListeners()
@@ -672,7 +673,6 @@ Wallet.prototype.removeListeners = function () {
  */
 Wallet.prototype.clearStorage = function () {
   this.config.clear()
-  this.blockchainStorage.clear()
   this.cdStorage.clear()
   this.cDataStorage.clear()
   this.aStorage.clear()

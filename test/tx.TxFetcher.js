@@ -9,8 +9,7 @@ describe('tx.TxFetcher', function () {
   beforeEach(function () {
     wallet = new Wallet({
       testnet: true,
-      blockchain: 'NaiveBlockchain',
-      storageSaveTimeout: 0,
+      blockchain: 'Naive',
       spendUnconfirmedCoins: true
     })
     wallet.initialize('123131123131123131123131123131123131123131123131123131')

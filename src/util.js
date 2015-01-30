@@ -1,6 +1,7 @@
 var _ = require('lodash')
 var Q = require('q')
 
+var bitcoin = require('./bitcoin')
 var util = require('./cclib').util
 var verify = require('./verify')
 
@@ -181,6 +182,15 @@ function createCoins(wallet, opts, cb) {
   )
 }
 
+function createGetTxFn(blockchain) {
+  return function (txId, cb) {
+    function onFulfilled(txHex) { cb(null, bitcoin.Transaction.fromHex(txHex)) }
+    function onRejected(error) { cb(error) }
+
+    blockchain.getTx(txId).then(onFulfilled, onRejected)
+  }
+}
+
 
 module.exports = _.extend(util, {
   OrderedMap: OrderedMap,
@@ -189,5 +199,6 @@ module.exports = _.extend(util, {
     create: createEnum,
     update: updateEnum
   },
-  createCoins: createCoins
+  createCoins: createCoins,
+  createGetTxFn: createGetTxFn
 })

@@ -41,12 +41,6 @@ var functions = {
   AssetTarget: createInstanceCheck(function () { return require('./asset').AssetTarget }),
   AssetValue: createInstanceCheck(function () { return require('./asset').AssetValue }),
 
-  Blockchain: createInstanceCheck(function () { return require('./blockchain').Blockchain }),
-  NaiveBlockchain: createInstanceCheck(function () { return require('./blockchain').NaiveBlockchain }),
-  VerifiedBlockchain: createInstanceCheck(function () { return require('./blockchain').VerifiedBlockchain }),
-  VerifiedBlockchainStorage: createInstanceCheck(
-    function () { return require('./blockchain').VerifiedBlockchainStorage }),
-
   Coin: createInstanceCheck(function () { return require('./coin').Coin }),
   CoinQuery: createInstanceCheck(function () { return require('./coin').CoinQuery }),
   CoinManager: createInstanceCheck(function () { return require('./coin').CoinManager }),
@@ -54,10 +48,6 @@ var functions = {
   HistoryEntry: createInstanceCheck(function () { return require('./history').HistoryEntry }),
   HistoryTarget: createInstanceCheck(function () { return require('./history').HistoryTarget }),
   HistoryManager: createInstanceCheck(function () { return require('./history').HistoryManager }),
-
-  Network: createInstanceCheck(function () { return require('./network').Network }),
-  Chain: createInstanceCheck(function () { return require('./network').Chain }),
-  Electrum: createInstanceCheck(function () { return require('./network').Electrum }),
 
   AssetTx: createInstanceCheck(function () { return require('./tx').AssetTx }),
   OperationalTx: createInstanceCheck(function () { return require('./tx').OperationalTx }),

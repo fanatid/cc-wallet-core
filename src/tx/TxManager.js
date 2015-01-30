@@ -101,10 +101,11 @@ TxManager.prototype.addTx = function (tx, data) {
       return
     }
 
-    return Q.ninvoke(self._wallet.getBlockchain(), 'getBlockTime', record.height).then(function (ts) {
-      record.timestamp = ts
-      record.isBlockTimestamp = true
-    })
+    return self._wallet.getBlockchain().getHeader(record.height)
+      .then(function (header) {
+        record.timestamp = header.timestamp
+        record.isBlockTimestamp = true
+      })
 
   }).then(function () {
     self._txRecords[txId] = record

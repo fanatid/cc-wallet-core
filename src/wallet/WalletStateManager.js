@@ -5,6 +5,7 @@ var _ = require('lodash')
 var Q = require('q')
 
 var WalletState = require('./WalletState')
+var bitcoin = require('../bitcoin')
 var cclib = require('../cclib')
 var getUncolored = cclib.ColorDefinitionManager.getUncolored
 var errors = require('../errors')
@@ -143,15 +144,15 @@ WalletStateManager.prototype._attemptSendTx = function (txId, attempt) {
     })
   }
 
-  Q.ninvoke(self._wallet.getBlockchain(), 'sendTx', tx).done(
-    function () {
+  self._wallet.getBlockchain().sendTx(tx.toHex())
+    .then(function () {
       /**
        * @todo
        * Check propagation with blockchain?
        */
       updateTx(TX_STATUS.pending)
-    },
-    function (error) {
+
+    }, function (error) {
       self.emit('error', error)
 
       if (attempt >= 5) {
@@ -162,8 +163,7 @@ WalletStateManager.prototype._attemptSendTx = function (txId, attempt) {
       Q.delay(timeout).then(function () {
         self._attemptSendTx(txId, attempt + 1)
       })
-    }
-  )
+    })
 }
 
 /**
@@ -195,7 +195,15 @@ WalletStateManager.prototype._createGetTxFn = function (walletState) {
 
   var blockchain = this._wallet.getBlockchain()
   function getTxFn(txId, cb) {
-    blockchain.getTx(txId, walletState, cb)
+    var tx = walletState.getTxManager().getTx(txId)
+    if (tx !== null) {
+      return setImmediate(cb, null, tx)
+    }
+
+    function onFulfilled(txHex) { cb(null, bitcoin.Transaction.fromHex(txHex)) }
+    function onRejected(error) { cb(error) }
+
+    blockchain.getTx(txId).then(onFulfilled, onRejected)
   }
 
   return getTxFn
@@ -353,15 +361,21 @@ WalletStateManager.prototype.historySync = function (address, entries) {
         return promise.then(function () { return {commit: true} })
       }
 
-      return Q.ninvoke(self._wallet.getBlockchain(), 'getTx', entry.txId).then(function (tx) {
-        var promise = Q()
-        promise = promise.then(function () {
-          return walletState.getTxManager().addTx(tx, {status: status, height: entry.height, tAddresses: address})
+      // blockchainjs uses Promise, cc-wallet-core used Q.Promise
+      var deferred = Q.defer()
+      self._wallet.getBlockchain().getTx(entry.txId)
+        .then(function (txHex) {
+          var tx = bitcoin.Transaction.fromHex(txHex)
+          var promise = Q()
+          promise = promise.then(function () {
+            return walletState.getTxManager().addTx(tx, {status: status, height: entry.height, tAddresses: address})
+          })
+          promise = promise.then(function () { return walletState.getCoinManager().addTx(tx) })
+          promise = promise.then(function () { return walletState.getHistoryManager().addTx(tx) })
+          return promise.then(function () { return {commit: true} })
         })
-        promise = promise.then(function () { return walletState.getCoinManager().addTx(tx) })
-        promise = promise.then(function () { return walletState.getHistoryManager().addTx(tx) })
-        return promise.then(function () { return {commit: true} })
-      })
+        .then(deferred.resolve, deferred.reject)
+      return deferred.promise
     })
   }))
 

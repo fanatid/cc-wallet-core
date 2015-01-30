@@ -2,8 +2,9 @@ var _ = require('lodash')
 var Q = require('q')
 
 var bitcoin = require('../bitcoin')
-var verify = require('../verify')
 var cclib = require('../cclib')
+var util = require('../util')
+var verify = require('../verify')
 
 
 /**
@@ -123,7 +124,12 @@ RawTx.prototype.sign = function (wallet, seedHex, signingOnly, cb) {
         return wallet.getStateManager().getTx(txId)
 
       }).then(function (tx) {
-        return tx !== null ? tx : Q.ninvoke(wallet.getBlockchain(), 'getTx', txId)
+        if (tx !== null) {
+          return tx
+        }
+
+        return wallet.getBlockchain().getTx(txId)
+          .then(function (txHex) { return bitcoin.Transaction.fromHex(txHex) })
 
       }).then(function (tx) {
         self.txb.prevOutScripts[index] = tx.outs[input.index].script
@@ -236,7 +242,7 @@ RawTx.prototype.getSentColorValues = function (wallet, cb) {
   verify.Wallet(wallet)
   verify.function(cb)
 
-  var getTxFn = wallet.getBlockchain().getTxFn()
+  var getTxFn = util.createGetTxFn(wallet.getBlockchain())
   var tx = this.toTransaction(true)
   var network = wallet.getBitcoinNetwork()
   var walletAddresses = wallet.getAllAddresses()
@@ -358,7 +364,7 @@ RawTx.prototype.getInputAddresses = function (wallet, indexes, cb) {
   verify.function(cb)
 
   var tx = this.txb.buildIncomplete()
-  var getTxFn = wallet.getBlockchain().getTxFn()
+  var getTxFn = util.createGetTxFn(wallet.getBlockchain())
   Q.ninvoke(tx, 'ensureInputValues', getTxFn).then(function (tx) {
     var bitcoinNetwork = wallet.getBitcoinNetwork()
     return _.chain(tx.ins)

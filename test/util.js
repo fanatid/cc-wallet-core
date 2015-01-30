@@ -22,8 +22,7 @@ describe('util', function () {
       localStorage.clear()
       wallet = new Wallet({
         testnet: true,
-        blockchain: 'NaiveBlockchain',
-        storageSaveTimeout: 0,
+        blockchain: 'Naive',
         spendUnconfirmedCoins: true,
         systemAssetDefinitions: [goldAsset]
       })

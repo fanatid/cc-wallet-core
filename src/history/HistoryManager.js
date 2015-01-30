@@ -10,6 +10,7 @@ var errors = require('../errors')
 var AssetValue = require('../asset').AssetValue
 var HistoryTarget = require('./HistoryTarget')
 var HistoryEntry = require('./HistoryEntry')
+var util = require('../util')
 var verify = require('../verify')
 var HISTORY_ENTRY_TYPE = require('../const').HISTORY_ENTRY_TYPE
 
@@ -111,7 +112,7 @@ HistoryManager.prototype.addTx = function (tx) {
   var txId = tx.getId()
 
   var wsm = self._wallet.getStateManager()
-  var getTxFn = self._wallet.getBlockchain().getTxFn()
+  var getTxFn = util.createGetTxFn(self._wallet.getBlockchain())
   var walletAddresses = self._wallet.getAllAddresses()
   var network = self._wallet.getBitcoinNetwork()
   var colorValues = {}
