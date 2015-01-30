@@ -145,6 +145,10 @@ WalletStateManager.prototype._attemptSendTx = function (txId, attempt) {
 
   Q.ninvoke(self._wallet.getBlockchain(), 'sendTx', tx).done(
     function () {
+      /**
+       * @todo
+       * Check propagation with blockchain?
+       */
       updateTx(TX_STATUS.pending)
     },
     function (error) {
