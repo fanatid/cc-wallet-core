@@ -79,11 +79,6 @@ var expected = {
   AssetTarget: 'AssetTarget',
   AssetValue: 'AssetValue',
 
-  Blockchain: 'Blockchain',
-  NaiveBlockchain: 'NaiveBlockchain',
-  VerifiedBlockchain: 'VerifiedBlockchain',
-  VerifiedBlockchainStorage: 'VerifiedBlockchainStorage',
-
   Coin: 'Coin',
   CoinQuery: 'CoinQuery',
   CoinManager: 'CoinManager',
@@ -91,10 +86,6 @@ var expected = {
   HistoryEntry: 'HistoryEntry',
   HistoryTarget: 'HistoryTarget',
   HistoryManager: 'HistoryManager',
-
-  Network: 'Network',
-  Chain: 'Chain',
-  Electrum: 'Electrum',
 
   AssetTx: 'AssetTx',
   OperationalTx: 'OperationalTx',

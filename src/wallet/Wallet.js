@@ -136,7 +136,7 @@ function Wallet(opts) {
     return new Network()
   })
   self.networkSwitcher = new blockchainjs.network.Switcher(self.networks, {crosscheck: opts.crosscheck})
-  self.blockchain = new blockchainjs.blockchain[opts.blockchain](self.networkSwitcher)
+  self.blockchain = new blockchainjs.blockchain[opts.blockchain.name](self.networkSwitcher)
 
   self.cdStorage = new cclib.ColorDefinitionStorage()
   self.cdManager = new cclib.ColorDefinitionManager(self.cdStorage)
@@ -189,6 +189,7 @@ inherits(Wallet, events.EventEmitter)
 
 Wallet.prototype.getBitcoinNetwork = function () { return this.bitcoinNetwork }
 Wallet.prototype.canSpendUnconfirmedCoins = function () { return this._spendUnconfirmedCoins }
+Wallet.prototype.getNetwork = function () { return this.networkSwitcher }
 Wallet.prototype.getBlockchain = function () { return this.blockchain }
 Wallet.prototype.getColorDefinitionManager = function () { return this.cdManager }
 Wallet.prototype.getColorData = function () { return this.cData }

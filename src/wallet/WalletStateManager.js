@@ -1,3 +1,4 @@
+var timers = require('timers')
 var events = require('events')
 var inherits = require('util').inherits
 
@@ -197,7 +198,7 @@ WalletStateManager.prototype._createGetTxFn = function (walletState) {
   function getTxFn(txId, cb) {
     var tx = walletState.getTxManager().getTx(txId)
     if (tx !== null) {
-      return setImmediate(cb, null, tx)
+      return timers.setImmediate(cb, null, tx)
     }
 
     function onFulfilled(txHex) { cb(null, bitcoin.Transaction.fromHex(txHex)) }

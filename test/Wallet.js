@@ -51,7 +51,7 @@ describe('Wallet', function () {
     localStorage.clear()
     wallet = new Wallet({
       testnet: true,
-      blockchain: 'Naive',
+      blockchain: {name: 'Naive'},
       spendUnconfirmedCoins: true
     })
   }
@@ -263,7 +263,7 @@ describe('Wallet', function () {
       wallet = new Wallet({
         masterKey: '421fc385fdae762b346b80e0212f77bd',
         testnet: true,
-        blockchain: 'Naive',
+        blockchain: {name: 'Naive'},
         spendUnconfirmedCoins: true
       })
 

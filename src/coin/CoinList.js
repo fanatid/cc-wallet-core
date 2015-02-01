@@ -1,3 +1,4 @@
+var timers = require('timers')
 var _ = require('lodash')
 var Q = require('q')
 
@@ -45,7 +46,7 @@ CoinList.prototype.getValues = function (cb) {
 
   var self = this
   if (self._getValuesCache !== null) {
-    return setImmediate(cb, null, self._getValuesCache)
+    return timers.setImmediate(cb, null, self._getValuesCache)
   }
 
   if (self._getValuesPromise === null) {
