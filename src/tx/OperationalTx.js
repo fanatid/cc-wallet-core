@@ -138,7 +138,7 @@ OperationalTx.prototype.selectCoins = function (colorValue, feeEstimator, cb) {
       requiredSum = requiredSum.plus(feeEstimator.estimateRequiredFee({extraTxIns: coins.length}))
     }
 
-    /** @todo Better algorithm */
+    /** @todo Better coins selection algorithm */
     var promise = Q()
     coins.forEach(function (coin) {
       promise = promise.then(function () {

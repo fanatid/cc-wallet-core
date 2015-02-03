@@ -192,7 +192,7 @@ function createGetTxFn(blockchain) {
 }
 
 
-module.exports = _.extend(util, {
+module.exports = _.extend({
   OrderedMap: OrderedMap,
   SyncMixin: SyncMixin,
   enum: {
@@ -201,4 +201,4 @@ module.exports = _.extend(util, {
   },
   createCoins: createCoins,
   createGetTxFn: createGetTxFn
-})
+}, util)

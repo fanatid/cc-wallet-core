@@ -104,8 +104,7 @@ var verify = require('../verify')
  *
  * @param {Object} opts
  * @param {boolean} [opts.testnet=false]
- * @param {number} [opts.crosscheck=1]
- * @param {Wallet~NetworkObject[]} [opts.networks=[{name: 'ElectrumJS', args: [{testnet: false}]}]]
+ * @param {Wallet~NetworkObject[]} [opts.networks=[{name: 'ElectrumJS', ...}, {name: 'Chain', ...}]]
  * @param {{name: string}} [opts.blockchain={name: 'Naive'}] Blockchain name from blockchainjs
  * @param {boolean} [opts.spendUnconfirmedCoins=false] Allow spend unconfirmed coins
  * @param {Object[]} [opts.systemAssetDefinitions]
@@ -113,8 +112,10 @@ var verify = require('../verify')
 function Wallet(opts) {
   opts = _.extend({testnet: false}, opts)
   opts = _.extend({
-    crosscheck: 1,
-    networks: [{name: 'ElectrumJS', args: [{testnet: opts.testnet}]}],
+    networks: [
+      {name: 'ElectrumJS', args: [{testnet: opts.testnet}]},
+      {name: 'Chain',      args: [{testnet: opts.testnet}]}
+    ],
     blockchain: {name: 'Naive'},
     spendUnconfirmedCoins: false
   }, opts)
@@ -131,11 +132,12 @@ function Wallet(opts) {
   self.config = new ConfigStorage()
 
   self.networks = opts.networks.map(function (opts) {
-    var args = [null].concat(opts.args)
-    var Network = Function.prototype.bind.apply(blockchainjs.network[opts.name], args)
+    var Network = Function.prototype.bind.apply(
+      blockchainjs.network[opts.name], [null].concat(opts.args))
     return new Network()
   })
-  self.networkSwitcher = new blockchainjs.network.Switcher(self.networks, {crosscheck: opts.crosscheck})
+  self.networkSwitcher = new blockchainjs.network.Switcher(
+    self.networks, {spv: opts.blockchain.name === 'Verified'})
   self.blockchain = new blockchainjs.blockchain[opts.blockchain.name](self.networkSwitcher)
 
   self.cdStorage = new cclib.ColorDefinitionStorage()
@@ -539,7 +541,7 @@ Wallet.prototype.createTx = function (assetdef, rawTargets, cb) {
   self.isInitializedCheck()
 
   var assetTargets = rawTargets.map(function (rawTarget) {
-    // @todo Add multisig support
+    /** @todo Add multisig support */
     var script = bitcoin.Address.fromBase58Check(rawTarget.address).toOutputScript()
     var assetValue = new asset.AssetValue(assetdef, rawTarget.value)
     return new asset.AssetTarget(script.toHex(), assetValue)

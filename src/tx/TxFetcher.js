@@ -1,7 +1,6 @@
 var events = require('events')
 var inherits = require('util').inherits
 
-var _ = require('lodash')
 var Q = require('q')
 
 var verify = require('../verify')
@@ -34,8 +33,11 @@ function TxFetcher(wallet) {
   self._wallet = wallet
 
   self._wallet.getBlockchain().on('touchAddress', function (address) {
-    if (_.isUndefined(self._subscribedAddresses[address])) { return }
+    if (typeof self._subscribedAddresses[address] === 'undefined') {
+      return
+    }
 
+    self._subscribedAddresses[address].count += 1
     self.historySync(address, function (error) {
       if (error) { self.emit('error', error) }
     })
@@ -52,12 +54,40 @@ TxFetcher.prototype.historySync = function (address, cb) {
   verify.string(address)
   verify.function(cb)
 
-  var wallet = this._wallet
-  wallet.getBlockchain().getHistory(address)
-    .then(function (entries) {
-      return wallet.getStateManager().historySync(address, entries)
+  var self = this
+
+  self._subscribedAddresses[address].promise
+    .then(function () {
+      if (self._subscribedAddresses[address].count === 0) {
+        return
+      }
+
+      self._subscribedAddresses[address].count = 0
+
+      var deferred = Q.defer()
+      self._subscribedAddresses[address].promise = deferred.promise
+
+      function onFulfilled() {
+        deferred.resolve()
+        cb(null)
+      }
+
+      function onRejected(error) {
+        deferred.resolve()
+        cb(error)
+      }
+
+      self._wallet.getBlockchain().getHistory(address)
+        .then(function (entries) {
+          /** @todo Upgrade 0 to null for unconfirmed */
+          entries = entries.map(function (entry) {
+            return {txId: entry.txId, height: entry.height || 0}
+          })
+
+          return self._wallet.getStateManager().historySync(address, entries)
+        })
+        .then(onFulfilled, onRejected)
     })
-    .then(function () { cb(null) }, function (error) { cb(error) })
 }
 
 /**
@@ -69,13 +99,13 @@ TxFetcher.prototype.subscribeAndSyncAddress = function (address, cb) {
   verify.function(cb)
 
   var self = this
-  if (!_.isUndefined(self._subscribedAddresses[address])) {
+  if (typeof self._subscribedAddresses[address] !== 'undefined') {
     return cb(null)
   }
 
   self._wallet.getBlockchain().subscribeAddress(address)
     .then(function () {
-      self._subscribedAddresses[address] = true
+      self._subscribedAddresses[address] = {count: 1, promise: Q()}
       return Q.ninvoke(self, 'historySync', address)
     })
     .then(function () { cb(null) }, function (error) { cb(error) })

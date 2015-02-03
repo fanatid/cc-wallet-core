@@ -147,10 +147,7 @@ WalletStateManager.prototype._attemptSendTx = function (txId, attempt) {
 
   self._wallet.getBlockchain().sendTx(tx.toHex())
     .then(function () {
-      /**
-       * @todo
-       * Check propagation with blockchain?
-       */
+      /** @todo Check propagation with blockchain? */
       updateTx(TX_STATUS.pending)
 
     }, function (error) {
