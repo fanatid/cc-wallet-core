@@ -24,21 +24,13 @@
     "url": "https://github.com/chromaway/cc-wallet-core"
   },
   "dependencies": {
-    "bigi": "1.4.0",
     "blockchainjs": "0.1.0",
-    "browser-request": "0.3.3",
     "bs58": "2.0.1",
     "buffer-equal": "0.0.1",
     "coloredcoinjs-lib": "git://github.com/chromaway/coloredcoinjs-lib.git#v0.3.2",
     "errno": "0.1.1",
     "lodash": "2.4.1",
-    "lru-cache": "2.5.0",
-    "q": "1.1.2",
-    "querystring": "0.2.0",
-    "request": "2.51.0",
-    "socket.io-client": "1.2.1",
-    "ws": "0.6.5",
-    "zfill": "0.0.2"
+    "q": "1.1.2"
   },
   "devDependencies": {
     "chai": "1.10.0",
@@ -58,9 +50,6 @@
     "mocha": "2.1.0",
     "replay": "1.12.0",
     "testling": "1.7.1"
-  },
-  "browser": {
-    "request": "browser-request"
   },
   "testling": {
     "browsers": [
