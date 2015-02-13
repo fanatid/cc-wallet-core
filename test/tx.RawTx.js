@@ -22,6 +22,7 @@ describe('tx.RawTx', function () {
     rawTx = RawTx.fromHex(btcHexTx)
     wallet = new Wallet({
       testnet: true,
+      networks: [{name: 'ElectrumJS', args: [{testnet: true}]}],
       blockchain: {name: 'Naive'},
       spendUnconfirmedCoins: true
     })
@@ -30,10 +31,11 @@ describe('tx.RawTx', function () {
   })
 
   afterEach(function () {
-    rawTx = undefined
+    rawTx = null
+    wallet.getNetwork().disconnect()
     wallet.removeListeners()
     wallet.clearStorage()
-    wallet = undefined
+    wallet = null
   })
 
   it('toTransaction', function () {

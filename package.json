@@ -24,7 +24,7 @@
     "url": "https://github.com/chromaway/cc-wallet-core"
   },
   "dependencies": {
-    "blockchainjs": "0.1.0",
+    "blockchainjs": "0.2.0",
     "bs58": "2.0.1",
     "buffer-equal": "0.0.1",
     "coloredcoinjs-lib": "git://github.com/chromaway/coloredcoinjs-lib.git#v0.3.2",

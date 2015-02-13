@@ -51,15 +51,17 @@ describe('Wallet', function () {
     localStorage.clear()
     wallet = new Wallet({
       testnet: true,
+      networks: [{name: 'ElectrumJS', args: [{testnet: true}]}],
       blockchain: {name: 'Naive'},
       spendUnconfirmedCoins: true
     })
   }
 
   function cleanup() {
+    wallet.getNetwork().disconnect()
     wallet.removeListeners()
     wallet.clearStorage()
-    wallet = undefined
+    wallet = null
   }
 
   describe('instance methods', function () {
@@ -187,13 +189,14 @@ describe('Wallet', function () {
 
   describe('balance methods', function () {
     before(function (done) {
-      setup()
-      wallet.initialize(seed)
-      wallet.addAssetDefinition(seed, goldAsset)
-      wallet.subscribeAndSyncAllAddresses(function (error) {
-        if (error) { throw error }
-        expect(error).to.be.null
-        done()
+      setup(function () {
+        wallet.initialize(seed)
+        wallet.addAssetDefinition(seed, goldAsset)
+        wallet.subscribeAndSyncAllAddresses(function (error) {
+          if (error) { throw error }
+          expect(error).to.be.null
+          done()
+        })
       })
     })
 
@@ -263,6 +266,7 @@ describe('Wallet', function () {
       wallet = new Wallet({
         masterKey: '421fc385fdae762b346b80e0212f77bd',
         testnet: true,
+        networks: [{name: 'ElectrumJS', args: [{testnet: true}]}],
         blockchain: {name: 'Naive'},
         spendUnconfirmedCoins: true
       })

@@ -105,6 +105,7 @@ var verify = require('../verify')
  * @param {Object} opts
  * @param {boolean} [opts.testnet=false]
  * @param {Wallet~NetworkObject[]} [opts.networks=[{name: 'ElectrumJS', ...}, {name: 'Chain', ...}]]
+ * @param {boolean} [opts.autoConnect=true]
  * @param {{name: string}} [opts.blockchain={name: 'Naive'}] Blockchain name from blockchainjs
  * @param {boolean} [opts.spendUnconfirmedCoins=false] Allow spend unconfirmed coins
  * @param {Object[]} [opts.systemAssetDefinitions]
@@ -116,6 +117,7 @@ function Wallet(opts) {
       {name: 'ElectrumJS', args: [{testnet: opts.testnet}]},
       {name: 'Chain',      args: [{testnet: opts.testnet}]}
     ],
+    autoConnect: true,
     blockchain: {name: 'Naive'},
     spendUnconfirmedCoins: false
   }, opts)
@@ -138,6 +140,10 @@ function Wallet(opts) {
   })
   self.networkSwitcher = new blockchainjs.network.Switcher(
     self.networks, {spv: opts.blockchain.name === 'Verified'})
+  if (opts.autoConnect) {
+    self.networkSwitcher.connect()
+  }
+
   self.blockchain = new blockchainjs.blockchain[opts.blockchain.name](self.networkSwitcher)
 
   self.cdStorage = new cclib.ColorDefinitionStorage()
