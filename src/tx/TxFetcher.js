@@ -1,6 +1,7 @@
 var events = require('events')
 var inherits = require('util').inherits
 
+var _ = require('lodash')
 var Q = require('q')
 
 var verify = require('../verify')
@@ -32,15 +33,20 @@ function TxFetcher(wallet) {
 
   self._wallet = wallet
 
-  self._wallet.getBlockchain().on('touchAddress', function (address) {
-    if (typeof self._subscribedAddresses[address] === 'undefined') {
-      return
-    }
-
-    self._subscribedAddresses[address].count += 1
+  function historySync(address) {
     self.historySync(address, function (error) {
-      if (error) { self.emit('error', error) }
+      if (error !== null) { self.emit('error', error) }
     })
+  }
+
+  self._wallet.getNetwork().on('connect', function () {
+    _.keys(self._subscribedAddresses).forEach(historySync)
+  })
+
+  self._wallet.getBlockchain().on('touchAddress', function (address) {
+    if (typeof self._subscribedAddresses[address] !== 'undefined') {
+      historySync(address)
+    }
   })
 }
 
@@ -55,6 +61,7 @@ TxFetcher.prototype.historySync = function (address, cb) {
   verify.function(cb)
 
   var self = this
+  self._subscribedAddresses[address].count += 1
 
   self._subscribedAddresses[address].promise
     .then(function () {
@@ -105,7 +112,7 @@ TxFetcher.prototype.subscribeAndSyncAddress = function (address, cb) {
 
   self._wallet.getBlockchain().subscribeAddress(address)
     .then(function () {
-      self._subscribedAddresses[address] = {count: 1, promise: Q()}
+      self._subscribedAddresses[address] = {count: 0, promise: Q()}
       return Q.ninvoke(self, 'historySync', address)
     })
     .then(function () { cb(null) }, function (error) { cb(error) })

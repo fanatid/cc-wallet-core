@@ -189,14 +189,13 @@ describe('Wallet', function () {
 
   describe('balance methods', function () {
     before(function (done) {
-      setup(function () {
-        wallet.initialize(seed)
-        wallet.addAssetDefinition(seed, goldAsset)
-        wallet.subscribeAndSyncAllAddresses(function (error) {
-          if (error) { throw error }
-          expect(error).to.be.null
-          done()
-        })
+      setup()
+      wallet.initialize(seed)
+      wallet.addAssetDefinition(seed, goldAsset)
+      wallet.subscribeAndSyncAllAddresses(function (error) {
+        if (error) { throw error }
+        expect(error).to.be.null
+        done()
       })
     })
 
