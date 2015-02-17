@@ -1,5 +1,6 @@
 var events = require('events')
 var inherits = require('util').inherits
+var timers = require('timers')
 
 var _ = require('lodash')
 var Q = require('q')
@@ -128,6 +129,9 @@ function Wallet(opts) {
   events.EventEmitter.call(self)
   util.SyncMixin.call(self)
 
+  self._allAddressesCache = undefined
+  self.on('newAddress', function () { self._allAddressesCache = undefined })
+
   self.bitcoinNetwork = opts.testnet ? bitcoin.networks.testnet : bitcoin.networks.bitcoin
   self._spendUnconfirmedCoins = opts.spendUnconfirmedCoins
 
@@ -172,6 +176,8 @@ function Wallet(opts) {
   // events
   self.networkSwitcher.on('error', function (error) { self.emit('error', error) })
   self.blockchain.on('error', function (error) { self.emit('error', error) })
+  self.txFetcher.on('syncStart', function () { self._syncEnter() })
+  self.txFetcher.on('syncStop', function () { self._syncExit() })
   self.txFetcher.on('error', function (error) { self.emit('error', error) })
 
   self.blockchain.on('newHeight', function (height) { self.emit('newHeight', height) })
@@ -189,9 +195,6 @@ function Wallet(opts) {
   self.walletStateManager.on('newColor', function (desc) { self.emit('newColor', desc) })
   self.walletStateManager.on('touchAsset', function (assetdef) { self.emit('touchAsset', assetdef) })
   self.walletStateManager.on('historyUpdate', function () { self.emit('historyUpdate') })
-
-  self._allAddressesCache = undefined
-  self.on('newAddress', function () { self._allAddressesCache = undefined })
 }
 
 inherits(Wallet, events.EventEmitter)
@@ -400,33 +403,39 @@ Wallet.prototype.checkAddress = function (assetdef, checkedAddress) {
 }
 
 /**
+ * @deprecated TxFetcher itself tracks and subscribe addresses
+ *
  * @param {string} address
  * @param {Wallet~errorCallback} cb
  */
 Wallet.prototype.subscribeAndSyncAddress = function (address, cb) {
+  console.warn('subscribeAndSyncAddress is deprecated for removal in 1.0.0')
+
   verify.string(address)
   verify.function(cb)
 
-  this.isInitializedCheck()
+  if (!this.txFetcher.isSyncing()) {
+    return timers.setImmediate(cb, null)
+  }
 
-  this.txFetcher.subscribeAndSyncAddress(address, cb)
+  this.txFetcher.once(function () { cb(null) })
 }
 
 /**
+ * @deprecated TxFetcher itself tracks and subscribe addresses
+ *
  * @param {Wallet~errorCallback} cb
  */
 Wallet.prototype.subscribeAndSyncAllAddresses = function (cb) {
+  console.warn('subscribeAndSyncAllAddresses is deprecated for removal in 1.0.0')
+
   verify.function(cb)
 
-  this.isInitializedCheck()
+  if (!this.txFetcher.isSyncing()) {
+    return timers.setImmediate(cb, null)
+  }
 
-  var addresses = _.chain(this.getAllAssetDefinitions())
-    .map(function (assetdef) { return this.getAllAddresses(assetdef) }, this)
-    .flatten()
-    .uniq()
-    .value()
-
-  this.txFetcher.subscribeAndSyncAllAddresses(addresses, cb)
+  this.txFetcher.once(function () { cb(null) })
 }
 
 /**

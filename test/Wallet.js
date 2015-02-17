@@ -47,14 +47,17 @@ describe('Wallet', function () {
     unit: 10
   }
 
-  function setup() {
+  function setup(done) {
     localStorage.clear()
     wallet = new Wallet({
       testnet: true,
       networks: [{name: 'ElectrumJS', args: [{testnet: true}]}],
+      autoConnect: false,
       blockchain: {name: 'Naive'},
       spendUnconfirmedCoins: true
     })
+    wallet.getNetwork().once('connect', done)
+    wallet.getNetwork().connect()
   }
 
   function cleanup() {
@@ -189,13 +192,10 @@ describe('Wallet', function () {
 
   describe('balance methods', function () {
     before(function (done) {
-      setup()
-      wallet.initialize(seed)
-      wallet.addAssetDefinition(seed, goldAsset)
-      wallet.subscribeAndSyncAllAddresses(function (error) {
-        if (error) { throw error }
-        expect(error).to.be.null
-        done()
+      setup(function () {
+        wallet.initialize(seed)
+        wallet.addAssetDefinition(seed, goldAsset)
+        wallet.once('syncStop', done)
       })
     })
 
@@ -235,9 +235,7 @@ describe('Wallet', function () {
       var seed = '421fc385fdae724b246b80e0212f77bb'
       wallet.initialize(seed)
       wallet.addAssetDefinition(seed, goldAsset)
-      wallet.subscribeAndSyncAllAddresses(function (error) {
-        expect(error).to.be.null
-
+      wallet.once('syncStop', function () {
         var bitcoin = wallet.getAssetDefinitionByMoniker('bitcoin')
         var targets = [{address: 'mkwmtrHX99ozTegy77wTgPZwodm4E2VbBr', value: 10000}]
 
@@ -259,40 +257,6 @@ describe('Wallet', function () {
       })
     })
 
-    // Need new issued asset, this broken
-    it.skip('sendCoins epobc', function (done) {
-      // need removeListeners and clearStorage
-      wallet = new Wallet({
-        masterKey: '421fc385fdae762b346b80e0212f77bd',
-        testnet: true,
-        networks: [{name: 'ElectrumJS', args: [{testnet: true}]}],
-        blockchain: {name: 'Naive'},
-        spendUnconfirmedCoins: true
-      })
-
-      var data = {
-        monikers: ['gold'],
-        colorDescs: ['epobc:b77b5d214b2f9fd23b377cbbf443a9da445fd7c6c24ba1b92d3a3bfdf26aabf2:0:273921'],
-        unit: 10000
-      }
-      var assetdef = wallet.addAssetDefinition(data)
-
-      wallet.subscribeAndSyncAllAddresses(function (error) {
-        expect(error).to.be.null
-
-        //var address = wallet.getSomeAddress(assetdef)
-        //console.log('Address to:   ' + 'mo8Ni5kFSxcuEVXbfBaSaDzMiq1j4E6wUE')
-        var targets = [{address: 'mo8Ni5kFSxcuEVXbfBaSaDzMiq1j4E6wUE', value: 10000}]
-        //wallet.getAvailableBalance(assetdef, function (error, balance) {
-          //console.log(error, balance, assetdef.formatValue(balance))
-        wallet.sendCoins(assetdef, targets, function (error, txId) {
-          expect(error).to.be.null
-          expect(txId).to.be.an('string').with.to.have.length(64)
-          done()
-        })
-      })
-    })
-
     it('history', function (done) {
       wallet.initialize(seed)
 
@@ -301,19 +265,13 @@ describe('Wallet', function () {
         expect(entries).to.be.instanceof(Array)
         done()
       })
-
-      wallet.subscribeAndSyncAllAddresses(function (error) {
-        expect(error).to.be.null
-      })
     })
 
     it('issueCoins epobc', function (done) {
-      var seed = '421ac385fdaed1121321222eddad0dae'
+      var seed = '421ac385fdaed1121321222eddad0daf'
       wallet.initialize(seed)
       wallet.addAssetDefinition(seed, goldAsset)
-      wallet.subscribeAndSyncAllAddresses(function (error) {
-        expect(error).to.be.null
-
+      wallet.once('syncStop', function () {
         wallet.createIssuanceTx('newEPOBC', 'epobc', 2, 10000, seed, function (error, tx) {
           expect(error).to.be.null
 

@@ -27,7 +27,7 @@ describe('tx.RawTx', function () {
       spendUnconfirmedCoins: true
     })
     wallet.initialize(BIP39.mnemonicToSeedHex(mnemonic, password))
-    wallet.subscribeAndSyncAllAddresses(done)
+    wallet.once('syncStop', done)
   })
 
   afterEach(function () {

@@ -29,7 +29,10 @@ describe('util', function () {
       })
       wallet.initialize(seed)
       assetdef = wallet.getAssetDefinitionByMoniker('bitcoin')
-      return Q.ninvoke(wallet, 'subscribeAndSyncAllAddresses')
+
+      var deferred = Q.defer()
+      wallet.once('syncStop', deferred.resolve)
+      return deferred.promise
 
     }).then(function () {
       var opts = {

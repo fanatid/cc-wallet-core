@@ -1,3 +1,5 @@
+if (typeof global._babelPolyfill === 'undefined') { require('babel/polyfill') }
+
 module.exports = {
   bitcoin: require('./bitcoin'),
   cclib: require('./cclib'),
