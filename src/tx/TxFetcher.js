@@ -93,7 +93,14 @@ TxFetcher.prototype._sync = function (address) {
         return
       }
 
-      var promise = self._wallet.getBlockchain().getHistory(address)
+      var deferred = {}
+      deferred.promise = new Promise(function (resolve) {
+        deferred.resolve = resolve
+      })
+
+      self._syncAddresses.set(address, {count: 0, promise: deferred.promise})
+
+      self._wallet.getBlockchain().getHistory(address)
         .then(function (entries) {
           /** @todo Upgrade 0 to null for unconfirmed */
           entries = entries.map(function (entry) {
@@ -102,18 +109,16 @@ TxFetcher.prototype._sync = function (address) {
 
           return self._wallet.getStateManager().historySync(address, entries)
         })
+        .then(function () {
+          self._syncExit()
+          deferred.resolve()
 
-      self._syncAddresses.set(address, {count: 0, promise: promise})
+        }, function (error) {
+          self._syncExit()
+          deferred.resolve()
+          self.emit('error', error)
 
-      return promise
-    })
-    .then(function () {
-      self._syncExit()
-
-    }, function (error) {
-      self._syncExit()
-      self.emit('error', error)
-
+        })
     })
 }
 
