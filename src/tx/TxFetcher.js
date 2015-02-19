@@ -51,9 +51,12 @@ TxFetcher.prototype._addEventListeners = function () {
     }
   })
 
-  if (self._wallet.getNetwork().isConnected() && self._wallet.isInitialized()) {
-    self._wallet.getAllAddresses().forEach(self._subscribeAndSync.bind(self))
-  }
+  // event exists only for NetworkSwitcher
+  self._wallet.getNetwork().on('switchNetwork', function (newNetwork) {
+    if (self._wallet.isInitialized() && newNetwork !== null) {
+      self._wallet.getAllAddresses().forEach(self._sync.bind(self))
+    }
+  })
 
   self._wallet.getBlockchain().on('touchAddress', function (address) {
     if (self._wallet.isInitialized() && self._wallet.getAllAddresses().indexOf(address) !== -1) {
@@ -66,6 +69,10 @@ TxFetcher.prototype._addEventListeners = function () {
       self._subscribeAndSync(address.getAddress())
     }
   })
+
+  if (self._wallet.getNetwork().isConnected() && self._wallet.isInitialized()) {
+    self._wallet.getAllAddresses().forEach(self._subscribeAndSync.bind(self))
+  }
 }
 
 /**

@@ -142,9 +142,8 @@ function Wallet(opts) {
       blockchainjs.network[opts.name], [null].concat(opts.args))
     return new Network()
   })
-  /*self.networkSwitcher = new blockchainjs.network.Switcher(
-    self.networks, {spv: opts.blockchain.name === 'Verified'})*/
-  self.networkSwitcher = self.networks[0]
+  self.networkSwitcher = new blockchainjs.network.Switcher(
+    self.networks, {spv: opts.blockchain.name === 'Verified'})
   if (opts.autoConnect) {
     self.networkSwitcher.connect()
   }
@@ -175,12 +174,13 @@ function Wallet(opts) {
 
   // events
   self.networkSwitcher.on('error', function (error) { self.emit('error', error) })
+
   self.blockchain.on('error', function (error) { self.emit('error', error) })
+  self.blockchain.on('newHeight', function (height) { self.emit('newHeight', height) })
+
+  self.txFetcher.on('error', function (error) { self.emit('error', error) })
   self.txFetcher.on('syncStart', function () { self._syncEnter() })
   self.txFetcher.on('syncStop', function () { self._syncExit() })
-  self.txFetcher.on('error', function (error) { self.emit('error', error) })
-
-  self.blockchain.on('newHeight', function (height) { self.emit('newHeight', height) })
 
   self.aManager.on('newAddress', function (address) { self.emit('newAddress', address) })
   self.adManager.on('newAsset', function (assetdef) { self.emit('newAsset', assetdef) })
