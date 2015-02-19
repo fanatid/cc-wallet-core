@@ -82,16 +82,17 @@ function WalletStateManager(wallet, stateStorage) {
   self._currentState = new WalletState(self._wallet, self._stateStorage)
   self._executeQueue = []
 
-  self._currentState.getTxManager().getAllTxIds().filter(function (txId) {
-    var txStatus = self._currentState.getTxManager().getTxStatus(txId)
-    if (TX_STATUS.isDispatch(txStatus)) {
-      self._attemptSendTx(txId)
-    }
-  })
+  // disable tx sending with attempts... (temporary)
+  // self._currentState.getTxManager().getAllTxIds().filter(function (txId) {
+  //   var txStatus = self._currentState.getTxManager().getTxStatus(txId)
+  //   if (TX_STATUS.isDispatch(txStatus)) {
+  //     self._attemptSendTx(txId)
+  //   }
+  // })
 
-  self.on('sendTx', function (tx) {
-    self._attemptSendTx(tx.getId())
-  })
+  // self.on('sendTx', function (tx) {
+  //   self._attemptSendTx(tx.getId())
+  // })
 }
 
 inherits(WalletStateManager, events.EventEmitter)
@@ -295,13 +296,30 @@ WalletStateManager.prototype.execute = function (fn) {
  * @return {Q.Promise}
  */
 WalletStateManager.prototype.sendTx = function (tx) {
-  return this.execute(function (walletState) {
-    var promise = Q()
-    promise = promise.then(function () { return walletState.getTxManager().sendTx(tx) })
-    promise = promise.then(function () { return walletState.getCoinManager().addTx(tx) })
-    promise = promise.then(function () { return walletState.getHistoryManager().addTx(tx) })
-    return promise.then(function () { return {commit: true, saveNow: true} })
-  })
+  // return this.execute(function (walletState) {
+  //   var promise = Q()
+  //   promise = promise.then(function () { return walletState.getTxManager().sendTx(tx) })
+  //   promise = promise.then(function () { return walletState.getCoinManager().addTx(tx) })
+  //   promise = promise.then(function () { return walletState.getHistoryManager().addTx(tx) })
+  //   return promise.then(function () { return {commit: true, saveNow: true} })
+  // })
+
+  var self = this
+  var promise = self._wallet.getBlockchain().sendTx(tx.toHex())
+    .then(function () {
+      return self.execute(function (walletState) {
+        return Q()
+          .then(function () { return walletState.getTxManager().sendTx(tx) })
+          .then(function () { return walletState.getTxManager().updateTx(tx, {status: TX_STATUS.pending}) })
+          .then(function () { return walletState.getCoinManager().addTx(tx) })
+          .then(function () { return walletState.getCoinManager().updateTx(tx) })
+          .then(function () { return walletState.getHistoryManager().addTx(tx) })
+          .then(function () { return walletState.getHistoryManager().updateTx(tx) })
+          .then(function () { return {commit: true, saveNow: true} })
+      })
+    })
+
+  return Q(promise)
 }
 
 /**
