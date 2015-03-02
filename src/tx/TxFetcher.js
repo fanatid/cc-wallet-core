@@ -1,5 +1,7 @@
 var events = require('events')
 var inherits = require('util').inherits
+var _ = require('lodash')
+var Q = require('q')
 
 var util = require('../util')
 var verify = require('../verify')
@@ -76,31 +78,43 @@ TxFetcher.prototype._addEventListeners = function () {
 }
 
 /**
+ * @param {function} fn
+ * @return {function}
+ */
+function makeSerial(fn) {
+  var queue = []
+
+  return function () {
+    var ctx = this
+
+    var args = Array.prototype.slice.call(arguments)
+
+    var deferred = Q.defer()
+
+    queue.push(deferred)
+    if (queue.length === 1) {
+      queue[0].resolve()
+    }
+
+    return deferred.promise
+      .then(function () { return fn.apply(ctx, args) })
+      .finally(function () {
+        queue.shift()
+        if (queue.length > 0) {
+          queue[0].resolve()
+        }
+      })
+  }
+}
+
+/**
  * @param {string} address
  */
 TxFetcher.prototype._sync = function (address) {
   var self = this
   if (!self._syncAddresses.has(address)) {
-    self._syncAddresses.set(address, {count: 0, promise: Promise.resolve()})
-  }
-
-  self._syncAddresses.get(address).count += 1
-
-  self._syncEnter()
-  self._syncAddresses.get(address).promise
-    .then(function () {
-      if (self._syncAddresses.get(address).count === 0) {
-        return
-      }
-
-      var deferred = {}
-      deferred.promise = new Promise(function (resolve) {
-        deferred.resolve = resolve
-      })
-
-      self._syncAddresses.set(address, {count: 0, promise: deferred.promise})
-
-      self._wallet.getBlockchain().getHistory(address)
+    self._syncAddresses.set(address, makeSerial(function () {
+      return self._wallet.getBlockchain().getHistory(address)
         .then(function (entries) {
           /** @todo Upgrade 0 to null for unconfirmed */
           entries = entries.map(function (entry) {
@@ -109,17 +123,13 @@ TxFetcher.prototype._sync = function (address) {
 
           return self._wallet.getStateManager().historySync(address, entries)
         })
-        .then(function () {
-          self._syncExit()
-          deferred.resolve()
+    }))
+  }
 
-        }, function (error) {
-          self._syncExit()
-          deferred.resolve()
-          self.emit('error', error)
-
-        })
-    })
+  self._syncEnter()
+  self._syncAddresses.get(address)()
+    .finally(self._syncExit.bind(self))
+    .done()
 }
 
 /**
