@@ -142,8 +142,7 @@ function Wallet(opts) {
       blockchainjs.network[opts.name], [null].concat(opts.args))
     return new Network()
   })
-  self.networkSwitcher = new blockchainjs.network.Switcher(
-    self.networks, {spv: opts.blockchain.name === 'Verified'})
+  self.networkSwitcher = self.networks[0]
   if (opts.autoConnect) {
     self.networkSwitcher.connect()
   }
