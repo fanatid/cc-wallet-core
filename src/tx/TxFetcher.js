@@ -29,7 +29,7 @@ function TxFetcher(wallet) {
   util.SyncMixin.call(this)
 
   this._wallet = wallet
-  this._syncAddresses = new Map()
+  this._syncAddresses = {}
   this._addEventListeners()
 }
 
@@ -111,8 +111,8 @@ function makeSerial(fn) {
  */
 TxFetcher.prototype._sync = function (address) {
   var self = this
-  if (!self._syncAddresses.has(address)) {
-    self._syncAddresses.set(address, makeSerial(function () {
+  if (typeof self._syncAddresses[address] === 'undefined') {
+    self._syncAddresses[address] = makeSerial(function () {
       return self._wallet.getBlockchain().getHistory(address)
         .then(function (entries) {
           /** @todo Upgrade 0 to null for unconfirmed */
@@ -122,11 +122,11 @@ TxFetcher.prototype._sync = function (address) {
 
           return self._wallet.getStateManager().historySync(address, entries)
         })
-    }))
+    })
   }
 
   self._syncEnter()
-  self._syncAddresses.get(address)()
+  self._syncAddresses[address]()
     .finally(self._syncExit.bind(self))
     .done()
 }
