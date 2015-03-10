@@ -417,7 +417,7 @@ Wallet.prototype.subscribeAndSyncAddress = function (address, cb) {
     return timers.setImmediate(cb, null)
   }
 
-  this.txFetcher.once(function () { cb(null) })
+  this.txFetcher.once('syncStop', function () { cb(null) })
 }
 
 /**
@@ -434,7 +434,7 @@ Wallet.prototype.subscribeAndSyncAllAddresses = function (cb) {
     return timers.setImmediate(cb, null)
   }
 
-  this.txFetcher.once(function () { cb(null) })
+  this.txFetcher.once('syncStop', function () { cb(null) })
 }
 
 /**

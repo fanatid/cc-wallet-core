@@ -139,7 +139,7 @@ OperationalTx.prototype.selectCoins = function (colorValue, feeEstimator, cb) {
     }
 
     /** @todo Better coins selection algorithm */
-    var promise = Q()
+    var promise = Q.resolve()
     coins.forEach(function (coin) {
       promise = promise.then(function () {
         if (selectedCoinsColorValue.getValue() >= requiredSum.getValue()) {

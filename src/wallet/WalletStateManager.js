@@ -308,7 +308,7 @@ WalletStateManager.prototype.sendTx = function (tx) {
   var promise = self._wallet.getBlockchain().sendTx(tx.toHex())
     .then(function () {
       return self.execute(function (walletState) {
-        return Q()
+        return Q.resolve()
           .then(function () { return walletState.getTxManager().sendTx(tx) })
           .then(function () { return walletState.getTxManager().updateTx(tx, {status: TX_STATUS.pending}) })
           .then(function () { return walletState.getCoinManager().addTx(tx) })
@@ -319,7 +319,7 @@ WalletStateManager.prototype.sendTx = function (tx) {
       })
     })
 
-  return Q(promise)
+  return Q.fcall(function () { return promise })
 }
 
 /**
@@ -345,10 +345,10 @@ WalletStateManager.prototype.historySync = function (address, entries) {
     return self.execute(function (walletState) {
       var tx = walletState.getTxManager().getTx(txId)
       if (tx === null) {
-        return Q({commit: false})
+        return Q.resolve({commit: false})
       }
 
-      var promise = Q()
+      var promise = Q.resolve()
       promise = promise.then(function () { return walletState.getTxManager().revertTx(tx, address) })
       promise = promise.then(function () { return walletState.getCoinManager().revertTx(tx) })
       promise = promise.then(function () { return walletState.getHistoryManager().revertTx(tx) })
@@ -365,10 +365,10 @@ WalletStateManager.prototype.historySync = function (address, entries) {
         var txHeight = walletState.getTxManager().getTxData(entry.txId).height
         var isTouchedAddress = walletState.getTxManager().isTouchedAddress(entry.txId, address)
         if (txHeight === entry.height && isTouchedAddress) {
-          return Q({commit: false})
+          return Q.resolve({commit: false})
         }
 
-        var promise = Q()
+        var promise = Q.resolve()
         promise = promise.then(function () {
           return walletState.getTxManager().updateTx(tx, {status: status, height: entry.height, tAddress: address})
         })
@@ -382,7 +382,7 @@ WalletStateManager.prototype.historySync = function (address, entries) {
       self._wallet.getBlockchain().getTx(entry.txId)
         .then(function (txHex) {
           var tx = bitcoin.Transaction.fromHex(txHex)
-          var promise = Q()
+          var promise = Q.resolve()
           promise = promise.then(function () {
             return walletState.getTxManager().addTx(tx, {status: status, height: entry.height, tAddresses: address})
           })
@@ -416,7 +416,7 @@ WalletStateManager.prototype.freezeCoins = function (coins, opts, cb) {
 
   this.execute(function (walletState) {
     walletState.getCoinManager().freezeCoins(coins, opts)
-    return Q({commit: true})
+    return Q.resolve({commit: true})
 
   }).done(
     function () { cb(null) },
@@ -433,7 +433,7 @@ WalletStateManager.prototype.unfreezeCoins = function (coins, cb) {
 
   this.execute(function (walletState) {
     walletState.getCoinManager().unfreezeCoins(coins)
-    return Q({commit: true})
+    return Q.resolve({commit: true})
 
   }).done(
     function () { cb(null) },

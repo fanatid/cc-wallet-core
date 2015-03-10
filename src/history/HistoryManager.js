@@ -214,7 +214,7 @@ HistoryManager.prototype.addTx = function (tx) {
  */
 HistoryManager.prototype.updateTx = function () {
   this._resortHistoryRecords()
-  return Q()
+  return Q.resolve()
 }
 
 /**

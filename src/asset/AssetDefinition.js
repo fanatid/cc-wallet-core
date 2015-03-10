@@ -96,7 +96,7 @@ AssetDefinition.prototype.parseValue = function (portion) {
   var value = parseInt(items[0]) * this.unit
 
   if (!_.isUndefined(items[1])) {
-    var centString = items[1] + Array(this.unit.toString().length).join('0')
+    var centString = items[1] + new Array(this.unit.toString().length).join('0')
     var centValue = parseInt(centString.slice(0, this.unit.toString().length - 1))
 
     if (!isNaN(centValue)) {

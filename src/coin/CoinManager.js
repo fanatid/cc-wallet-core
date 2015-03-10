@@ -118,7 +118,7 @@ CoinManager.prototype.addTx = function (tx) {
  * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
  * @return {external:Q.Promise}
  */
-CoinManager.prototype.updateTx = function () { return Q() }
+CoinManager.prototype.updateTx = function () { return Q.resolve() }
 
 /**
  * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx

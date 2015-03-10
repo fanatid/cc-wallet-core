@@ -1,6 +1,5 @@
 var events = require('events')
 var inherits = require('util').inherits
-var _ = require('lodash')
 var Q = require('q')
 
 var util = require('../util')
