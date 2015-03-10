@@ -1,6 +1,6 @@
 {
   "name": "cc-wallet-core",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "",
   "main": "./src/index.js",
   "keywords": [],
@@ -27,7 +27,7 @@
     "blockchainjs": "0.2.0",
     "bs58": "2.0.1",
     "buffer-equal": "0.0.1",
-    "coloredcoinjs-lib": "git://github.com/chromaway/coloredcoinjs-lib.git#v0.3.2",
+    "coloredcoinjs-lib": "git://github.com/chromaway/coloredcoinjs-lib.git#v0.3.3",
     "errno": "0.1.1",
     "lodash": "2.4.1",
     "q": "1.1.2"
