@@ -21,7 +21,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/chromaway/cc-wallet-core"
+    "url": "git://github.com/chromaway/cc-wallet-core.git"
   },
   "dependencies": {
     "blockchainjs": "0.2.0",
