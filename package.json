@@ -1,23 +1,13 @@
 {
   "name": "cc-wallet-core", 
-  "contributors": [
-    {
-      "name": "Henrik Hjelte", 
-      "email": "henrik@henrikhjelte.com"
-    }, 
-    {
-      "name": "Alex Mizrahi", 
-      "email": "alex.mizrahi@gmail.com"
-    }, 
-    {
-      "name": "Fabian Barkhau", 
-      "email": "fabian.barkhau@gmail.com"
-    }
-  ], 
+  "repository": {
+    "url": "git://github.com/chromaway/cc-wallet-core.git", 
+    "type": "git"
+  }, 
   "author": "Fomichev Kirill <fanatid@ya.ru>", 
   "testling": {
-    "harness": "mocha-bdd", 
     "files": "test/*.js", 
+    "harness": "mocha-bdd", 
     "browsers": [
       "chrome/20..latest", 
       "firefox/21..latest", 
@@ -28,27 +18,9 @@
       "android-browser/4.2..latest"
     ]
   }, 
-  "repository": {
-    "url": "git://github.com/chromaway/cc-wallet-core.git", 
-    "type": "git"
-  }, 
-  "version": "0.6.3", 
-  "dependencies": {
-    "bs58": "2.0.1", 
-    "lodash": "2.4.1", 
-    "buffer-equal": "0.0.1", 
-    "blockchainjs": "0.2.0", 
-    "errno": "0.1.1", 
-    "q": "1.1.2", 
-    "coloredcoinjs-lib": "https://github.com/chromaway/coloredcoinjs-lib#v0.3.4"
-  }, 
-  "scripts": {
-    "test": "grunt test"
-  }, 
-  "keywords": [], 
   "devDependencies": {
     "jshint-stylish": "1.0.0", 
-    "grunt-contrib-watch": "0.6.1", 
+    "grunt": "0.4.5", 
     "coveralls": "2.11.2", 
     "grunt-browserify": "3.2.0", 
     "istanbul": "0.3.2", 
@@ -63,7 +35,35 @@
     "replay": "1.12.0", 
     "grunt-contrib-clean": "0.6.0", 
     "grunt-mocha-istanbul": "2.2.0", 
-    "grunt": "0.4.5"
+    "grunt-contrib-watch": "0.6.1"
+  }, 
+  "version": "0.6.4", 
+  "contributors": [
+    {
+      "name": "Henrik Hjelte", 
+      "email": "henrik@henrikhjelte.com"
+    }, 
+    {
+      "name": "Alex Mizrahi", 
+      "email": "alex.mizrahi@gmail.com"
+    }, 
+    {
+      "name": "Fabian Barkhau", 
+      "email": "fabian.barkhau@gmail.com"
+    }
+  ], 
+  "scripts": {
+    "test": "grunt test"
+  }, 
+  "keywords": [], 
+  "dependencies": {
+    "bs58": "2.0.1", 
+    "lodash": "2.4.1", 
+    "errno": "0.1.1", 
+    "blockchainjs": "0.2.0", 
+    "q": "1.1.2", 
+    "buffer-equal": "0.0.1", 
+    "coloredcoinjs-lib": "git://github.com/chromaway/coloredcoinjs-lib#v0.3.5"
   }, 
   "main": "./src/index.js", 
   "description": ""
