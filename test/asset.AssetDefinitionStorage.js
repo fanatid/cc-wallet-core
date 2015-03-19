@@ -1,8 +1,9 @@
 var expect = require('chai').expect
 
-var errors = require('../src').errors
-var SyncStorage = require('../src').SyncStorage
-var AssetDefinitionStorage = require('../src').asset.AssetDefinitionStorage
+var ccWallet = require('../lib')
+var errors = ccWallet.errors
+var SyncStorage = ccWallet.SyncStorage
+var AssetDefinitionStorage = ccWallet.asset.AssetDefinitionStorage
 
 
 describe('asset.AssetDefinitionStorage', function () {

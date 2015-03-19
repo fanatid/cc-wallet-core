@@ -17,7 +17,7 @@
       "email": "fabian.barkhau@gmail.com"
     }
   ],
-  "main": "./src/index.js",
+  "main": "./lib/index.js",
   "repository": {
     "url": "git://github.com/chromaway/cc-wallet-core.git",
     "type": "git"
@@ -49,13 +49,13 @@
   },
   "scripts": {
     "build": "npm run-script compile && npm run-script uglify",
-    "compile": "browserify src/index.js -s ccWallet -o ccwallet.js",
+    "compile": "browserify lib/index.js -s ccWallet -o ccwallet.js",
     "compile_test": "browserify test/*.js >ccwallet.test.js",
-    "coverage": "istanbul cover _mocha -- --timeout 200000 test/*.js",
+    "coverage": "istanbul cover _mocha -- test/*.js",
     "coveralls": "npm run-script coverage && coveralls <coverage/lcov.info",
     "clean": "rm -f ccwallet.js ccwallet.min.js ccwallet.test.js",
-    "lint": "jshint src/*.js src/**.js test/*.js && jscs src/*.js src/**.js test/*.js",
+    "lint": "jshint lib/*.js lib/**.js test/*.js && jscs lib/*.js lib/**.js test/*.js",
     "uglify": "uglify -s ccwallet.js -o ccwallet.min.js",
-    "test": "istanbul test mocha -- --reporter spec --timeout 200000 test/*.js"
+    "test": "istanbul test mocha -- --reporter spec test/*.js"
   }
 }

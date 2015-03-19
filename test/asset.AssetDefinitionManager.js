@@ -1,7 +1,8 @@
 var expect = require('chai').expect
 
-var cclib = require('../src/cclib')
-var asset = require('../src/asset')
+var ccWallet = require('../lib')
+var cclib = ccWallet.cclib
+var asset = ccWallet.asset
 
 
 describe('asset.AssetDefinitionManager', function () {

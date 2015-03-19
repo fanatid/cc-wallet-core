@@ -1,9 +1,10 @@
 var expect = require('chai').expect
 var _ = require('lodash')
 
-var cclib = require('../src').cclib
-var errors = require('../src').errors
-var AssetDefinition = require('../src/asset').AssetDefinition
+var ccWallet = require('../lib')
+var cclib = ccWallet.cclib
+var errors = ccWallet.errors
+var AssetDefinition = ccWallet.asset.AssetDefinition
 
 
 describe('asset.AssetDefinition', function () {

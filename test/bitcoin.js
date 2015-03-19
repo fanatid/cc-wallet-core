@@ -1,6 +1,6 @@
 var expect = require('chai').expect
 
-var bitcoin = require('../src/bitcoin')
+var bitcoin = require('../lib').bitcoin
 
 
 describe('bitcoin', function () {

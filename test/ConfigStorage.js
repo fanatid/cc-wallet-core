@@ -1,7 +1,8 @@
 var expect = require('chai').expect
 
-var ConfigStorage = require('../src/ConfigStorage')
-var SyncStorage = require('../src/SyncStorage')
+var ccWallet = require('../lib')
+var ConfigStorage = require('../lib/ConfigStorage')
+var SyncStorage = ccWallet.SyncStorage
 
 
 describe('ConfigStorage', function () {

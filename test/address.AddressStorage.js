@@ -1,8 +1,9 @@
 var expect = require('chai').expect
 
-var errors = require('../src').errors
-var SyncStorage = require('../src').SyncStorage
-var AddressStorage = require('../src').address.AddressStorage
+var ccWallet = require('../lib')
+var errors = ccWallet.errors
+var SyncStorage = ccWallet.SyncStorage
+var AddressStorage = ccWallet.address.AddressStorage
 
 
 describe('address.AddressStorage', function () {

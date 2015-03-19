@@ -2,13 +2,15 @@ var expect = require('chai').expect
 
 var Q = require('q')
 
-var cccore = require('../src')
+var cccore = require('../lib')
 var errors = cccore.errors
 var AssetDefinition = cccore.asset.AssetDefinition
 var Wallet = cccore.Wallet
 
 
 describe('Wallet', function () {
+  this.timeout(240 * 1000)
+
   var wallet
   var seed = '123131123131123131123131123131123131123131123131123131'
   var goldAsset = {
