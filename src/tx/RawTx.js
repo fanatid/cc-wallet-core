@@ -232,9 +232,9 @@ RawTx.prototype.getOutputIndexesForAddress = function (wallet, address) {
   var network = wallet.getBitcoinNetwork()
   var tx = this.toTransaction(true)
   var indexes = []
-  tx.outs.forEach(function(out, index){
+  tx.outs.forEach(function (out, index) {
     var outaddrs = bitcoin.util.getAddressesFromScript(out.script, network)
-    if(outaddrs.indexOf(address) >= 0){
+    if (outaddrs.indexOf(address) >= 0) {
       indexes.push(index)
     }
   })
@@ -245,7 +245,7 @@ RawTx.prototype.getOutputAddresses = function (wallet) {
   var network = wallet.getBitcoinNetwork()
   var tx = this.toTransaction(true)
   var addresses = []
-  tx.outs.forEach(function(txout){
+  tx.outs.forEach(function (txout) {
     var outaddrs = bitcoin.util.getAddressesFromScript(txout.script, network)
     addresses.push.apply(addresses, outaddrs)
   })

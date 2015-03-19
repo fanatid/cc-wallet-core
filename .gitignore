@@ -1,6 +1,7 @@
 coverage
 node_modules
 
-cc-wallet-core.js
-cc-wallet-core.min.js
-cc-wallet-core.test.js
+ccwallet.js
+ccwallet.min.js
+ccwallet.test.js
+npm-debug.log

@@ -8,36 +8,6 @@ var AssetDefinition = cccore.asset.AssetDefinition
 var Wallet = cccore.Wallet
 
 
-//var replay = require('replay')
-
-// replay.mode = 'record'
-//replay.mode = 'cheat'
-
-//describe.replayMode = replay.mode
-
-/* Replay modes:
-
-bloody -- All requests go out, none get replayed. Use this if you want
-to remember what life was before you started using node-replay. Also,
-to test your code against changes to 3rd party API, because these do
-happen. Too often.
-
-cheat -- Replays recorded responses, and allow HTTP outbound
-requests. This is mighty convenient when you're writing new tests or
-changing code to make new, un-recorded HTTP requests, but you haven't
-quite settled on which requets to make, so you don't want any
-responses recorded quite yet.
-
-record -- Replays recorded responses, or captures responses for future
-replay. Use this whenever you're writing new tests or code that makes
-new HTTP requests.
-
-replay -- Replays recorded responses, does not allow outbound
-requests. This is the default mode. That's another way of saying,
-"you'll be running in this mode most of the time".
-
-*/
-
 describe('Wallet', function () {
   var wallet
   var seed = '123131123131123131123131123131123131123131123131123131'
