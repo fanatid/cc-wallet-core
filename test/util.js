@@ -24,7 +24,6 @@ describe('util', function () {
       localStorage.clear()
       wallet = new Wallet({
         testnet: true,
-        networks: [{name: 'ElectrumJS', args: [{testnet: true}]}],
         blockchain: {name: 'Naive'},
         spendUnconfirmedCoins: true,
         systemAssetDefinitions: [goldAsset]

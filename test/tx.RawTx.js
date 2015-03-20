@@ -24,7 +24,6 @@ describe('tx.RawTx', function () {
     rawTx = RawTx.fromHex(btcHexTx)
     wallet = new Wallet({
       testnet: true,
-      networks: [{name: 'ElectrumJS', args: [{testnet: true}]}],
       blockchain: {name: 'Naive'},
       spendUnconfirmedCoins: true
     })
