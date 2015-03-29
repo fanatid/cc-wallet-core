@@ -2,11 +2,13 @@ var expect = require('chai').expect
 var _ = require('lodash')
 var Q = require('q')
 
-var cccore = require('../src')
+var cccore = require('../lib')
 var Wallet = cccore.Wallet
 
 
 describe('util', function () {
+  this.timeout(240 * 1000)
+
   it('createCoins', function (done) {
     var goldAsset = {
       monikers: ['gold'],

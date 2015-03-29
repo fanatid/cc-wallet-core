@@ -1,7 +1,7 @@
 var expect = require('chai').expect
 
 var BIP39 = require('bip39')
-var cccore = require('../src')
+var cccore = require('../lib')
 var ColorTarget = cccore.cclib.ColorTarget
 var ColorValue = cccore.cclib.ColorValue
 var Wallet = cccore.Wallet
@@ -14,6 +14,8 @@ var password = fixtures.wallet.alice.password
 
 
 describe('tx.RawTx', function () {
+  this.timeout(240 * 1000)
+
   var rawTx
   var wallet
 

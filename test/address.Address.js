@@ -1,11 +1,11 @@
 var expect = require('chai').expect
 
-var cclib = require('../src/cclib')
+var ccWallet = require('../lib')
+var address = ccWallet.address
+var asset = ccWallet.asset
+var cclib = ccWallet.cclib
 var bitcoin = cclib.bitcoin
 var networks = bitcoin.networks
-
-var address = require('../src/address')
-var asset = require('../src/asset')
 
 
 describe('address.Address', function () {
