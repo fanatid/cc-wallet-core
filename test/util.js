@@ -61,7 +61,7 @@ describe('util', function () {
       expect(matched).to.be.equal(3)
 
     }).finally(function () {
-      wallet.getNetwork().disconnect()
+      wallet.getConnector().disconnect()
       wallet.removeListeners()
       wallet.clearStorage()
 

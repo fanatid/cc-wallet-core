@@ -33,7 +33,7 @@ describe('tx.RawTx', function () {
 
   afterEach(function () {
     rawTx = null
-    wallet.getNetwork().disconnect()
+    wallet.getConnector().disconnect()
     wallet.removeListeners()
     wallet.clearStorage()
     wallet = null

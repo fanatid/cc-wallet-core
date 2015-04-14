@@ -26,11 +26,11 @@ describe('Wallet', function () {
       blockchain: {name: 'Naive'},
       spendUnconfirmedCoins: true
     })
-    wallet.getNetwork().once('connect', done)
+    wallet.getConnector().once('connect', done)
   }
 
   function cleanup() {
-    wallet.getNetwork().disconnect()
+    wallet.disconnect()
     wallet.removeListeners()
     wallet.clearStorage()
     wallet = null
