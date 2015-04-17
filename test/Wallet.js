@@ -23,17 +23,14 @@ describe('Wallet', function () {
     localStorage.clear()
     wallet = new Wallet({
       testnet: true,
-      networks: [{name: 'ElectrumJS', args: [{testnet: true}]}],
-      autoConnect: false,
       blockchain: {name: 'Naive'},
       spendUnconfirmedCoins: true
     })
-    wallet.getNetwork().once('connect', done)
-    wallet.getNetwork().connect()
+    wallet.getConnector().once('connect', done)
   }
 
   function cleanup() {
-    wallet.getNetwork().disconnect()
+    wallet.disconnect()
     wallet.removeListeners()
     wallet.clearStorage()
     wallet = null

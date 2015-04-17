@@ -24,7 +24,6 @@ describe('util', function () {
       localStorage.clear()
       wallet = new Wallet({
         testnet: true,
-        networks: [{name: 'ElectrumJS', args: [{testnet: true}]}],
         blockchain: {name: 'Naive'},
         spendUnconfirmedCoins: true,
         systemAssetDefinitions: [goldAsset]
@@ -62,7 +61,7 @@ describe('util', function () {
       expect(matched).to.be.equal(3)
 
     }).finally(function () {
-      wallet.getNetwork().disconnect()
+      wallet.getConnector().disconnect()
       wallet.removeListeners()
       wallet.clearStorage()
 
