@@ -23,10 +23,11 @@ describe('Wallet', function () {
     localStorage.clear()
     wallet = new Wallet({
       testnet: true,
-      blockchain: {name: 'Naive'},
+      blockchain: {name: 'Verified'},
       spendUnconfirmedCoins: true
     })
     wallet.getConnector().once('connect', done)
+    wallet.on('error', function (e) {console.error(e)})
   }
 
   function cleanup() {

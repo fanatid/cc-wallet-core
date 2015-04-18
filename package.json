@@ -37,7 +37,7 @@
     "coveralls": "npm run-script coverage && coveralls <coverage/lcov.info", 
     "coverage": "istanbul cover _mocha -- test/*.js", 
     "lint": "jshint lib/*.js lib/**.js test/*.js && jscs lib/*.js lib/**.js test/*.js", 
-    "compile_test": "browserify test/*.js >ccwallet.test.js", 
+    "compile_test": "browserify test/*.js >cc-wallet-core.test.js", 
     "compile": "browserify lib/index.js -s ccWallet -o ccwallet.js", 
     "build": "npm run-script compile && npm run-script uglify", 
     "clean": "rm -f ccwallet.js ccwallet.min.js ccwallet.test.js", 
