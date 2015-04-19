@@ -23,7 +23,7 @@
     "url": "git://github.com/chromaway/cc-wallet-core.git", 
     "type": "git"
   }, 
-  "version": "0.7.0", 
+  "version": "0.7.1", 
   "dependencies": {
     "bs58": "2.0.1", 
     "lodash": "2.4.1", 
