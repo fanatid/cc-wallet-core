@@ -1,6 +1,5 @@
 {
   "license": "MIT", 
-  "name": "cc-wallet-core", 
   "contributors": [
     {
       "name": "Henrik Hjelte", 
@@ -15,32 +14,33 @@
       "email": "fabian.barkhau@gmail.com"
     }
   ], 
-  "author": "Fomichev Kirill <fanatid@ya.ru>", 
-  "bugs": {
-    "url": "https://github.com/chromaway/cc-wallet-core/issues"
-  }, 
   "repository": {
     "url": "git://github.com/chromaway/cc-wallet-core.git", 
     "type": "git"
   }, 
-  "version": "0.7.3", 
+  "author": "Fomichev Kirill <fanatid@ya.ru>", 
+  "description": "", 
+  "bugs": {
+    "url": "https://github.com/chromaway/cc-wallet-core/issues"
+  }, 
+  "version": "0.7.4", 
   "dependencies": {
     "bs58": "2.0.1", 
     "lodash": "2.4.1", 
     "errno": "0.1.1", 
-    "blockchainjs": "git://github.com/chromaway/blockchainjs#v0.3.3", 
+    "blockchainjs": "git@github.com:chromaway/blockchainjs.git#v0.3.3", 
     "q": "1.1.2", 
     "buffer-equal": "0.0.1", 
-    "coloredcoinjs-lib": "git://github.com/chromaway/coloredcoinjs-lib#v0.3.5"
+    "coloredcoinjs-lib": "git://github.com/chromaway/coloredcoinjs-lib#v0.3.6"
   }, 
   "scripts": {
     "coveralls": "npm run-script coverage && coveralls <coverage/lcov.info", 
-    "coverage": "istanbul cover _mocha -- test/*.js", 
+    "clean": "rm -f ccwallet.js ccwallet.min.js ccwallet.test.js", 
     "lint": "jshint lib/*.js lib/**.js test/*.js && jscs lib/*.js lib/**.js test/*.js", 
     "compile_test": "browserify test/*.js >cc-wallet-core.test.js", 
     "compile": "browserify lib/index.js -s ccWallet -o ccwallet.js", 
     "build": "npm run-script compile && npm run-script uglify", 
-    "clean": "rm -f ccwallet.js ccwallet.min.js ccwallet.test.js", 
+    "coverage": "istanbul cover _mocha -- test/*.js", 
     "test": "istanbul test mocha -- --reporter spec test/*.js", 
     "uglify": "uglify -s ccwallet.js -o ccwallet.min.js"
   }, 
@@ -57,5 +57,5 @@
     "browserify": "9.0.3"
   }, 
   "main": "./lib/index.js", 
-  "description": ""
+  "name": "cc-wallet-core"
 }
