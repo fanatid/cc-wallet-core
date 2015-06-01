@@ -1,8 +1,8 @@
 /* global describe, beforeEach, afterEach, it */
 var expect = require('chai').expect
 
-var ccWallet = require('../lib')
-var ConfigStorage = require('../lib/ConfigStorage')
+var ccWallet = require('../')
+var ConfigStorage = require('../').ConfigStorage
 var SyncStorage = ccWallet.SyncStorage
 
 describe.skip('ConfigStorage', function () {

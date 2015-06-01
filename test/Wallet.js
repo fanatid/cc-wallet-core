@@ -3,7 +3,7 @@ var expect = require('chai').expect
 
 var Q = require('q')
 
-var cccore = require('../lib')
+var cccore = require('../')
 var errors = cccore.errors
 var AssetDefinition = cccore.asset.AssetDefinition
 var Wallet = cccore.Wallet

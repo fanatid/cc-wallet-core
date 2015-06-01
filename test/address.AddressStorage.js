@@ -1,7 +1,7 @@
 /* global describe, beforeEach, afterEach, it */
 var expect = require('chai').expect
 
-var ccWallet = require('../lib')
+var ccWallet = require('../')
 var errors = ccWallet.errors
 var SyncStorage = ccWallet.SyncStorage
 var AddressStorage = ccWallet.address.AddressStorage

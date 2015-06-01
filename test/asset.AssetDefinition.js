@@ -2,7 +2,7 @@
 var expect = require('chai').expect
 var _ = require('lodash')
 
-var ccWallet = require('../lib')
+var ccWallet = require('../')
 var cclib = ccWallet.cclib
 var errors = ccWallet.errors
 var AssetDefinition = ccWallet.asset.AssetDefinition

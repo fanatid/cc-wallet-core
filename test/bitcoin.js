@@ -1,7 +1,7 @@
 /* global describe, it */
 var expect = require('chai').expect
 
-var bitcoin = require('../lib').bitcoin
+var bitcoin = require('../').bitcoin
 
 describe.skip('bitcoin', function () {
   // 304765

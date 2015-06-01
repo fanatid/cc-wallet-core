@@ -1,7 +1,7 @@
 /* global describe, beforeEach, afterEach, it */
 var expect = require('chai').expect
 
-var ccWallet = require('../lib')
+var ccWallet = require('../')
 var cclib = ccWallet.cclib
 var asset = ccWallet.asset
 
