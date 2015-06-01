@@ -4,8 +4,7 @@ var ccWallet = require('../lib')
 var cclib = ccWallet.cclib
 var asset = ccWallet.asset
 
-
-describe('asset.AssetDefinitionManager', function () {
+describe.skip('asset.AssetDefinitionManager', function () {
   var cdStorage
   var cdManager
   var adStorage

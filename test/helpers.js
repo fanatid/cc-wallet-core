@@ -2,12 +2,11 @@ var expect = require('chai').expect
 
 var bitcoin = require('../lib').cclib.bitcoin
 
-
 /**
  * @param {Network} network
  * @return {Q.Promise<string>}
  */
-function sendCoins(network) {
+function sendCoins (network) {
   var hdnode = bitcoin.HDNode.fromSeedHex('00000000000000000000000000000000', bitcoin.networks.testnet)
   // address is mhW9PYb5jsjpsS5x6dcLrZj7gPvw9mMb9c
   var address = hdnode.pubKey.getAddress(bitcoin.networks.testnet).toBase58Check()
@@ -32,10 +31,8 @@ function sendCoins(network) {
       expect(txId).to.equal(tx.getId())
       return txId
     })
-
   })
 }
-
 
 module.exports = {
   sendCoins: sendCoins

@@ -5,8 +5,7 @@ var Q = require('q')
 var cccore = require('../lib')
 var Wallet = cccore.Wallet
 
-
-describe('util', function () {
+describe.skip('util', function () {
   this.timeout(240 * 1000)
 
   it('createCoins', function (done) {
@@ -21,7 +20,6 @@ describe('util', function () {
     var coinValue = Math.floor(Math.random() * 10000 + 10000)
 
     Q.fcall(function () {
-      localStorage.clear()
       wallet = new Wallet({
         testnet: true,
         blockchain: {name: 'Naive'},
@@ -34,7 +32,6 @@ describe('util', function () {
       var deferred = Q.defer()
       wallet.once('syncStop', deferred.resolve)
       return deferred.promise
-
     }).then(function () {
       var opts = {
         assetdef: assetdef,
@@ -43,13 +40,11 @@ describe('util', function () {
         seed: seed
       }
       return Q.nfcall(cccore.util.createCoins, wallet, opts)
-
     }).then(function () {
       var coinQuery = wallet.getCoinQuery()
       coinQuery = coinQuery.includeUnconfirmed()
       coinQuery = coinQuery.onlyColoredAs(assetdef.getColorDefinitions())
       return Q.ninvoke(coinQuery, 'getCoins')
-
     }).then(function (coinList) {
       var matched = _.chain(coinList.getCoins())
         .invoke('toRawCoin')
@@ -59,12 +54,10 @@ describe('util', function () {
         .value()
 
       expect(matched).to.be.equal(3)
-
     }).finally(function () {
       wallet.getConnector().disconnect()
       wallet.removeListeners()
       wallet.clearStorage()
-
     }).done(done, done)
   })
 })

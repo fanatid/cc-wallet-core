@@ -12,15 +12,13 @@ var btcHexTx = fixtures.tx.uncolored2.raw // mainnet, 2 uncolored outputs
 var mnemonic = fixtures.wallet.alice.mnemonic
 var password = fixtures.wallet.alice.password
 
-
-describe('tx.RawTx', function () {
+describe.skip('tx.RawTx', function () {
   this.timeout(240 * 1000)
 
   var rawTx
   var wallet
 
   beforeEach(function (done) {
-    localStorage.clear()
     rawTx = RawTx.fromHex(btcHexTx)
     wallet = new Wallet({
       testnet: true,

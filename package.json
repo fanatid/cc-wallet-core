@@ -1,55 +1,98 @@
 {
-  "license": "MIT", 
-  "description": "", 
-  "repository": {
-    "url": "git://github.com/chromaway/cc-wallet-core.git", 
-    "type": "git"
-  }, 
-  "author": "Fomichev Kirill <fanatid@ya.ru>", 
-  "devDependencies": {
-    "coveralls": "2.11.2", 
-    "istanbul": "0.3.2", 
-    "chai": "1.10.0", 
-    "mocha": "2.1.0", 
-    "bip39": "2.1.0", 
-    "jshint": "2.6.3", 
-    "jscs": "1.11.3"
-  }, 
+  "name": "cc-wallet-core",
+  "version": "0.9.0",
+  "description": "Bitcoin wallet with colored coins support.",
+  "keywords": [
+    "bitcoin",
+    "testnet",
+    "colored",
+    "coins",
+    "colored coins",
+    "wallet"
+  ],
   "bugs": {
     "url": "https://github.com/chromaway/cc-wallet-core/issues"
-  }, 
-  "version": "0.8.10", 
+  },
+  "license": "MIT",
+  "author": "Chromaway AB",
   "contributors": [
     {
-      "name": "Henrik Hjelte", 
-      "email": "henrik@henrikhjelte.com"
-    }, 
-    {
-      "name": "Alex Mizrahi", 
+      "name": "Alex Mizrahi",
       "email": "alex.mizrahi@gmail.com"
-    }, 
+    },
     {
-      "name": "Fabian Barkhau", 
+      "name": "Fabian Barkhau",
       "email": "fabian.barkhau@gmail.com"
+    },
+    {
+      "name": "Henrik Hjelte",
+      "email": "henrik@henrikhjelte.com"
+    },
+    {
+      "name": "Kirill Fomichev",
+      "email": "fanatid@ya.ru"
     }
-  ], 
+  ],
+  "files": [
+    "lib",
+    "index.js",
+    "LICENSE",
+    "README.md"
+  ],
+  "main": "./lib/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chromaway/cc-wallet-core.git"
+  },
   "scripts": {
-    "coveralls": "npm run-script coverage && coveralls <coverage/lcov.info", 
-    "coverage": "istanbul cover _mocha -- test/*.js", 
-    "lint": "jshint lib/*.js lib/**.js test/*.js && jscs lib/*.js lib/**.js test/*.js", 
-    "clean": "rm -f ccwallet.js ccwallet.min.js ccwallet.test.js", 
-    "test": "istanbul test mocha -- --reporter spec test/*.js"
-  }, 
-  "keywords": [], 
+    "coverage": "find test/ -type f -name \"*.js\" | xargs istanbul cover _mocha",
+    "coveralls": "npm run coverage && coveralls <coverage/lcov.info",
+    "lint": "standard",
+    "test": "npm run test:node && npm run test:browser",
+    "test:browser": "karma start karma.conf.js",
+    "test:node": "find test/ -type f -name \"*.js\" | xargs istanbul test mocha -- --reporter spec"
+  },
   "dependencies": {
-    "bs58": "2.0.1", 
-    "lodash": "2.4.1", 
-    "errno": "0.1.1", 
-    "blockchainjs": "git://github.com/chromaway/blockchainjs.git#v0.3.12", 
-    "q": "1.1.2", 
-    "buffer-equal": "0.0.1", 
-    "coloredcoinjs-lib": "git://github.com/chromaway/coloredcoinjs-lib#v0.3.8"
-  }, 
-  "main": "./lib/index.js", 
-  "name": "cc-wallet-core"
+    "blockchainjs": "^0.3.12",
+    "bs58": "^3.0.0",
+    "buffer-equal": "^0.0.1",
+    "errno": "=0.1.1",
+    "localStorage": "^1.0.3",
+    "lodash": "^3.10.1",
+    "q": "=1.1.2",
+    "store": "^1.3.17"
+  },
+  "peerDependencies": {
+    "bitcore-lib": "^0.13.7",
+    "coloredcoinjs-lib": "^0.6.3"
+  },
+  "devDependencies": {
+    "bip39": "^2.1.0",
+    "chai": "^3.4.0",
+    "chai-as-promised": "^5.1.0",
+    "coveralls": "^2.11.3",
+    "istanbul": "^0.4.0",
+    "karma": "^0.13.14",
+    "karma-browserify": "^4.4.0",
+    "karma-chrome-launcher": "^0.2.1",
+    "karma-detect-browsers": "^2.0.2",
+    "karma-firefox-launcher": "^0.1.6",
+    "karma-mocha": "^0.2.0",
+    "mocha": "^2.2.5",
+    "standard": "^5.3.1"
+  },
+  "engines": {
+    "node": ">=0.10"
+  },
+  "standard": {
+    "globals": [
+      "describe",
+      "xdescribe",
+      "before",
+      "after",
+      "beforeEach",
+      "afterEach",
+      "it"
+    ]
+  }
 }
