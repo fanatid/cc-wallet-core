@@ -1,3 +1,4 @@
+/* global describe, beforeEach, afterEach, it */
 var expect = require('chai').expect
 
 var ccWallet = require('../lib')
@@ -5,8 +6,7 @@ var errors = ccWallet.errors
 var SyncStorage = ccWallet.SyncStorage
 var AssetDefinitionStorage = ccWallet.asset.AssetDefinitionStorage
 
-
-describe('asset.AssetDefinitionStorage', function () {
+describe.skip('asset.AssetDefinitionStorage', function () {
   var storage
 
   beforeEach(function () {

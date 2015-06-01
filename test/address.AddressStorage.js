@@ -1,3 +1,4 @@
+/* global describe, beforeEach, afterEach, it */
 var expect = require('chai').expect
 
 var ccWallet = require('../lib')
@@ -5,8 +6,7 @@ var errors = ccWallet.errors
 var SyncStorage = ccWallet.SyncStorage
 var AddressStorage = ccWallet.address.AddressStorage
 
-
-describe('address.AddressStorage', function () {
+describe.skip('address.AddressStorage', function () {
   var storage
   // master key:
   // xprv9s21ZrQH143K2JF8RafpqtKiTbsbaxEeUaMnNHsm5o6wCW3z8ySyH4UxFVSfZ8n7ESu7fgir8imbZKLYVBxFPND1pniTZ81vKfd45EHKX73

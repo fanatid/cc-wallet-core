@@ -1,11 +1,11 @@
+/* global describe, beforeEach, afterEach, it */
 var expect = require('chai').expect
 
 var ccWallet = require('../lib')
 var ConfigStorage = require('../lib/ConfigStorage')
 var SyncStorage = ccWallet.SyncStorage
 
-
-describe('ConfigStorage', function () {
+describe.skip('ConfigStorage', function () {
   var cStorage
 
   beforeEach(function () {

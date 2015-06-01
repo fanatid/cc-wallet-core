@@ -1,3 +1,4 @@
+/* global describe, before, after, beforeEach, afterEach, it */
 var expect = require('chai').expect
 
 var Q = require('q')
@@ -7,8 +8,7 @@ var errors = cccore.errors
 var AssetDefinition = cccore.asset.AssetDefinition
 var Wallet = cccore.Wallet
 
-
-describe('Wallet', function () {
+describe.skip('Wallet', function () {
   this.timeout(240 * 1000)
 
   var wallet
@@ -19,8 +19,7 @@ describe('Wallet', function () {
     unit: 10
   }
 
-  function setup(done) {
-    localStorage.clear()
+  function setup (done) {
     wallet = new Wallet({
       testnet: true,
       blockchain: {name: 'Verified'},
@@ -30,7 +29,7 @@ describe('Wallet', function () {
     wallet.on('error', function (e) {console.error(e)})
   }
 
-  function cleanup() {
+  function cleanup () {
     wallet.disconnect()
     wallet.removeListeners()
     wallet.clearStorage()
@@ -172,12 +171,12 @@ describe('Wallet', function () {
     after(cleanup)
 
     var fixtures = [
-      {method: 'getAvailableBalance',   moniker: 'bitcoin', balance: 63326039},
-      {method: 'getAvailableBalance',   moniker: 'gold',    balance: 2000},
-      {method: 'getTotalBalance',       moniker: 'bitcoin', balance: 63326039},
-      {method: 'getTotalBalance',       moniker: 'gold',    balance: 2000},
+      {method: 'getAvailableBalance', moniker: 'bitcoin', balance: 63326039},
+      {method: 'getAvailableBalance', moniker: 'gold', balance: 2000},
+      {method: 'getTotalBalance', moniker: 'bitcoin', balance: 63326039},
+      {method: 'getTotalBalance', moniker: 'gold', balance: 2000},
       {method: 'getUnconfirmedBalance', moniker: 'bitcoin', balance: 0},
-      {method: 'getUnconfirmedBalance', moniker: 'gold',    balance: 0}
+      {method: 'getUnconfirmedBalance', moniker: 'gold', balance: 0}
     ]
 
     fixtures.forEach(function (fixture) {

@@ -1,3 +1,4 @@
+/* global describe, beforeEach, it */
 var expect = require('chai').expect
 var _ = require('lodash')
 
@@ -6,8 +7,7 @@ var cclib = ccWallet.cclib
 var errors = ccWallet.errors
 var AssetDefinition = ccWallet.asset.AssetDefinition
 
-
-describe('asset.AssetDefinition', function () {
+describe.skip('asset.AssetDefinition', function () {
   var cdStorage
   var cdManager
   var assetdef
@@ -29,7 +29,7 @@ describe('asset.AssetDefinition', function () {
       colorDescs: [''],
       unit: 2
     }
-    var fn = function () { new AssetDefinition(cdManager, data) }
+    var fn = function () { data = new AssetDefinition(cdManager, data) }
     expect(fn).to.throw(errors.VerifyPowerError)
   })
 
@@ -47,18 +47,18 @@ describe('asset.AssetDefinition', function () {
 
   describe('parseValue', function () {
     var fixtures = [
-      {value: 'a.00',       unit: 100000000, expect: NaN},
+      {value: 'a.00', unit: 100000000, expect: NaN},
       {value: '0.00000000', unit: 100000000, expect: 0},
       {value: '0.00000001', unit: 100000000, expect: 1},
-      {value: '0.2',        unit: 100000000, expect: 20000000},
+      {value: '0.2', unit: 100000000, expect: 20000000},
       {value: '0.99999999', unit: 100000000, expect: 99999999},
-      {value: '1',          unit: 100000000, expect: 100000000},
-      {value: '1.00000',    unit: 100000000, expect: 100000000},
+      {value: '1', unit: 100000000, expect: 100000000},
+      {value: '1.00000', unit: 100000000, expect: 100000000},
       {value: '1.00000001', unit: 100000000, expect: 100000001},
-      {value: '5.345000',   unit: 100000000, expect: 534500000},
-      {value: '1.1',        unit: 1,         expect: 1},
-      {value: '1.1',        unit: 10,        expect: 11},
-      {value: '1.1',        unit: 100,       expect: 110}
+      {value: '5.345000', unit: 100000000, expect: 534500000},
+      {value: '1.1', unit: 1, expect: 1},
+      {value: '1.1', unit: 10, expect: 11},
+      {value: '1.1', unit: 100, expect: 110}
     ]
 
     fixtures.forEach(function (fixture, index) {
@@ -80,9 +80,9 @@ describe('asset.AssetDefinition', function () {
 
   describe('formatValue', function () {
     var fixtures = [
-      {value: 0,         expect: '0.00000000'},
-      {value: 1,         expect: '0.00000001'},
-      {value: 99999999,  expect: '0.99999999'},
+      {value: 0, expect: '0.00000000'},
+      {value: 1, expect: '0.00000001'},
+      {value: 99999999, expect: '0.99999999'},
       {value: 100000000, expect: '1.00000000'},
       {value: 100000001, expect: '1.00000001'},
       {value: 534500000, expect: '5.34500000'}

@@ -1,61 +1,93 @@
 {
-  "license": "MIT", 
-  "description": "", 
-  "repository": {
-    "url": "git://github.com/chromaway/cc-wallet-core.git", 
-    "type": "git"
-  }, 
-  "author": "Fomichev Kirill <fanatid@ya.ru>", 
-  "devDependencies": {
-    "coveralls": "2.11.2", 
-    "istanbul": "0.3.2", 
-    "chai": "1.10.0", 
-    "mocha": "2.1.0", 
-    "bip39": "2.1.0", 
-    "jshint": "2.6.3", 
-    "uglify": "0.1.1", 
-    "jscs": "1.11.3", 
-    "browserify": "9.0.3"
-  }, 
+  "name": "cc-wallet-core",
+  "version": "0.8.4",
+  "description": "Bitcoin wallet with colored coins support.",
+  "keywords": [
+    "bitcoin",
+    "testnet",
+    "colored",
+    "coins",
+    "colored coins",
+    "wallet"
+  ],
   "bugs": {
     "url": "https://github.com/chromaway/cc-wallet-core/issues"
-  }, 
-  "version": "0.8.4", 
+  },
+  "license": "MIT",
+  "author": "Chromaway AB",
   "contributors": [
     {
-      "name": "Henrik Hjelte", 
-      "email": "henrik@henrikhjelte.com"
-    }, 
-    {
-      "name": "Alex Mizrahi", 
+      "name": "Alex Mizrahi",
       "email": "alex.mizrahi@gmail.com"
-    }, 
+    },
     {
-      "name": "Fabian Barkhau", 
+      "name": "Fabian Barkhau",
       "email": "fabian.barkhau@gmail.com"
+    },
+    {
+      "name": "Henrik Hjelte",
+      "email": "henrik@henrikhjelte.com"
+    },
+    {
+      "name": "Kirill Fomichev",
+      "email": "fanatid@ya.ru"
     }
-  ], 
+  ],
+  "files": [
+    "lib",
+    "index.js",
+    "LICENSE",
+    "README.md"
+  ],
+  "main": "./index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chromaway/cc-wallet-core.git"
+  },
   "scripts": {
-    "coveralls": "npm run-script coverage && coveralls <coverage/lcov.info", 
-    "coverage": "istanbul cover _mocha -- test/*.js", 
-    "lint": "jshint lib/*.js lib/**.js test/*.js && jscs lib/*.js lib/**.js test/*.js", 
-    "compile_test": "browserify test/*.js >cc-wallet-core.test.js", 
-    "compile": "browserify lib/index.js -s ccWallet -o ccwallet.js", 
-    "build": "npm run-script compile && npm run-script uglify", 
-    "clean": "rm -f ccwallet.js ccwallet.min.js ccwallet.test.js", 
-    "test": "istanbul test mocha -- --reporter spec test/*.js", 
-    "uglify": "uglify -s ccwallet.js -o ccwallet.min.js"
-  }, 
-  "keywords": [], 
+    "compile": "browserify index.js -s ccwallet -o ccwallet.js -g [ uglifyify --no-sourcemap ]",
+    "compile:debug": "browserify index.js -s ccwallet -o ccwallet.js -d",
+    "compile:test": "find test/ -type f -name \"*.js\" | xargs browserify -o ccwallet.test.js",
+    "coverage": "find test/ -type f -name \"*.js\" | xargs istanbul cover _mocha --",
+    "coveralls": "npm run coverage && coveralls <coverage/lcov.info",
+    "clean": "rm -f ccwallet.js ccwallet.test.js",
+    "karma": "./node_modules/karma/bin/karma start karma.conf.js",
+    "lint": "standard",
+    "test": "npm run test:node && npm run test:browser",
+    "test:node": "find test/ -type f -name \"*.js\" | xargs istanbul test mocha -- --reporter spec",
+    "test:browser": "npm run compile:test && npm run karma"
+  },
   "dependencies": {
-    "bs58": "2.0.1", 
-    "lodash": "2.4.1", 
-    "errno": "0.1.1", 
-    "blockchainjs": "git://github.com/chromaway/blockchainjs.git#v0.3.8", 
-    "q": "1.1.2", 
-    "buffer-equal": "0.0.1", 
+    "bs58": "=2.0.1",
+    "lodash": "=3.9.3",
+    "errno": "=0.1.1",
+    "blockchainjs": "git://github.com/chromaway/blockchainjs.git#v0.3.8",
+    "q": "=1.1.2",
+    "buffer-equal": "=0.0.1",
     "coloredcoinjs-lib": "git://github.com/chromaway/coloredcoinjs-lib#v0.3.6"
-  }, 
-  "main": "./lib/index.js", 
-  "name": "cc-wallet-core"
+  },
+  "devDependencies": {
+    "bip39": "^2.1.0",
+    "browserify": "9.0.8",
+    "chai": "^2.3.0",
+    "coveralls": "^2.11.2",
+    "istanbul": "^0.3.14",
+    "karma": "^0.12.35",
+    "karma-chrome-launcher": "^0.1.12",
+    "karma-detect-browsers": "^2.0.0",
+    "karma-firefox-launcher": "^0.1.6",
+    "karma-mocha": "^0.1.10",
+    "mocha": "^2.2.5",
+    "standard": "^4.0.0",
+    "uglifyify": "^3.0.1"
+  },
+  "engines": {
+    "node": "~0.10.x"
+  },
+  "standard": {
+    "ignore": [
+      "ccwallet.js",
+      "ccwallet.test.js"
+    ]
+  }
 }
