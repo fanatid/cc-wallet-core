@@ -1,6 +1,6 @@
 var expect = require('chai').expect
 
-var ccWallet = require('../lib')
+var ccWallet = require('../')
 var address = ccWallet.address
 var cclib = ccWallet.cclib
 var networks = {} // cclib.bitcoin.networks

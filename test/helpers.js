@@ -1,6 +1,6 @@
 var expect = require('chai').expect
 
-var bitcoin = require('../lib').cclib.bitcoin
+var bitcoin// = require('../').cclib.bitcoin
 
 /**
  * @param {Network} network

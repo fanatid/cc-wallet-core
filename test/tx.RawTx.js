@@ -1,9 +1,9 @@
 var expect = require('chai').expect
 
 var BIP39 = require('bip39')
-var cccore = require('../lib')
-var ColorTarget = cccore.cclib.ColorTarget
-var ColorValue = cccore.cclib.ColorValue
+var cccore = require('../')
+var ColorTarget// = cccore.cclib.ColorTarget
+var ColorValue// = cccore.cclib.ColorValue
 var Wallet = cccore.Wallet
 var RawTx = cccore.tx.RawTx
 

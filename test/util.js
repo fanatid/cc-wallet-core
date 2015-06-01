@@ -2,13 +2,14 @@ var expect = require('chai').expect
 var _ = require('lodash')
 var Q = require('q')
 
-var cccore = require('../lib')
+var cccore = require('../')
 var Wallet = cccore.Wallet
 
 describe.skip('util', function () {
   this.timeout(240 * 1000)
 
-  it('createCoins', function (done) {
+  // was moved to wallet
+  it.skip('createCoins', function (done) {
     var goldAsset = {
       monikers: ['gold'],
       colorDescs: ['epobc:b95323a763fa507110a89ab857af8e949810cf1e67e91104cd64222a04ccd0bb:0:180679'],
