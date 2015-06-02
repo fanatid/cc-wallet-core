@@ -1,9 +1,9 @@
 /* global describe, beforeEach, afterEach, it */
 var expect = require('chai').expect
 
-var ccWallet = require('../')
-var address = ccWallet.address
-var cclib = ccWallet.cclib
+var ccwallet = require('../')
+var address = ccwallet.address
+var cclib = ccwallet.cclib
 var networks = {} // cclib.bitcoin.networks
 
 describe.skip('address.AddressManager', function () {

@@ -1,10 +1,10 @@
 /* global describe, beforeEach, afterEach, it */
 var expect = require('chai').expect
 
-var ccWallet = require('../')
-var errors = ccWallet.errors
-var SyncStorage = ccWallet.SyncStorage
-var AssetDefinitionStorage = ccWallet.asset.AssetDefinitionStorage
+var ccwallet = require('../')
+var errors = ccwallet.errors
+var SyncStorage = ccwallet.SyncStorage
+var AssetDefinitionStorage = ccwallet.asset.AssetDefinitionStorage
 
 describe.skip('asset.AssetDefinitionStorage', function () {
   var storage

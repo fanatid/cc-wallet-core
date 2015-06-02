@@ -4,8 +4,13 @@ var ccwallet = module.exports
 ccwallet.errors = require('./lib/errors')
 
 //
+ccwallet.asset = {}
+ccwallet.asset.AssetDefinition = require('./lib/asset/definition')
+ccwallet.asset.AssetManager = require('./lib/asset/manager')
+ccwallet.asset.AssetTarget = require('./lib/asset/target')
+ccwallet.asset.AssetValue = require('./lib/asset/value')
+
 ccwallet.address = require('./lib/address'),
-ccwallet.asset = require('./lib/asset'),
 ccwallet.coin = require('./lib/coin'),
 ccwallet.history = require('./lib/history'),
 ccwallet.tx = require('./lib/tx'),

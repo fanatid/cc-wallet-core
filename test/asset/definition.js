@@ -1,48 +1,62 @@
 /* global describe, beforeEach, it */
 var expect = require('chai').expect
 var _ = require('lodash')
+var cclib = require('coloredcoinjs-lib')
 
-var ccWallet = require('../')
-var cclib = ccWallet.cclib
-var errors = ccWallet.errors
-var AssetDefinition = ccWallet.asset.AssetDefinition
+var ccwallet = require('../../')
 
-describe.skip('asset.AssetDefinition', function () {
-  var cdStorage
-  var cdManager
-  var assetdef
+describe('asset.adefinition', function () {
+  var cdstorage
+  var cdmanager
+  var adef
 
-  beforeEach(function () {
-    cdStorage = new cclib.ColorDefinitionStorage()
-    cdManager = new cclib.ColorDefinitionManager(cdStorage)
-    assetdef = new AssetDefinition(cdManager, {
+  beforeEach(function (done) {
+    cdstorage = new cclib.storage.definitions.Memory()
+    cdmanager = new cclib.definitions.Manager(cdstorage)
+    adef = new ccwallet.asset.AssetDefinition(cdmanager, {
       monikers: ['bitcoin'],
-      colorDescs: [''],
+      cdescs: [''],
       unit: 100000000
     })
-    cdStorage.clear()
+    cdstorage.ready.done(done, done)
   })
 
-  it('constructor throw error', function () {
-    var data = {
-      monikers: ['bitcoin'],
-      colorDescs: [''],
-      unit: 2
+  it('a few items in cdescs throw error', function () {
+    var fn = function () {
+      adef = new ccwallet.asset.AssetDefinition(cdmanager, {
+        monikers: ['bitcoin'],
+        cdescs: ['', ''],
+        unit: 10
+      })
     }
-    var fn = function () { data = new AssetDefinition(cdManager, data) }
-    expect(fn).to.throw(errors.VerifyPowerError)
+    expect(fn).to.throw(ccwallet.errors.MultiColorNotSupportedError)
+  })
+
+  it('unit is not power of 10', function () {
+    var fn = function () {
+      adef = new ccwallet.asset.AssetDefinition(cdmanager, {
+        monikers: ['bitcoin'],
+        cdescs: [''],
+        unit: 3
+      })
+    }
+    expect(fn).to.throw(ccwallet.errors.VerifyPowerError)
   })
 
   it('getId', function () {
-    expect(assetdef.getId()).to.equal('JNu4AFCBNmTE1')
+    expect(adef.getId()).to.equal('JNu4AFCBNmTE1')
   })
 
   it('getMonikers', function () {
-    expect(assetdef.getMonikers()).to.deep.equal(['bitcoin'])
+    expect(adef.getMonikers()).to.deep.equal(['bitcoin'])
   })
 
   it('getColorSet', function () {
-    expect(assetdef.getColorSet()).to.be.instanceof(cclib.ColorSet)
+    expect(adef.getColorSet()).to.be.instanceof(cclib.ColorSet)
+  })
+
+  it('getUnit', function () {
+    expect(adef.getUnit()).to.equal(100000000)
   })
 
   describe('parseValue', function () {
@@ -63,8 +77,9 @@ describe.skip('asset.AssetDefinition', function () {
 
     fixtures.forEach(function (fixture, index) {
       it('#' + (index * 2), function () {
-        assetdef.unit = fixture.unit
-        expect(assetdef.parseValue(fixture.value)).to.deep.equal(fixture.expect)
+        adef._unit = fixture.unit
+        var result = adef.parseValue(fixture.value)
+        expect(result).to.deep.equal(fixture.expect)
       })
 
       it('#' + (index * 2 + 1), function () {
@@ -72,8 +87,9 @@ describe.skip('asset.AssetDefinition', function () {
           return
         }
 
-        assetdef.unit = fixture.unit
-        expect(assetdef.parseValue('-' + fixture.value)).to.deep.equal(-fixture.expect)
+        adef._unit = fixture.unit
+        var result = adef.parseValue('-' + fixture.value)
+        expect(result).to.deep.equal(-fixture.expect)
       })
     })
   })
@@ -90,7 +106,8 @@ describe.skip('asset.AssetDefinition', function () {
 
     fixtures.forEach(function (fixture, index) {
       it('#' + (index * 2), function () {
-        expect(assetdef.formatValue(fixture.value)).to.deep.equal(fixture.expect)
+        var result = adef.formatValue(fixture.value)
+        expect(result).to.deep.equal(fixture.expect)
       })
 
       it('#' + (index * 2 + 1), function () {
@@ -98,13 +115,14 @@ describe.skip('asset.AssetDefinition', function () {
           return
         }
 
-        expect(assetdef.formatValue(-fixture.value)).to.deep.equal('-' + fixture.expect)
+        var result = adef.formatValue(-fixture.value)
+        expect(result).to.deep.equal('-' + fixture.expect)
       })
     })
   })
 
-  it('getData', function () {
-    expect(assetdef.getData()).to.deep.equal({
+  it.skip('getData', function () {
+    expect(adef.getData()).to.deep.equal({
       monikers: ['bitcoin'],
       colorDescs: [''],
       unit: 100000000

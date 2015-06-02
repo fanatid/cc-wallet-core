@@ -1,10 +1,10 @@
 /* global describe, beforeEach, afterEach, it */
 var expect = require('chai').expect
 
-var ccWallet = require('../')
-var errors = ccWallet.errors
-var SyncStorage = ccWallet.SyncStorage
-var AddressStorage = ccWallet.address.AddressStorage
+var ccwallet = require('../')
+var errors = ccwallet.errors
+var SyncStorage = ccwallet.SyncStorage
+var AddressStorage = ccwallet.address.AddressStorage
 
 describe.skip('address.AddressStorage', function () {
   var storage

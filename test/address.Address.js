@@ -1,10 +1,10 @@
 /* global describe, beforeEach, afterEach, it */
 var expect = require('chai').expect
 
-var ccWallet = require('../')
-var address = ccWallet.address
-var asset = ccWallet.asset
-var cclib = ccWallet.cclib
+var ccwallet = require('../')
+var address = ccwallet.address
+var asset = ccwallet.asset
+var cclib = ccwallet.cclib
 var networks = {} // bitcoin.networks
 
 describe.skip('address.Address', function () {
