@@ -18,6 +18,10 @@ ccwallet.Wallet = require('./lib/wallet').Wallet,
 ccwallet.WalletState = require('./lib/wallet').WalletState,
 ccwallet.WalletStateManager = require('./lib/wallet').WalletStateManager
 
+// storage
+ccwallet.storage = {}
+ccwallet.storage.definitions = require('./lib/storage/definitions')
+
 // util
 ccwallet.util = {}
 ccwallet.util.bitcoin = require('./lib/util/bitcoin')

@@ -5,7 +5,7 @@ var cclib = require('coloredcoinjs-lib')
 
 var ccwallet = require('../../')
 
-describe('asset.adefinition', function () {
+describe('asset.AssetDefinition', function () {
   var cdstorage
   var cdmanager
   var adef
