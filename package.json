@@ -42,7 +42,7 @@
   "main": "./index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/chromaway/cc-wallet-core.git"
+    "url": "https://github.com/chromaway/cc-wallet-core"
   },
   "scripts": {
     "compile": "browserify index.js -s ccwallet -o ccwallet.js -g [ uglifyify --no-sourcemap ]",
@@ -58,16 +58,16 @@
     "test:browser": "npm run compile:test && npm run karma"
   },
   "dependencies": {
-    "bitcore": "=0.12.7",
+    "bitcore": "=0.12.8",
     "blockchainjs": "git://github.com/chromaway/blockchainjs.git#v0.3.8",
-    "bluebird": "=2.9.27",
-    "bs58": "=2.0.1",
+    "bluebird": "^2.9.27",
+    "bs58": "^2.0.1",
     "buffer-equal": "=0.0.1",
     "coloredcoinjs-lib": "git://github.com/fanatid/coloredcoinjs-lib#v0.4.0",
     "errno": "=0.1.1",
-    "lodash": "=3.9.3",
+    "lodash": "^3.9.3",
     "q": "=1.1.2",
-    "ready-mixin": "=0.0.5"
+    "ready-mixin": "^0.0.5"
   },
   "devDependencies": {
     "bip39": "^2.1.0",
@@ -85,6 +85,7 @@
     "uglifyify": "^3.0.1"
   },
   "browser": {
+    "./lib/storage/addresses/index.js": "./lib/storage/addresses/index-browser.js",
     "./lib/storage/definitions/index.js": "./lib/storage/definitions/index-browser.js"
   },
   "standard": {

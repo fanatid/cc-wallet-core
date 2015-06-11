@@ -1,5 +1,4 @@
 /* global describe, beforeEach, it */
-/* globals Promise:true */
 var expect = require('chai').expect
 var _ = require('lodash')
 var Promise = require('bluebird')
