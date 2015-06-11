@@ -15,7 +15,7 @@ module.exports = function (opts) {
     ldescribe = xdescribe
   }
 
-  ldescribe('storage.definitions.' + opts.StorageCls.name, function () {
+  ldescribe('storage.assets.' + opts.StorageCls.name, function () {
     var storage
     var records = _.range(4).map(function () {
       return {

@@ -5,7 +5,7 @@ var Q = require('q')
 
 var cccore = require('../')
 var errors = cccore.errors
-var AssetDefinition = cccore.asset.AssetDefinition
+var AssetDefinition = cccore.assets.AssetDefinition
 var Wallet = cccore.Wallet
 
 describe.skip('Wallet', function () {

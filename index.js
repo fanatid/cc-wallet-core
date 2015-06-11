@@ -5,15 +5,16 @@ ccwallet.errors = require('./lib/errors')
 
 //
 ccwallet.addresses = {}
+ccwallet.addresses.Address = require('./lib/addresses/address')
+ccwallet.addresses.Manager = require('./lib/addresses/manager')
 
 //
-ccwallet.asset = {}
-ccwallet.asset.AssetDefinition = require('./lib/asset/definition')
-ccwallet.asset.AssetManager = require('./lib/asset/manager')
-ccwallet.asset.AssetTarget = require('./lib/asset/target')
-ccwallet.asset.AssetValue = require('./lib/asset/value')
+ccwallet.assets = {}
+ccwallet.assets.AssetDefinition = require('./lib/assets/definition')
+ccwallet.assets.AssetManager = require('./lib/assets/manager')
+ccwallet.assets.AssetTarget = require('./lib/assets/target')
+ccwallet.assets.AssetValue = require('./lib/assets/value')
 
-ccwallet.address = require('./lib/address')
 ccwallet.coin = require('./lib/coin')
 ccwallet.history = require('./lib/history')
 ccwallet.tx = require('./lib/tx')
@@ -24,7 +25,7 @@ ccwallet.WalletStateManager = require('./lib/wallet').WalletStateManager
 // storage
 ccwallet.storage = {}
 ccwallet.storage.addresses = require('./lib/storage/addresses')
-ccwallet.storage.definitions = require('./lib/storage/definitions')
+ccwallet.storage.assets = require('./lib/storage/assets')
 
 // util
 ccwallet.util = {}

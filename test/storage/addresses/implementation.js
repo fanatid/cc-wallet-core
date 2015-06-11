@@ -14,7 +14,7 @@ module.exports = function (opts) {
     ldescribe = xdescribe
   }
 
-  ldescribe('storage.definitions.' + opts.StorageCls.name, function () {
+  ldescribe('storage.addresses.' + opts.StorageCls.name, function () {
     var storage
     // master key:
     // xprv9s21ZrQH143K2JF8RafpqtKiTbsbaxEeUaMnNHsm5o6wCW3z8ySyH4UxFVSfZ8n7ESu7fgir8imbZKLYVBxFPND1pniTZ81vKfd45EHKX73
@@ -91,8 +91,11 @@ module.exports = function (opts) {
 
       it('get', function (done) {
         storage.get()
-          .then(function (data) {
-            expect(_.sortBy(data)).to.deep.equal(_.sortBy(records))
+          .then(function (items) {
+            expect(items).to.have.length(records.length)
+            items.forEach(function (item) {
+              expect(_.find(records, item)).to.be.not.undefined
+            })
           })
           .done(done, done)
       })

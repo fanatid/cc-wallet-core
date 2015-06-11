@@ -5,9 +5,8 @@ var cclib = require('../../../')
 
 require('./implementation')({
   describe: describe,
-  StorageCls: cclib.storage.definitions.WebSQL,
+  StorageCls: cclib.storage.assets.LocalStorage,
   storageOpts: {
-    dbName: random.getRandomBuffer(5).toString('hex'),
-    dbSize: 1
+    prefix: random.getRandomBuffer(10).toString('hex')
   }
 })

@@ -3,6 +3,6 @@ var ccwallet = require('../../../')
 
 require('./implementation')({
   describe: describe,
-  StorageCls: ccwallet.storage.definitions.Memory,
+  StorageCls: ccwallet.storage.assets.Memory,
   storageOpts: {}
 })

@@ -4,15 +4,15 @@ var _ = require('lodash')
 
 var ccwallet = require('../../../')
 
-describe('storage.definitions.Interface', function () {
+describe('storage.assets.Interface', function () {
   var storage
 
   beforeEach(function () {
-    storage = new ccwallet.storage.definitions.Interface()
+    storage = new ccwallet.storage.assets.Interface()
   })
 
   it('isAvailable', function () {
-    expect(ccwallet.storage.definitions.Interface.isAvailable()).to.be.false
+    expect(ccwallet.storage.assets.Interface.isAvailable()).to.be.false
   })
 
   it('#resolve', function (done) {

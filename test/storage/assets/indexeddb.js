@@ -5,8 +5,8 @@ var cclib = require('../../../')
 
 require('./implementation')({
   describe: describe,
-  StorageCls: cclib.storage.definitions.LocalStorage,
+  StorageCls: cclib.storage.assets.IndexedDB,
   storageOpts: {
-    prefix: random.getRandomBuffer(10).toString('hex')
+    dbName: random.getRandomBuffer(5).toString('hex')
   }
 })

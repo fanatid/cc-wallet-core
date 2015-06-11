@@ -22,8 +22,8 @@ describe('asset.AssetManager', function () {
   beforeEach(function (done) {
     cdstorage = new cclib.storage.definitions.Memory()
     cdmanager = new cclib.definitions.Manager(cdstorage)
-    adstorage = new ccwallet.storage.definitions.Memory()
-    admanager = new ccwallet.asset.AssetManager(cdmanager, adstorage)
+    adstorage = new ccwallet.storage.assets.Memory()
+    admanager = new ccwallet.assets.AssetManager(cdmanager, adstorage)
     Promise.all([cdstorage.ready, adstorage.ready])
       .then(_.noop).done(done, done)
   })
@@ -37,7 +37,7 @@ describe('asset.AssetManager', function () {
       }
       admanager.resolve(data)
         .then(function (adef) {
-          expect(adef).to.be.instanceof(ccwallet.asset.AssetDefinition)
+          expect(adef).to.be.instanceof(ccwallet.assets.AssetDefinition)
           expect(adef.getId()).to.equal('JNu4AFCBNmTE1')
         })
         .done(done, done)
@@ -48,7 +48,7 @@ describe('asset.AssetManager', function () {
 
       admanager.on('new', function (adef) {
         Promise.try(function () {
-          expect(adef).to.be.instanceof(ccwallet.asset.AssetDefinition)
+          expect(adef).to.be.instanceof(ccwallet.assets.AssetDefinition)
           if (adef.getMonikers()[0] === 'bitcoin') {
             return
           }
@@ -61,7 +61,7 @@ describe('asset.AssetManager', function () {
 
       admanager.resolve(epobcdata)
         .then(function (adef) {
-          expect(adef).to.be.instanceof(ccwallet.asset.AssetDefinition)
+          expect(adef).to.be.instanceof(ccwallet.assets.AssetDefinition)
           expect(adef.getId()).to.equal(epobcId)
           return deferred.promise
         })
@@ -85,7 +85,7 @@ describe('asset.AssetManager', function () {
       admanager.get()
         .then(function (adefs) {
           expect(adefs).to.have.length(1)
-          expect(adefs[0]).to.be.instanceof(ccwallet.asset.AssetDefinition)
+          expect(adefs[0]).to.be.instanceof(ccwallet.assets.AssetDefinition)
           expect(adefs[0].getId()).to.equal('JNu4AFCBNmTE1')
         })
         .done(done, done)
@@ -94,7 +94,7 @@ describe('asset.AssetManager', function () {
     it('by moniker, asset definition', function (done) {
       admanager.get({moniker: 'bitcoin'})
         .then(function (adef) {
-          expect(adef).to.be.instanceof(ccwallet.asset.AssetDefinition)
+          expect(adef).to.be.instanceof(ccwallet.assets.AssetDefinition)
           expect(adef.getId()).to.equal('JNu4AFCBNmTE1')
         })
         .done(done, done)
@@ -111,7 +111,7 @@ describe('asset.AssetManager', function () {
     it('by cdesc, asset definition', function (done) {
       admanager.get({cdesc: cclib.definitions.Manager.getUncolored().getDesc()})
         .then(function (adef) {
-          expect(adef).to.be.instanceof(ccwallet.asset.AssetDefinition)
+          expect(adef).to.be.instanceof(ccwallet.assets.AssetDefinition)
           expect(adef.getId()).to.equal('JNu4AFCBNmTE1')
         })
         .done(done, done)
