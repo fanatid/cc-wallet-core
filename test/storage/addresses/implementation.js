@@ -61,9 +61,6 @@ module.exports = function (opts) {
       it('passed', function (done) {
         var data = {account: 0, chain: 0, index: 0, pubkey: pkHex1}
         storage.add(data)
-          .then(function (record) {
-            expect(record).to.deep.equal(data)
-          })
           .done(done, done)
       })
     })
