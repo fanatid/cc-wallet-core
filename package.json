@@ -84,7 +84,8 @@
   },
   "browser": {
     "./lib/storage/addresses/index.js": "./lib/storage/addresses/index-browser.js",
-    "./lib/storage/assets/index.js": "./lib/storage/assets/index-browser.js"
+    "./lib/storage/assets/index.js": "./lib/storage/assets/index-browser.js",
+    "./lib/storage/config/index.js": "./lib/storage/config/index-browser.js"
   },
   "standard": {
     "ignore": [

@@ -1,4 +1,6 @@
 /* global describe, beforeEach, it */
+'use strict'
+
 var expect = require('chai').expect
 var bitcore = require('bitcore')
 var cclib = require('coloredcoinjs-lib')

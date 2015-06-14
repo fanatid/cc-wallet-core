@@ -1,3 +1,5 @@
+'use strict'
+
 var ccwallet = module.exports
 
 // library errors
