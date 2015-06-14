@@ -1,9 +1,8 @@
 /* global describe, xdescribe, beforeEach, afterEach, it */
 'use strict'
 
-var expect = require('chai').expect
-
 var _ = require('lodash')
+var expect = require('chai').expect
 var Promise = require('bluebird')
 var random = require('bitcore').crypto.Random
 

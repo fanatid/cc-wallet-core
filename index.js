@@ -28,6 +28,7 @@ ccwallet.WalletStateManager = require('./lib/wallet').WalletStateManager
 ccwallet.storage = {}
 ccwallet.storage.addresses = require('./lib/storage/addresses')
 ccwallet.storage.assets = require('./lib/storage/assets')
+ccwallet.storage.config = require('./lib/storage/config')
 
 // util
 ccwallet.util = {}
