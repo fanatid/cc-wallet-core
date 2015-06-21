@@ -4,39 +4,42 @@
 var _ = require('lodash')
 var expect = require('chai').expect
 var Promise = require('bluebird')
-var random = require('bitcore').crypto.Random
+var crypto = require('crypto')
+
+var cclib = require('../../../')
 
 module.exports = function (opts) {
-  if (opts.StorageCls === undefined) {
+  var StorageCls = cclib.storage.assets[opts.clsName]
+  if (StorageCls === undefined) {
     return
   }
 
   var ldescribe = opts.describe || describe
-  if (!opts.StorageCls.isAvailable()) {
+  if (!StorageCls.isAvailable()) {
     ldescribe = xdescribe
   }
 
-  ldescribe('storage.assets.' + opts.StorageCls.name, function () {
+  ldescribe('storage.assets.' + opts.clsName, function () {
     var storage
     var records = _.range(4).map(function () {
       return {
-        id: random.getRandomBuffer(5).toString('hex'),
-        monikers: [random.getRandomBuffer(10).toString('hex')],
-        cdescs: [random.getRandomBuffer(10).toString('hex')],
+        id: crypto.pseudoRandomBytes(5).toString('hex'),
+        monikers: [crypto.pseudoRandomBytes(10).toString('hex')],
+        cdescs: [crypto.pseudoRandomBytes(10).toString('hex')],
         unit: Math.pow(10, _.random(0, 5))
       }
     })
-    records[1].monikers.push(random.getRandomBuffer(10).toString('hex'))
+    records[1].monikers.push(crypto.pseudoRandomBytes(10).toString('hex'))
     records[1].monikers.sort()
-    records[2].cdescs.push(random.getRandomBuffer(10).toString('hex'))
+    records[2].cdescs.push(crypto.pseudoRandomBytes(10).toString('hex'))
     records[2].cdescs.sort()
-    records[3].monikers.push(random.getRandomBuffer(10).toString('hex'))
+    records[3].monikers.push(crypto.pseudoRandomBytes(10).toString('hex'))
     records[3].monikers.sort()
-    records[3].cdescs.push(random.getRandomBuffer(10).toString('hex'))
+    records[3].cdescs.push(crypto.pseudoRandomBytes(10).toString('hex'))
     records[3].cdescs.sort()
 
     beforeEach(function (done) {
-      storage = new opts.StorageCls(opts.storageOpts)
+      storage = new StorageCls(opts.clsOpts)
       storage.ready.done(done, done)
     })
 
@@ -92,7 +95,7 @@ module.exports = function (opts) {
       })
 
       it('by moniker return null', function (done) {
-        storage.get({moniker: random.getRandomBuffer(10).toString('hex')})
+        storage.get({moniker: crypto.pseudoRandomBytes(10).toString('hex')})
           .then(function (data) {
             expect(data).to.deep.equal(null)
           })

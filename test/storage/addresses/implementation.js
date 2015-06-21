@@ -5,17 +5,20 @@ var _ = require('lodash')
 var expect = require('chai').expect
 var Promise = require('bluebird')
 
+var cclib = require('../../../')
+
 module.exports = function (opts) {
-  if (opts.StorageCls === undefined) {
+  var StorageCls = cclib.storage.addresses[opts.clsName]
+  if (StorageCls === undefined) {
     return
   }
 
   var ldescribe = opts.describe || describe
-  if (!opts.StorageCls.isAvailable()) {
+  if (!StorageCls.isAvailable()) {
     ldescribe = xdescribe
   }
 
-  ldescribe('storage.addresses.' + opts.StorageCls.name, function () {
+  ldescribe('storage.addresses.' + opts.clsName, function () {
     var storage
     // master key:
     // xprv9s21ZrQH143K2JF8RafpqtKiTbsbaxEeUaMnNHsm5o6wCW3z8ySyH4UxFVSfZ8n7ESu7fgir8imbZKLYVBxFPND1pniTZ81vKfd45EHKX73
@@ -23,7 +26,7 @@ module.exports = function (opts) {
     var pkHex2 = '0375d65343d5dcf4527cf712168b41059cb1df513ba89b44108899835329eb643c'
 
     beforeEach(function (done) {
-      storage = new opts.StorageCls(opts.storageOpts)
+      storage = new StorageCls(opts.clsOpts)
       storage.ready.done(done, done)
     })
 

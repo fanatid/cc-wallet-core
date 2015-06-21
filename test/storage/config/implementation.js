@@ -2,23 +2,26 @@
 'use strict'
 
 var expect = require('chai').expect
-var random = require('bitcore').crypto.Random
+var crypto = require('crypto')
+
+var cclib = require('../../../')
 
 module.exports = function (opts) {
-  if (opts.StorageCls === undefined) {
+  var StorageCls = cclib.storage.config[opts.clsName]
+  if (StorageCls === undefined) {
     return
   }
 
   var ldescribe = opts.describe || describe
-  if (!opts.StorageCls.isAvailable()) {
+  if (!StorageCls.isAvailable()) {
     ldescribe = xdescribe
   }
 
-  ldescribe('storage.config.' + opts.StorageCls.name, function () {
+  ldescribe('storage.config.' + opts.clsName, function () {
     var storage
 
     beforeEach(function (done) {
-      storage = new opts.StorageCls(opts.storageOpts)
+      storage = new StorageCls(opts.clsOpts)
       storage.ready.done(done, done)
     })
 
@@ -27,8 +30,8 @@ module.exports = function (opts) {
     })
 
     it('#set', function (done) {
-      var key = random.getRandomBuffer(2).toString('hex')
-      var value = random.getRandomBuffer(5).toString('hex')
+      var key = crypto.pseudoRandomBytes(2).toString('hex')
+      var value = crypto.pseudoRandomBytes(5).toString('hex')
       storage.set(key, value)
         .then(function () {
           return storage.get(key)
@@ -40,8 +43,8 @@ module.exports = function (opts) {
     })
 
     it('#get', function (done) {
-      var key = random.getRandomBuffer(2).toString('hex')
-      var value = random.getRandomBuffer(5).toString('hex')
+      var key = crypto.pseudoRandomBytes(2).toString('hex')
+      var value = crypto.pseudoRandomBytes(5).toString('hex')
       storage.get(key)
         .then(function (data) {
           expect(data).to.be.undefined

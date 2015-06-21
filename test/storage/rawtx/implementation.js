@@ -3,26 +3,28 @@
 
 var _ = require('lodash')
 var expect = require('chai').expect
-var Promise = require('bluebird')
-var random = require('bitcore').crypto.Random
+var crypto = require('crypto')
+
+var cclib = require('../../../')
 
 module.exports = function (opts) {
-  if (opts.StorageCls === undefined) {
+  var StorageCls = cclib.storage.rawtx[opts.clsName]
+  if (StorageCls === undefined) {
     return
   }
 
   var ldescribe = opts.describe || describe
-  if (!opts.StorageCls.isAvailable()) {
+  if (!StorageCls.isAvailable()) {
     ldescribe = xdescribe
   }
 
-  ldescribe('storage.rawtx.' + opts.StorageCls.name, function () {
+  ldescribe('storage.rawtx.' + opts.clsName, function () {
     var storage
-    var txid = random.getRandomBuffer(32).toString('hex')
-    var rawtx = random.getRandomBuffer(_.random(100, 200)).toString('hex')
+    var txid = crypto.pseudoRandomBytes(32).toString('hex')
+    var rawtx = crypto.pseudoRandomBytes(_.random(100, 200)).toString('hex')
 
     beforeEach(function (done) {
-      storage = new opts.StorageCls(opts.storageOpts)
+      storage = new StorageCls(opts.clsOpts)
       storage.ready.done(done, done)
     })
 

@@ -18,26 +18,29 @@ describe('storage.config.Interface', function () {
   })
 
   it('#set', function (done) {
-    storage.set().asCallback(function (err) {
-      expect(err).to.be.instanceof(ccwallet.errors.NotImplemented)
-      done()
-    })
-    .done(_.noop, _.noop)
+    storage.set()
+      .asCallback(function (err) {
+        expect(err).to.be.instanceof(ccwallet.errors.NotImplemented)
+        done()
+      })
+      .done(_.noop, _.noop)
   })
 
   it('#get', function (done) {
-    storage.get().asCallback(function (err) {
-      expect(err).to.be.instanceof(ccwallet.errors.NotImplemented)
-      done()
-    })
-    .done(_.noop, _.noop)
+    storage.get()
+      .asCallback(function (err) {
+        expect(err).to.be.instanceof(ccwallet.errors.NotImplemented)
+        done()
+      })
+      .done(_.noop, _.noop)
   })
 
   it('#clear', function (done) {
-    storage.clear().asCallback(function (err) {
-      expect(err).to.be.instanceof(ccwallet.errors.NotImplemented)
-      done()
-    })
-    .done(_.noop, _.noop)
+    storage.clear()
+      .asCallback(function (err) {
+        expect(err).to.be.instanceof(ccwallet.errors.NotImplemented)
+        done()
+      })
+      .done(_.noop, _.noop)
   })
 })
