@@ -4,10 +4,10 @@
 var expect = require('chai').expect
 var crypto = require('crypto')
 
-var cclib = require('../../../')
+var ccwallet = require('../../../')
 
 module.exports = function (opts) {
-  var StorageCls = cclib.storage.config[opts.clsName]
+  var StorageCls = ccwallet._storage.config[opts.clsName]
   if (StorageCls === undefined) {
     return
   }

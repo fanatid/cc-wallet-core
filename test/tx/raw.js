@@ -1,14 +1,16 @@
 /* global describe, beforeEach, afterEach, it */
+'use strict'
+
 var expect = require('chai').expect
 
 var BIP39 = require('bip39')
-var cccore = require('../')
+// var cccore = require('../../')
 var ColorTarget// = cccore.cclib.ColorTarget
 var ColorValue// = cccore.cclib.ColorValue
-var Wallet = cccore.Wallet
-var RawTx = cccore.tx.RawTx
+var Wallet // = cccore.Wallet
+var RawTx // = cccore.tx.RawTx
 
-var fixtures = require('./fixtures/tx.RawTx.json')
+var fixtures = require('../fixtures/tx.RawTx.json')
 var btcHexTx = fixtures.tx.uncolored2.raw // mainnet, 2 uncolored outputs
 var mnemonic = fixtures.wallet.alice.mnemonic
 var password = fixtures.wallet.alice.password

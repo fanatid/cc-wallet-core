@@ -20,8 +20,8 @@ describe('addresses.Manager', function () {
 
   beforeEach(function (done) {
     uncolored = cclib.definitions.Manager.getUncolored()
-    astorage = new ccwallet.storage.addresses.Memory()
-    amanager = new ccwallet.addresses.Manager(astorage, network)
+    astorage = new ccwallet._storage.addresses.Memory()
+    amanager = new ccwallet._addresses.Manager(astorage, network)
 
     astorage.ready.done(done, done)
   })

@@ -6,10 +6,10 @@ var expect = require('chai').expect
 var Promise = require('bluebird')
 var crypto = require('crypto')
 
-var cclib = require('../../../')
+var ccwallet = require('../../../')
 
 module.exports = function (opts) {
-  var StorageCls = cclib.storage.assets[opts.clsName]
+  var StorageCls = ccwallet._storage.assets[opts.clsName]
   if (StorageCls === undefined) {
     return
   }

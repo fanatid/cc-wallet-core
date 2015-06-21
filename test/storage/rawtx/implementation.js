@@ -5,10 +5,10 @@ var _ = require('lodash')
 var expect = require('chai').expect
 var crypto = require('crypto')
 
-var cclib = require('../../../')
+var ccwallet = require('../../../')
 
 module.exports = function (opts) {
-  var StorageCls = cclib.storage.rawtx[opts.clsName]
+  var StorageCls = ccwallet._storage.rawtx[opts.clsName]
   if (StorageCls === undefined) {
     return
   }

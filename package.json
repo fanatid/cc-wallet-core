@@ -58,11 +58,11 @@
     "test:browser": "npm run compile:test && npm run karma"
   },
   "dependencies": {
-    "bitcore": "=0.12.8",
+    "bitcore": "=0.12.9",
     "blockchainjs": "git://github.com/chromaway/blockchainjs.git#develop",
-    "bluebird": "^2.9.27",
+    "bluebird": "^2.9.30",
     "coloredcoinjs-lib": "git://github.com/fanatid/coloredcoinjs-lib#v0.4.0",
-    "errno": "=0.1.1",
+    "error-system": "^0.1.0",
     "lodash": "^3.9.3",
     "odd-storage": "^0.1.0",
     "q": "=1.1.2",
@@ -70,7 +70,7 @@
   },
   "devDependencies": {
     "bip39": "^2.1.0",
-    "browserify": "9.0.8",
+    "browserify": "^10.2.4",
     "chai": "^2.3.0",
     "coveralls": "^2.11.2",
     "istanbul": "^0.3.14",
