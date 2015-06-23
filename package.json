@@ -64,6 +64,7 @@
     "coloredcoinjs-lib": "git://github.com/fanatid/coloredcoinjs-lib#v0.4.0",
     "error-system": "^0.1.0",
     "lodash": "^3.9.3",
+    "make-concurrent": "0.0.4",
     "odd-storage": "^0.1.0",
     "q": "=1.1.2",
     "ready-mixin": "^0.0.5"
