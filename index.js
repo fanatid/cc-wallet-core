@@ -29,7 +29,7 @@ ccwallet._storage = {}
 ccwallet._storage.addresses = require('./lib/storage/addresses')
 ccwallet._storage.assets = require('./lib/storage/assets')
 ccwallet._storage.config = require('./lib/storage/config')
-ccwallet._storage.rawtx = require('./lib/storage/rawtx')
+ccwallet._storage.tx = require('./lib/storage/tx')
 
 // util
 ccwallet._util = {}

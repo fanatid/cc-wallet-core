@@ -6,15 +6,15 @@ var _ = require('lodash')
 
 var ccwallet = require('../../../')
 
-describe('storage.rawtx.Interface', function () {
+describe('storage.tx.Interface', function () {
   var storage
 
   beforeEach(function () {
-    storage = new ccwallet._storage.rawtx.Interface()
+    storage = new ccwallet._storage.tx.Interface()
   })
 
   it('isAvailable', function () {
-    expect(ccwallet._storage.rawtx.Interface.isAvailable()).to.be.false
+    expect(ccwallet._storage.tx.Interface.isAvailable()).to.be.false
   })
 
   it('#add', function (done) {
@@ -28,6 +28,15 @@ describe('storage.rawtx.Interface', function () {
 
   it('#get', function (done) {
     storage.get()
+      .asCallback(function (err) {
+        expect(err).to.be.instanceof(ccwallet.errors.NotImplemented)
+        done()
+      })
+      .done(_.noop, _.noop)
+  })
+
+  it('#update', function (done) {
+    storage.update()
       .asCallback(function (err) {
         expect(err).to.be.instanceof(ccwallet.errors.NotImplemented)
         done()

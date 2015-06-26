@@ -55,5 +55,26 @@ module.exports = function (opts) {
         })
         .done(done, done)
     })
+
+    it('update value', function (done) {
+      var key = crypto.pseudoRandomBytes(2).toString('hex')
+      var value = crypto.pseudoRandomBytes(5).toString('hex')
+      storage.set(key, value)
+        .then(function () {
+          return storage.get(key)
+        })
+        .then(function (data) {
+          expect(data).to.equal(value)
+          value = crypto.pseudoRandomBytes(5).toString('hex')
+          return storage.set(key, value)
+        })
+        .then(function () {
+          return storage.get(key)
+        })
+        .then(function (data) {
+          expect(data).to.equal(value)
+        })
+        .done(done, done)
+    })
   })
 }

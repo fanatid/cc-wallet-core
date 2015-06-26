@@ -8,7 +8,7 @@ var crypto = require('crypto')
 var ccwallet = require('../../../')
 
 module.exports = function (opts) {
-  var StorageCls = ccwallet._storage.rawtx[opts.clsName]
+  var StorageCls = ccwallet._storage.tx[opts.clsName]
   if (StorageCls === undefined) {
     return
   }
@@ -18,10 +18,17 @@ module.exports = function (opts) {
     ldescribe = xdescribe
   }
 
-  ldescribe('storage.rawtx.' + opts.clsName, function () {
+  ldescribe('storage.tx.' + opts.clsName, function () {
     var storage
     var txid = crypto.pseudoRandomBytes(32).toString('hex')
-    var rawtx = crypto.pseudoRandomBytes(_.random(100, 200)).toString('hex')
+    var data = {
+      rawtx: crypto.pseudoRandomBytes(_.random(100, 200)).toString('hex'),
+      status: _.random(0, 10),
+      blockHeight: null,
+      blockHash: null,
+      timestamp: Math.round(Date.now() / 1000),
+      isBlockTimestamp: false
+    }
 
     beforeEach(function (done) {
       storage = new StorageCls(opts.clsOpts)
@@ -34,22 +41,14 @@ module.exports = function (opts) {
 
     describe('add', function () {
       it('passed', function (done) {
-        storage.add(txid, rawtx)
-          .done(done, done)
-      })
-
-      it('same value, passed', function (done) {
-        storage.add(txid, rawtx)
-          .then(function () {
-            return storage.add(txid, rawtx)
-          })
+        storage.add(txid, data)
           .done(done, done)
       })
 
       it('throw already exists', function (done) {
-        storage.add(txid, rawtx)
+        storage.add(txid, data)
           .then(function () {
-            return storage.add(txid, rawtx.slice(1))
+            return storage.add(txid, data)
           })
           .asCallback(function (err) {
             expect(err).to.be.instanceof(Error)
@@ -61,12 +60,12 @@ module.exports = function (opts) {
 
     describe('get', function () {
       it('exists', function (done) {
-        storage.add(txid, rawtx)
+        storage.add(txid, data)
           .then(function () {
             return storage.get(txid)
           })
-          .then(function (data) {
-            expect(data).to.equal(rawtx)
+          .then(function (result) {
+            expect(data).to.equal(data)
           })
           .done(done, done)
       })
@@ -80,14 +79,51 @@ module.exports = function (opts) {
       })
     })
 
-    describe('remove', function () {
-      it('exists', function (done) {
-        storage.add(txid, rawtx)
+    describe('update', function () {
+      it('not exists', function (done) {
+        storage.update(txid, data)
+          .asCallback(function (err) {
+            expect(err).to.be.instanceof(Error)
+            done()
+          })
+          .done(_.noop, _.noop)
+      })
+
+      it('passed', function (done) {
+        var blockHeight = _.random(100000, 300000)
+        var blockHash = crypto.pseudoRandomBytes(32).toString('hex')
+
+        storage.add(txid, data)
+          .then(function () {
+            return storage.update(txid, {
+              blockHeight: blockHeight,
+              blockHash: blockHash
+            })
+          })
           .then(function () {
             return storage.get(txid)
           })
-          .then(function (data) {
-            expect(data).to.equal(rawtx)
+          .then(function (result) {
+            var expected = _.defaults({
+              txid: txid,
+              blockHeight: blockHeight,
+              blockHash: blockHash
+            }, data)
+            expect(result).to.deep.equal(expected)
+          })
+          .done(done, done)
+      })
+    })
+
+    describe('remove', function () {
+      it('exists', function (done) {
+        storage.add(txid, data)
+          .then(function () {
+            return storage.get(txid)
+          })
+          .then(function (result) {
+            var expected = _.defaults({txid: txid}, data)
+            expect(result).to.deep.equal(expected)
             return storage.remove(txid)
           })
           .then(function () {
