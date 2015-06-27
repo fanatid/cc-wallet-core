@@ -88,6 +88,7 @@
     "./lib/storage/addresses/index.js": "./lib/storage/addresses/index-browser.js",
     "./lib/storage/assets/index.js": "./lib/storage/assets/index-browser.js",
     "./lib/storage/config/index.js": "./lib/storage/config/index-browser.js",
+    "./lib/storage/locktime/index.js": "./lib/storage/locktime/index-browser.js",
     "./lib/storage/tx/index.js": "./lib/storage/tx/index-browser.js"
   },
   "standard": {

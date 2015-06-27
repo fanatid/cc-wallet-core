@@ -26,6 +26,7 @@ ccwallet._storage = {}
 ccwallet._storage.addresses = require('./lib/storage/addresses')
 ccwallet._storage.assets = require('./lib/storage/assets')
 ccwallet._storage.config = require('./lib/storage/config')
+ccwallet._storage.locktime = require('./lib/storage/locktime')
 ccwallet._storage.tx = require('./lib/storage/tx')
 
 //
