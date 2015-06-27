@@ -18,8 +18,8 @@ ccwallet._assets.AssetTarget = require('./lib/assets/target')
 ccwallet._assets.AssetValue = require('./lib/assets/value')
 
 //
-// ccwallet.coin = require('./lib/coin')
-// ccwallet.history = require('./lib/history')
+ccwallet._coin = {}
+ccwallet._coin.manager = require('./lib/coin/manager')
 
 // storage
 ccwallet._storage = {}
