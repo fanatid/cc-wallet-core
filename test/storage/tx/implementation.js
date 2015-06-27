@@ -65,7 +65,8 @@ module.exports = function (opts) {
             return storage.get(txid)
           })
           .then(function (result) {
-            expect(data).to.equal(data)
+            var expected = _.defaults({txid: txid}, result)
+            expect(result).to.deep.equal(expected)
           })
           .done(done, done)
       })
@@ -74,6 +75,18 @@ module.exports = function (opts) {
         storage.get(txid)
           .then(function (data) {
             expect(data).to.be.null
+          })
+          .done(done, done)
+      })
+
+      it('get all', function (done) {
+        storage.add(txid, data)
+          .then(function () {
+            return storage.get()
+          })
+          .then(function (result) {
+            var expected = [_.defaults({txid: txid}, data)]
+            expect(result).to.deep.equal(expected)
           })
           .done(done, done)
       })
