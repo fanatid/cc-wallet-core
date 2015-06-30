@@ -10,11 +10,11 @@ describe('storage.config.Interface', function () {
   var storage
 
   beforeEach(function () {
-    storage = new ccwallet._storage.config.Interface()
+    storage = new ccwallet.storage.config.Interface()
   })
 
   it('isAvailable', function () {
-    expect(ccwallet._storage.config.Interface.isAvailable()).to.be.false
+    expect(ccwallet.storage.config.Interface.isAvailable()).to.be.false
   })
 
   it('#set', function (done) {

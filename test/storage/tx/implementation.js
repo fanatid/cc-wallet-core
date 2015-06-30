@@ -8,7 +8,7 @@ var crypto = require('crypto')
 var ccwallet = require('../../../')
 
 module.exports = function (opts) {
-  var StorageCls = ccwallet._storage.tx[opts.clsName]
+  var StorageCls = ccwallet.storage.tx[opts.clsName]
   if (StorageCls === undefined) {
     return
   }

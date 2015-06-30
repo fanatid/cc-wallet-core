@@ -8,7 +8,7 @@ var Promise = require('bluebird')
 var ccwallet = require('../../../')
 
 module.exports = function (opts) {
-  var StorageCls = ccwallet._storage.addresses[opts.clsName]
+  var StorageCls = ccwallet.storage.addresses[opts.clsName]
   if (StorageCls === undefined) {
     return
   }

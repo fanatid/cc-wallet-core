@@ -10,7 +10,7 @@ describe('util.bitcoin', function () {
   describe('script2addresses', function () {
     function checkScript (asm, addresses) {
       var script = bitcore.Script(asm)
-      var result = ccwallet._util.bitcoin.script2addresses(script, 'testnet')
+      var result = ccwallet.util.bitcoin.script2addresses(script, 'testnet')
       expect(result).to.deep.equal(addresses)
     }
 

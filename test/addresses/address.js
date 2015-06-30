@@ -6,7 +6,7 @@ var bitcore = require('bitcore')
 var cclib = require('coloredcoinjs-lib')
 
 var ccwallet = require('../../')
-var Address = ccwallet._addresses.Address
+var Address = ccwallet.addresses.Address
 
 describe('addresses.Address', function () {
   var network = bitcore.Networks.testnet
@@ -24,14 +24,14 @@ describe('addresses.Address', function () {
     cdstorage = new cclib.storage.definitions.Memory()
     cdmanager = new cclib.definitions.Manager(cdstorage)
 
-    uncolored = new ccwallet._assets.AssetDefinition(cdmanager, {
+    uncolored = new ccwallet.assets.AssetDefinition(cdmanager, {
       monikers: ['bitcoin'],
       cdescs: [''],
       unit: 100000000
     })
     uncoloredAddress = new Address(pubkey, {adef: uncolored, network: network})
 
-    epobc = new ccwallet._assets.AssetDefinition(cdmanager, {
+    epobc = new ccwallet.assets.AssetDefinition(cdmanager, {
       monikers: ['gold'],
       cdescs: ['epobc:b95323a763fa507110a89ab857af8e949810cf1e67e91104cd64222a04ccd0bb:0:180679'],
       unit: 10000

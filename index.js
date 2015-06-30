@@ -1,43 +1,41 @@
 'use strict'
 
-var ccwallet = module.exports = require('./lib/wallet/wallet')
+var ccwallet = module.exports = require('./lib/wallet')
 
 // library errors
 ccwallet.errors = require('./lib/errors')
 
 //
-ccwallet._addresses = {}
-ccwallet._addresses.Address = require('./lib/addresses/address')
-ccwallet._addresses.Manager = require('./lib/addresses/manager')
+ccwallet.addresses = {}
+ccwallet.addresses.Address = require('./lib/addresses/address')
+ccwallet.addresses.Manager = require('./lib/addresses/manager')
 
 //
-ccwallet._assets = {}
-ccwallet._assets.AssetDefinition = require('./lib/assets/definition')
-ccwallet._assets.AssetManager = require('./lib/assets/manager')
-ccwallet._assets.AssetTarget = require('./lib/assets/target')
-ccwallet._assets.AssetValue = require('./lib/assets/value')
+ccwallet.assets = {}
+ccwallet.assets.AssetDefinition = require('./lib/assets/definition')
+ccwallet.assets.AssetManager = require('./lib/assets/manager')
+ccwallet.assets.AssetTarget = require('./lib/assets/target')
+ccwallet.assets.AssetValue = require('./lib/assets/value')
 
 //
-ccwallet._coin = {}
-ccwallet._coin.manager = require('./lib/coin/manager')
+ccwallet.coin = {}
+ccwallet.coin.manager = require('./lib/coin/manager')
 
 // storage
-ccwallet._storage = {}
-ccwallet._storage.addresses = require('./lib/storage/addresses')
-ccwallet._storage.assets = require('./lib/storage/assets')
-ccwallet._storage.config = require('./lib/storage/config')
-ccwallet._storage.locktime = require('./lib/storage/locktime')
-ccwallet._storage.tx = require('./lib/storage/tx')
+ccwallet.storage = {}
+ccwallet.storage.addresses = require('./lib/storage/addresses')
+ccwallet.storage.assets = require('./lib/storage/assets')
+ccwallet.storage.config = require('./lib/storage/config')
+ccwallet.storage.locktime = require('./lib/storage/locktime')
+ccwallet.storage.tx = require('./lib/storage/tx')
 
 //
-ccwallet._tx = {}
-ccwallet._tx.manager = require('./lib/tx/manager')
+ccwallet.tx = {}
+ccwallet.tx.manager = require('./lib/tx/manager')
 
 // util
-ccwallet._util = {}
-ccwallet._util.bitcoin = require('./lib/util/bitcoin')
-ccwallet._util.const = require('./lib/util/const')
-ccwallet._util.enum = require('./lib/util/enum')
-ccwallet._util.OrderedMap = require('./lib/util/ordered-map')
-ccwallet._util.SyncMixin = require('./lib/util/sync-mixin')
-ccwallet._util.tx = require('./lib/util/tx')
+ccwallet.util = {}
+ccwallet.util.bitcoin = require('./lib/util/bitcoin')
+ccwallet.util.const = require('./lib/util/const')
+ccwallet.util.enum = require('./lib/util/enum')
+ccwallet.util.SyncMixin = require('./lib/util/sync-mixin')

@@ -15,7 +15,7 @@ describe('assets.AssetDefinition', function () {
   beforeEach(function (done) {
     cdstorage = new cclib.storage.definitions.Memory()
     cdmanager = new cclib.definitions.Manager(cdstorage)
-    adef = new ccwallet._assets.AssetDefinition(cdmanager, {
+    adef = new ccwallet.assets.AssetDefinition(cdmanager, {
       monikers: ['bitcoin'],
       cdescs: [''],
       unit: 100000000
@@ -25,7 +25,7 @@ describe('assets.AssetDefinition', function () {
 
   it('a few items in cdescs throw error', function () {
     var fn = function () {
-      adef = new ccwallet._assets.AssetDefinition(cdmanager, {
+      adef = new ccwallet.assets.AssetDefinition(cdmanager, {
         monikers: ['bitcoin'],
         cdescs: ['', ''],
         unit: 10
@@ -36,7 +36,7 @@ describe('assets.AssetDefinition', function () {
 
   it('unit is not power of 10', function () {
     var fn = function () {
-      adef = new ccwallet._assets.AssetDefinition(cdmanager, {
+      adef = new ccwallet.assets.AssetDefinition(cdmanager, {
         monikers: ['bitcoin'],
         cdescs: [''],
         unit: 3

@@ -10,11 +10,11 @@ describe('storage.locktime.Interface', function () {
   var storage
 
   beforeEach(function () {
-    storage = new ccwallet._storage.locktime.Interface()
+    storage = new ccwallet.storage.locktime.Interface()
   })
 
   it('isAvailable', function () {
-    expect(ccwallet._storage.locktime.Interface.isAvailable()).to.be.false
+    expect(ccwallet.storage.locktime.Interface.isAvailable()).to.be.false
   })
 
   it('#set', function (done) {
