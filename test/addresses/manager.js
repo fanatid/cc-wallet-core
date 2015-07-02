@@ -33,7 +33,7 @@ describe('addresses.Manager', function () {
       done()
     })
 
-    amanager.getNewAddress(seed, uncolored)
+    amanager.getNewAddress(uncolored, seed)
       .then(function (address) {
         expect(address.getAddress()).to.equal(zeroAddress)
       })
@@ -41,7 +41,7 @@ describe('addresses.Manager', function () {
   })
 
   it('getAllAddresses', function (done) {
-    amanager.getNewAddress(seed, uncolored)
+    amanager.getNewAddress(uncolored, seed)
       .then(function (address) {
         expect(address.getAddress()).to.equal(zeroAddress)
         return amanager.getAllAddresses(uncolored)
@@ -54,7 +54,7 @@ describe('addresses.Manager', function () {
   })
 
   it('getPrivKeyByAddress', function (done) {
-    amanager.getNewAddress(seed, uncolored)
+    amanager.getNewAddress(uncolored, seed)
       .then(function (address) {
         expect(address.getAddress()).to.equal(zeroAddress)
         return amanager.getPrivateKeyByAddress(seed, zeroAddress)

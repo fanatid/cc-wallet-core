@@ -7,7 +7,7 @@ var cclib = require('coloredcoinjs-lib')
 
 var ccwallet = require('../../')
 
-describe('assets.AssetDefinition', function () {
+describe('assets.Definition', function () {
   var cdstorage
   var cdmanager
   var adef
@@ -15,7 +15,7 @@ describe('assets.AssetDefinition', function () {
   beforeEach(function (done) {
     cdstorage = new cclib.storage.definitions.Memory()
     cdmanager = new cclib.definitions.Manager(cdstorage)
-    adef = new ccwallet.assets.AssetDefinition(cdmanager, {
+    adef = new ccwallet.assets.Definition(cdmanager, {
       monikers: ['bitcoin'],
       cdescs: [''],
       unit: 100000000
@@ -25,7 +25,7 @@ describe('assets.AssetDefinition', function () {
 
   it('a few items in cdescs throw error', function () {
     var fn = function () {
-      adef = new ccwallet.assets.AssetDefinition(cdmanager, {
+      adef = new ccwallet.assets.Definition(cdmanager, {
         monikers: ['bitcoin'],
         cdescs: ['', ''],
         unit: 10
@@ -36,7 +36,7 @@ describe('assets.AssetDefinition', function () {
 
   it('unit is not power of 10', function () {
     var fn = function () {
-      adef = new ccwallet.assets.AssetDefinition(cdmanager, {
+      adef = new ccwallet.assets.Definition(cdmanager, {
         monikers: ['bitcoin'],
         cdescs: [''],
         unit: 3
@@ -120,14 +120,6 @@ describe('assets.AssetDefinition', function () {
         var result = adef.formatValue(-fixture.value)
         expect(result).to.deep.equal('-' + fixture.expect)
       })
-    })
-  })
-
-  it.skip('getData', function () {
-    expect(adef.getData()).to.deep.equal({
-      monikers: ['bitcoin'],
-      colorDescs: [''],
-      unit: 100000000
     })
   })
 })

@@ -15,7 +15,7 @@ var btcHexTx = fixtures.tx.uncolored2.raw // mainnet, 2 uncolored outputs
 var mnemonic = fixtures.wallet.alice.mnemonic
 var password = fixtures.wallet.alice.password
 
-describe.skip('tx.RawTx', function () {
+describe('tx.Raw', function () {
   this.timeout(240 * 1000)
 
   var rawTx
@@ -40,11 +40,11 @@ describe.skip('tx.RawTx', function () {
     wallet = null
   })
 
-  it('toTransaction', function () {
+  it.skip('toTransaction', function () {
     expect(rawTx.toTransaction().toHex()).to.equal(btcHexTx)
   })
 
-  it('getSentColorValues uncolored', function (done) {
+  it.skip('getSentColorValues uncolored', function (done) {
     rawTx.getSentColorValues(wallet, function (error, sentColorValues) {
       expect(error).to.be.null
       expect(sentColorValues).to.be.an('array').with.to.have.length(2)
@@ -61,7 +61,7 @@ describe.skip('tx.RawTx', function () {
     })
   })
 
-  it('getReceivedColorValues uncolored', function (done) {
+  it.skip('getReceivedColorValues uncolored', function (done) {
     rawTx.getReceivedColorValues(wallet, function (error, receivedColorValues) {
       expect(error).to.be.null
       expect(receivedColorValues).to.be.an('array').with.to.have.length(1)
@@ -74,7 +74,7 @@ describe.skip('tx.RawTx', function () {
     })
   })
 
-  it('getDeltaColorValues uncolored', function (done) {
+  it.skip('getDeltaColorValues uncolored', function (done) {
     rawTx.getDeltaColorValues(wallet, function (error, colorValues) {
       expect(error).to.be.null
       expect(colorValues).to.be.an('array').with.to.have.length(1)
@@ -88,7 +88,7 @@ describe.skip('tx.RawTx', function () {
   })
 
   describe('getColorTargets uncolored', function () {
-    it('gets uncolored targets', function (done) {
+    it.skip('gets uncolored targets', function (done) {
       rawTx.getColorTargets(wallet, function (error, colorTargets) {
         expect(error).to.be.null
         expect(colorTargets).to.be.an('array').with.to.have.length(2)
@@ -102,7 +102,7 @@ describe.skip('tx.RawTx', function () {
   })
 
   describe('satisfiesTargets', function () {
-    it('satisfies itself', function (done) {
+    it.skip('satisfies itself', function (done) {
       rawTx.getColorTargets(wallet, function (error, cts) {
         expect(error).to.be.null
         rawTx.satisfiesTargets(wallet, cts, false, function (error, satisfied) {
@@ -113,7 +113,7 @@ describe.skip('tx.RawTx', function () {
       })
     })
 
-    it('respects allowExtra false', function (done) {
+    it.skip('respects allowExtra false', function (done) {
       rawTx.getColorTargets(wallet, function (error, cts) {
         expect(error).to.be.null
         expect(cts).to.be.an('array')
@@ -126,7 +126,7 @@ describe.skip('tx.RawTx', function () {
       })
     })
 
-    it('respects allowExtra true', function (done) {
+    it.skip('respects allowExtra true', function (done) {
       rawTx.getColorTargets(wallet, function (error, cts) {
         expect(error).to.be.null
         expect(cts).to.be.an('array')

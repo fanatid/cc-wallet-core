@@ -1,6 +1,7 @@
 'use strict'
 
 var expect = require('chai').expect
+var blockchainjs = require('blockchainjs')
 
 var bitcoin// = require('../').cclib.bitcoin
 
@@ -37,6 +38,20 @@ function sendCoins (network) {
   })
 }
 
+/**
+ * @param {Error} error
+ * @throws {Error}
+ */
+function ignoreConnectorErrors (err) {
+  if (err instanceof blockchainjs.errors.Connector.NotConnected ||
+      err instanceof blockchainjs.errors.Connector.Unreachable) {
+    return
+  }
+
+  throw err
+}
+
 module.exports = {
-  sendCoins: sendCoins
+  sendCoins: sendCoins,
+  ignoreConnectorErrors: ignoreConnectorErrors
 }

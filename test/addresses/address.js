@@ -24,14 +24,14 @@ describe('addresses.Address', function () {
     cdstorage = new cclib.storage.definitions.Memory()
     cdmanager = new cclib.definitions.Manager(cdstorage)
 
-    uncolored = new ccwallet.assets.AssetDefinition(cdmanager, {
+    uncolored = new ccwallet.assets.Definition(cdmanager, {
       monikers: ['bitcoin'],
       cdescs: [''],
       unit: 100000000
     })
     uncoloredAddress = new Address(pubkey, {adef: uncolored, network: network})
 
-    epobc = new ccwallet.assets.AssetDefinition(cdmanager, {
+    epobc = new ccwallet.assets.Definition(cdmanager, {
       monikers: ['gold'],
       cdescs: ['epobc:b95323a763fa507110a89ab857af8e949810cf1e67e91104cd64222a04ccd0bb:0:180679'],
       unit: 10000
