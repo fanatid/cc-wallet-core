@@ -13,14 +13,12 @@
     "mocha": "2.1.0", 
     "bip39": "2.1.0", 
     "jshint": "2.6.3", 
-    "uglify": "0.1.1", 
-    "jscs": "1.11.3", 
-    "browserify": "9.0.3"
+    "jscs": "1.11.3"
   }, 
   "bugs": {
     "url": "https://github.com/chromaway/cc-wallet-core/issues"
   }, 
-  "version": "0.8.7", 
+  "version": "0.8.8", 
   "contributors": [
     {
       "name": "Henrik Hjelte", 
@@ -39,19 +37,15 @@
     "coveralls": "npm run-script coverage && coveralls <coverage/lcov.info", 
     "coverage": "istanbul cover _mocha -- test/*.js", 
     "lint": "jshint lib/*.js lib/**.js test/*.js && jscs lib/*.js lib/**.js test/*.js", 
-    "compile_test": "browserify test/*.js >cc-wallet-core.test.js", 
-    "compile": "browserify lib/index.js -s ccWallet -o ccwallet.js", 
-    "build": "npm run-script compile && npm run-script uglify", 
     "clean": "rm -f ccwallet.js ccwallet.min.js ccwallet.test.js", 
-    "test": "istanbul test mocha -- --reporter spec test/*.js", 
-    "uglify": "uglify -s ccwallet.js -o ccwallet.min.js"
+    "test": "istanbul test mocha -- --reporter spec test/*.js"
   }, 
   "keywords": [], 
   "dependencies": {
     "bs58": "2.0.1", 
     "lodash": "2.4.1", 
     "errno": "0.1.1", 
-    "blockchainjs": "git://github.com/chromaway/blockchainjs.git#v0.3.10", 
+    "blockchainjs": "git://github.com/chromaway/blockchainjs.git#v0.3.11", 
     "q": "1.1.2", 
     "buffer-equal": "0.0.1", 
     "coloredcoinjs-lib": "git://github.com/chromaway/coloredcoinjs-lib#v0.3.6"
