@@ -1,4 +1,6 @@
 var _ = require('lodash')
+
+global.localStorage = require('localStorage')
 var store = require('store')
 
 /**

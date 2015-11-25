@@ -15,7 +15,6 @@ ccwallet.WalletStateManager = require('./wallet').WalletStateManager
 
 // util
 ccwallet.util = {}
-ccwallet.util.bitcoin = require('./util/bitcoin')
 ccwallet.util.const = require('./util/const')
 ccwallet.util.enum = require('./util/enum')
 ccwallet.util.OrderedMap = require('./util/ordered-map')

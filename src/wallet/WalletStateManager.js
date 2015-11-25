@@ -1,6 +1,7 @@
 var timers = require('timers')
 var events = require('events')
 var inherits = require('util').inherits
+var SyncMixin = require('sync-mixin')
 
 var _ = require('lodash')
 var Q = require('q')
@@ -12,7 +13,6 @@ var getUncolored = cclib.definitions.Manager.getUncolored
 var errors = require('../errors')
 var TX_STATUS = require('../util/const').TX_STATUS
 var OrderedMap = require('../util/ordered-map')
-var SyncMixin = require('../util/sync-mixin')
 
 /**
  * @event WalletStateManager#error
@@ -91,7 +91,7 @@ function WalletStateManager (wallet, stateStorage) {
 }
 
 inherits(WalletStateManager, events.EventEmitter)
-SyncMixin(WalletStateManager.prototype)
+_.assign(WalletStateManager.prototype, SyncMixin)
 
 /**
  * @private

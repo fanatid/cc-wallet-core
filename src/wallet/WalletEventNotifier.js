@@ -1,7 +1,7 @@
 var events = require('events')
 var inherits = require('util').inherits
-
-var SyncMixin = require('../util/sync-mixin')
+var SyncMixin = require('sync-mixin')
+var _ = require('lodash')
 
 var Q = require('q')
 
@@ -30,7 +30,7 @@ function WalletEventNotifier (wallet) {
 }
 
 inherits(WalletEventNotifier, events.EventEmitter)
-SyncMixin(WalletEventNotifier.prototype)
+_.assign(WalletEventNotifier.prototype, SyncMixin)
 
 WalletEventNotifier.prototype._notifyNeedsSync = function () {
   var self = this

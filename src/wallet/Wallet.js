@@ -5,6 +5,7 @@ var timers = require('timers')
 var _ = require('lodash')
 var Q = require('q')
 var blockchainjs = require('blockchainjs')
+var SyncMixin = require('sync-mixin')
 
 var address = require('../address')
 var asset = require('../asset')
@@ -18,7 +19,6 @@ var WalletStateManager = require('./WalletStateManager')
 var cclib = require('../cclib')
 var bitcoin
 var errors = require('../errors')
-var SyncMixin = require('../util/sync-mixin')
 
 /**
  * @event Wallet#error
@@ -219,7 +219,7 @@ function Wallet (opts) {
 }
 
 inherits(Wallet, events.EventEmitter)
-SyncMixin(Wallet.prototype)
+_.assign(Wallet.prototype, SyncMixin)
 
 Wallet.prototype.getBitcoinNetwork = function () { return this.bitcoinNetwork }
 Wallet.prototype.canSpendUnconfirmedCoins = function () { return this._spendUnconfirmedCoins }
