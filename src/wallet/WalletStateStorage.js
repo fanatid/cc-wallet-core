@@ -9,7 +9,7 @@ var SyncStorage = require('../SyncStorage')
  * @extends SyncStorage
  */
 function WalletStateStorage () {
-  SyncStorage.apply(this, Array.prototype.slice.call(arguments))
+  SyncStorage.apply(this, arguments)
 
   this._stateDBKey = this.globalPrefix + 'stateV3'
   this._state = this.store.get(this._stateDBKey) || null

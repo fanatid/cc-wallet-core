@@ -1,55 +1,15 @@
 var events = require('events')
 var inherits = require('util').inherits
-
 var _ = require('lodash')
 var Q = require('q')
+var cclib = require('coloredcoinjs-lib')
+var script2addresses = require('script2addresses')
 
-var cclib = require('../cclib')
-var bitcoin
 var errors = require('../errors')
 var AssetValue = require('../asset').AssetValue
 var HistoryTarget = require('./HistoryTarget')
 var HistoryEntry = require('./HistoryEntry')
-var createGetTxFn = require('../util/tx').createGetTxFn
 var HISTORY_ENTRY_TYPE = require('../util/const').HISTORY_ENTRY_TYPE
-
-/**
- * @private
- * @param {Array.<{txId1: string, txIdN:string}>} entries
- * @param {TxManager} txManager
- * @return {Array.<{txId1: string, txIdN:string}>}
- */
-function toposort (entries, txManager) {
-  var entriesTxIds = _.zipObject(entries.map(function (entry) { return [entry.txId, entry] }))
-  var result = []
-  var resultTxIds = {}
-
-  function sort (entry, topEntry) {
-    if (resultTxIds[entry.txId] === true) {
-      return
-    }
-
-    txManager.getTx(entry.txId).ins.forEach(function (input) {
-      var inputTxId = bitcoin.util.hashEncode(input.hash)
-      if (_.isUndefined(entriesTxIds[inputTxId])) {
-        return
-      }
-
-      if (entriesTxIds[inputTxId].txId === topEntry.txId) {
-        throw new errors.ToposortError('Graph is cyclical')
-      }
-
-      sort(entriesTxIds[inputTxId], topEntry)
-    })
-
-    resultTxIds[entry.txId] = true
-    result.push(entry)
-  }
-
-  entries.forEach(function (entry) { sort(entry, entry) })
-
-  return result
-}
 
 /**
  * @event HistoryManager#update
@@ -57,7 +17,7 @@ function toposort (entries, txManager) {
 
 /**
  * @class HistoryManager
- * @extends external:events.EventEmitter
+ * @extends events.EventEmitter
  * @param {Wallet} wallet
  * @param {WalletState} walletState
  * @param {Object} rawStorage
@@ -79,6 +39,7 @@ inherits(HistoryManager, events.EventEmitter)
  */
 HistoryManager.prototype._resortHistoryRecords = function () {
   var self = this
+  var txManager = self._walletState.getTxManager()
 
   var orderedRecords = _.sortBy(self._historyRecords, function (record) {
     var txData = self._walletState.getTxManager().getTxData(record.txId)
@@ -89,21 +50,55 @@ HistoryManager.prototype._resortHistoryRecords = function () {
     return txData.height + txData.timestamp / 10000000000
   })
 
-  toposort(orderedRecords, self._walletState.getTxManager()).forEach(function (record, index) {
+  var entriesTxIds = _.zipObject(orderedRecords.map(function (entry) {
+    return [entry.txId, entry]
+  }))
+
+  var result = []
+  var resultTxIds = {}
+
+  function sort (entry, topEntry) {
+    if (resultTxIds[entry.txId] === true) {
+      return
+    }
+
+    txManager.getTx(entry.txId).inputs.forEach(function (input) {
+      var inputTxId = input.prevTxId.toString('hex')
+      if (_.isUndefined(entriesTxIds[inputTxId])) {
+        return
+      }
+
+      if (entriesTxIds[inputTxId].txId === topEntry.txId) {
+        throw new errors.ToposortError('Graph is cyclical')
+      }
+
+      sort(entriesTxIds[inputTxId], topEntry)
+    })
+
+    resultTxIds[entry.txId] = true
+    result.push(entry)
+  }
+
+  orderedRecords.forEach(function (entry) {
+    sort(entry, entry)
+  })
+
+  result.forEach(function (record, index) {
     self._historyRecords[index] = record
   })
 }
 
 /**
- * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
- * @return {external:Q.Promise}
+ * @param {bitcore.Transaction} tx
+ * @return {Promise}
  */
 HistoryManager.prototype.addTx = function (tx) {
   var self = this
-  var txId = tx.getId()
+  var txId = tx.id
 
   var wsm = self._wallet.getStateManager()
-  var getTxFn = createGetTxFn(self._wallet.getBlockchain())
+  var blockchain = self._wallet.getBlockchain()
+  var getTxFn = blockchain.getTx.bind(blockchain)
   var walletAddresses = self._wallet.getAllAddresses()
   var network = self._wallet.getBitcoinNetwork()
   var colorValues = {}
@@ -112,57 +107,66 @@ HistoryManager.prototype.addTx = function (tx) {
   var myInsCount = 0
   var myOutsCount = 0
 
-  return Q.ninvoke(tx, 'ensureInputValues', getTxFn).then(function (ensuredTx) {
-    tx = ensuredTx
-    return Q.all(tx.ins.map(function (input) {
-      // @todo Add multisig support (multi-address)
-      var address = bitcoin.util.getAddressesFromScript(
-        input.prevTx.outs[input.index].script, self._wallet.getBitcoinNetwork())[0]
+  var bitcoinNetwork = self._wallet.getBitcoinNetwork()
+  var ftx = new cclib.tx.FilledInputs(tx, getTxFn)
+  return Q.all(tx.inputs.map(function (input, inputIndex) {
+    return ftx.getInputTx(inputIndex)
+      .then(function (inputTx) {
+        var output = inputTx.outputs[input.outputIndex]
 
-      if (walletAddresses.indexOf(address) === -1) {
-        return
-      }
+        // @todo Add multisig support (multi-address)
+        var address = script2addresses(output.script.toBuffer(), bitcoinNetwork).addresses[0]
 
-      myInsCount += 1
-
-      var coin = {
-        txId: input.prevTx.getId(),
-        outIndex: input.index,
-        value: input.prevTx.outs[input.index].value
-      }
-
-      return Q.ninvoke(wsm, 'getCoinMainColorValue', coin).then(function (cv) {
-        var cid = cv.getColorId()
-        if (_.isUndefined(colorValues[cid])) {
-          colorValues[cid] = cv.neg()
-        } else {
-          colorValues[cid] = colorValues[cid].minus(cv)
+        if (walletAddresses.indexOf(address) === -1) {
+          return
         }
+
+        myInsCount += 1
+
+        var coin = {
+          txId: input.prevTxId.toString('hex'),
+          outIndex: input.outputIndex,
+          value: output.satoshis
+        }
+
+        return Q.ninvoke(wsm, 'getCoinMainColorValue', coin)
+          .then(function (cv) {
+            var cid = cv.getColorId()
+            if (_.isUndefined(colorValues[cid])) {
+              colorValues[cid] = cv.neg()
+            } else {
+              colorValues[cid] = colorValues[cid].minus(cv)
+            }
+          })
       })
-    }))
-  }).then(function () {
+  }))
+  .then(function () {
     var wsm = self._wallet.getStateManager()
-    return Q.ninvoke(wsm, 'getTxMainColorValues', tx, self._walletState).then(function (txColorValues) {
-      txColorValues.forEach(function (colorValue, index) {
-        var colorTarget = new cclib.ColorTarget(tx.outs[index].script.toHex(), colorValue)
+    return Q.ninvoke(wsm, 'getTxMainColorValues', tx, self._walletState)
+      .then(function (txColorValues) {
+        txColorValues.forEach(function (colorValue, outputIndex) {
+          var outputScript = tx.outputs[outputIndex].script
 
-        var touchedAddresses = bitcoin.util.getAddressesFromScript(tx.outs[index].script, network)
-        if (_.intersection(walletAddresses, touchedAddresses).length === 0) {
-          return otherColorTargets.push(colorTarget)
-        }
+          var colorTarget = new cclib.ColorTarget(outputScript.toHex(), colorValue)
 
-        myOutsCount += 1
-        myColorTargets.push(colorTarget)
+          var touchedAddresses = script2addresses(outputScript.toBuffer(), network).addresses
+          if (_.intersection(walletAddresses, touchedAddresses).length === 0) {
+            return otherColorTargets.push(colorTarget)
+          }
 
-        var cid = colorValue.getColorId()
-        if (_.isUndefined(colorValues[cid])) {
-          colorValues[cid] = colorValue
-        } else {
-          colorValues[cid] = colorValues[cid].plus(colorValue)
-        }
+          myOutsCount += 1
+          myColorTargets.push(colorTarget)
+
+          var cid = colorValue.getColorId()
+          if (_.isUndefined(colorValues[cid])) {
+            colorValues[cid] = colorValue
+          } else {
+            colorValues[cid] = colorValues[cid].plus(colorValue)
+          }
+        })
       })
-    })
-  }).then(function () {
+  })
+  .then(function () {
     colorValues = _.values(colorValues).map(function (cv) {
       return {desc: cv.getColorDefinition().getDesc(), value: cv.getValue()}
     })
@@ -174,7 +178,7 @@ HistoryManager.prototype.addTx = function (tx) {
     var entryType = HISTORY_ENTRY_TYPE.send
     if (myInsCount === 0) {
       entryType = HISTORY_ENTRY_TYPE.receive
-    } else if (myInsCount === tx.ins.length && myOutsCount === tx.outs.length) {
+    } else if (myInsCount === tx.inputs.length && myOutsCount === tx.outputs.length) {
       entryType = HISTORY_ENTRY_TYPE.payment2yourself
     }
 
@@ -192,8 +196,8 @@ HistoryManager.prototype.addTx = function (tx) {
 }
 
 /**
- * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
- * @return {external:Q.Promise}
+ * @param {bitcore.Transaction} tx
+ * @return {Promise}
  */
 HistoryManager.prototype.updateTx = function () {
   this._resortHistoryRecords()
@@ -201,12 +205,12 @@ HistoryManager.prototype.updateTx = function () {
 }
 
 /**
- * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
- * @return {external:Q.Promise}
+ * @param {bitcore.Transaction} tx
+ * @return {Promise}
  */
 HistoryManager.prototype.revertTx = function (tx) {
   var savedLength = this._historyRecords.length
-  var txId = tx.getId()
+  var txId = tx.id
   this._historyRecords = this._historyRecords.filter(function (record) {
     return record.txId !== txId
   })
@@ -241,12 +245,15 @@ HistoryManager.prototype.getEntries = function (assetdef) {
     record.values.forEach(function (rv) {
       var assetdef = assetDefinitionManager.getByDesc(rv.desc)
       if (assetdef === null) {
-        throw new errors.AssetNotFoundError('Color description: ' + rv.desc)
+        // TODO
+        // throw new errors.AssetNotFoundError('Color description: ' + rv.desc)
+        console.error('Asset not found! Color descriptor: ' + rv.desc)
+        return
       }
 
       var assetId = assetdef.getId()
       if (!_.isUndefined(assetValues[assetId])) {
-        throw new errors.MultiAssetTransactionNotSupportedError('TxId: ' + tx.getId())
+        throw new errors.MultiAssetTransactionNotSupportedError('TxId: ' + tx.id)
       }
 
       assetValues[assetId] = new AssetValue(assetdef, rv.value)
@@ -256,15 +263,18 @@ HistoryManager.prototype.getEntries = function (assetdef) {
       return
     }
 
-    var historyTargets = record.targets.map(function (rt) {
+    var historyTargets = _.filter(record.targets.map(function (rt) {
       var assetdef = assetDefinitionManager.getByDesc(rt.desc)
       if (assetdef === null) {
-        throw new errors.AssetNotFoundError('Color description: ' + rt.desc)
+        // TODO
+        // throw new errors.AssetNotFoundError('Color description: ' + rt.desc)
+        console.error('Asset not found! Color descriptor: ' + rt.desc)
+        return
       }
 
       var assetValue = new AssetValue(assetdef, rt.value)
       return new HistoryTarget(assetValue, rt.script, bitcoinNetwork)
-    })
+    }))
 
     var entry = new HistoryEntry({
       tx: tx,

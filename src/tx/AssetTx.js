@@ -1,8 +1,9 @@
 var _ = require('lodash')
+var Q = require('q')
+var cclib = require('coloredcoinjs-lib')
 
-var OperationalTx = require('./OperationalTx')
-var cclib = require('../cclib')
 var errors = require('../errors')
+var OperationalTx = require('./OperationalTx')
 
 /**
  * Simple asset transaction, but now supports only 1 color in asset
@@ -61,43 +62,56 @@ AssetTx.prototype.isMonoAsset = function () {
 /**
  * Return true if transaction represent 1 color
  *
- * @return {boolean}
+ * @return {Promise<boolean>}
  */
 AssetTx.prototype.isMonoColor = function () {
   if (!this.isMonoAsset) {
-    return false
+    return Q.reject(false)
   }
 
-  var colorIds = this.targets[0].getAsset().getColorSet().getColorIds()
-  var isMonoColor = colorIds.length === 1
-
-  return isMonoColor
+  return this.targets[0].getAsset().getColorSet().getColorIds()
+    .then(function (colorIds) {
+      return colorIds.length === 1
+    })
 }
 
 /**
- * @return {external:coloredcoinjs-lib.OperationalTx}
+ * @callback AssetTx~makeOperationalTxCallback
+ * @param {?Error} error
+ * @param {OperationalTx} operationalTx
  */
-AssetTx.prototype.makeOperationalTx = function () {
-  if (!this.isMonoColor()) {
+
+/**
+ * @param {AssetTx~makeOperationalTxCallback} cb
+ */
+AssetTx.prototype.makeOperationalTx = function (cb) {
+  var self = this
+
+  if (!self.isMonoColor()) {
     throw new errors.MultiColorNotSupportedError('Attempt create OperationalTx from multi-color AssetTx')
   }
 
-  if (this.targets.length === 0) {
+  if (self.targets.length === 0) {
     throw new errors.ZeroArrayLengthError('AssetTx targets not found')
   }
 
-  var assetdef = this.targets[0].getAsset()
-  var colordef = this.wallet.cdManager.getByColorId(assetdef.getColorSet().getColorIds()[0])
-
-  var colorTargets = this.targets.map(function (target) {
-    var colorValue = new cclib.ColorValue(colordef, target.getValue())
-    return new cclib.ColorTarget(target.getScript(), colorValue)
+  var assetdef = self.targets[0].getAsset()
+  Q.try(function () {
+    return assetdef.getColorSet().getColorDefinitions()
   })
+  .then(function (colordefs) {
+    var colorTargets = self.targets.map(function (target) {
+      var colorValue = new cclib.ColorValue(colordefs[0], target.getValue())
+      return new cclib.ColorTarget(target.getScript(), colorValue)
+    })
 
-  var operationalTx = new OperationalTx(this.wallet)
-  operationalTx.addTargets(colorTargets)
+    var operationalTx = new OperationalTx(self.wallet)
+    operationalTx.addTargets(colorTargets)
 
-  return operationalTx
+    return operationalTx
+  })
+  .then(function (opTx) { cb(null, opTx) },
+        function (err) { cb(err) })
 }
 
 module.exports = AssetTx

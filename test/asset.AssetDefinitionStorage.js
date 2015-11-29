@@ -1,11 +1,9 @@
 var expect = require('chai').expect
 
 var ccWallet = require('../')
-var errors = ccWallet.errors
-var SyncStorage = ccWallet.SyncStorage
 var AssetDefinitionStorage = ccWallet.asset.AssetDefinitionStorage
 
-describe.skip('asset.AssetDefinitionStorage', function () {
+describe('asset.AssetDefinitionStorage', function () {
   var storage
 
   beforeEach(function () {
@@ -22,11 +20,6 @@ describe.skip('asset.AssetDefinitionStorage', function () {
     storage.clear()
   })
 
-  it('inherits SyncStorage', function () {
-    expect(storage).to.be.instanceof(SyncStorage)
-    expect(storage).to.be.instanceof(AssetDefinitionStorage)
-  })
-
   it('add throw error, id already exist', function () {
     var data = {
       id: '111',
@@ -34,8 +27,9 @@ describe.skip('asset.AssetDefinitionStorage', function () {
       colorDescs: [''],
       unit: 1
     }
-    var fn = function () { storage.add(data) }
-    expect(fn).to.throw(errors.AlreadyExistsError)
+    expect(function () {
+      storage.add(data)
+    }).to.throw(ccWallet.errors.AlreadyExistsError)
   })
 
   it('add throw error, moniker already exist', function () {
@@ -45,8 +39,9 @@ describe.skip('asset.AssetDefinitionStorage', function () {
       colorDescs: [''],
       unit: 1
     }
-    var fn = function () { storage.add(data) }
-    expect(fn).to.throw(errors.AlreadyExistsError)
+    expect(function () {
+      storage.add(data)
+    }).to.throw(ccWallet.errors.AlreadyExistsError)
   })
 
   it('getByMoniker return null', function () {

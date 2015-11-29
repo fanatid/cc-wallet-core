@@ -1,11 +1,11 @@
 var _ = require('lodash')
 var Q = require('q')
+var bitcore = require('bitcore-lib')
+var cclib = require('coloredcoinjs-lib')
 
-var bitcoin
 var errors = require('../errors')
 var AssetTx = require('./AssetTx')
 var OperationalTx = require('./OperationalTx')
-var ComposedTx = require('../cclib').ComposedTx
 var RawTx = require('./RawTx')
 
 /**
@@ -13,7 +13,7 @@ var RawTx = require('./RawTx')
  *  the type of transaction (asset, operational, composed, signed) that it is
  *
  * @name transformTx~classifyTx
- * @param {(AssetTx|OperationalTx|ComposedTx|RawTx|Transaction)} tx
+ * @param {(AssetTx|OperationalTx|cclib.tx.Composed|RawTx|bitcore.Transaction)} tx
  * @return {?string}
  */
 function classifyTx (tx) {
@@ -25,7 +25,7 @@ function classifyTx (tx) {
     return 'operational'
   }
 
-  if (tx instanceof ComposedTx) {
+  if (tx instanceof cclib.tx.Composed) {
     return 'composed'
   }
 
@@ -33,9 +33,8 @@ function classifyTx (tx) {
     return 'raw'
   }
 
-  if (tx instanceof bitcoin.Transaction) {
-    var isSigned = tx.ins.every(function (input) { return input.script !== bitcoin.Script.EMPTY })
-    if (isSigned) {
+  if (tx instanceof bitcore.Transaction) {
+    if (tx.isFullySigned()) {
       return 'signed'
     }
 
@@ -67,19 +66,26 @@ function transformAssetTx (assetTx, targetKind, opts, cb) {
       throw new errors.TargetKindIsNotReachableError('AssetTx to ' + targetKind)
     }
 
-    if (!assetTx.isMonoColor()) {
+    return assetTx.isMonoColor()
+  })
+  .then(function (isMonoColor) {
+    if (!isMonoColor) {
       throw new errors.MultiColorNotSupportedError('Attempt transform multi-color AssetTx')
     }
 
-    var operationalTx = assetTx.makeOperationalTx()
+    return Q.ninvoke(assetTx, 'makeOperationalTx')
+  })
+  .then(function (operationalTx) {
     return Q.nfcall(transformTx, operationalTx, targetKind, opts)
-  }).done(function (targetTx) { cb(null, targetTx) }, function (error) { cb(error) })
+  })
+  .then(function (targetTx) { cb(null, targetTx) },
+        function (error) { cb(error) })
 }
 
 /**
  * @callback transformTx~transformOperationalTxCallback
  * @param {?Error} error
- * @param {external:coloredcoinjs-lib.ComposedTx} composedTx
+ * @param {cclib.tx.Composed} composedTx
  */
 
 /**
@@ -107,16 +113,19 @@ function transformOperationalTx (operationalTx, targetKind, opts, cb) {
       throw new errors.ComposerFunctionNotFoundError()
     }
 
-    return Q.nfcall(composer, operationalTx)
-  }).then(function (composedTx) {
+    return composer(operationalTx)
+  })
+  .then(function (composedTx) {
     return Q.nfcall(transformTx, composedTx, targetKind, opts)
-  }).done(function (targetTx) { cb(null, targetTx) }, function (error) { cb(error) })
+  })
+  .then(function (targetTx) { cb(null, targetTx) },
+        function (error) { cb(error) })
 }
 
 /**
  * @callback transformTx~transformComposedTxCallback
  * @param {?Error} error
- * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
+ * @param {bitcore.Transaction} tx
  */
 
 /**
@@ -124,7 +133,7 @@ function transformOperationalTx (operationalTx, targetKind, opts, cb) {
  *  of type targetKind which is one of (raw, signed)
  *
  * @name transformTx~transformComposedTx
- * @param {ComposedTx} composedTx
+ * @param {cclib.ComposedTx} composedTx
  * @param {string} targetKind
  * @param {Object} opts
  * @param {transformTx~transformComposedTxCallback} cb
@@ -136,15 +145,18 @@ function transformComposedTx (composedTx, targetKind, opts, cb) {
     }
 
     return RawTx.fromComposedTx(composedTx)
-  }).then(function (rawTx) {
+  })
+  .then(function (rawTx) {
     return Q.nfcall(transformTx, rawTx, targetKind, opts)
-  }).done(function (targetTx) { cb(null, targetTx) }, function (error) { cb(error) })
+  })
+  .then(function (targetTx) { cb(null, targetTx) },
+        function (error) { cb(error) })
 }
 
 /**
  * @callback transformTx~transformRawTxCallback
  * @param {?Error} error
- * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
+ * @param {bitcore.Transaction} tx
  */
 
 /**
@@ -164,18 +176,22 @@ function transformRawTx (rawTx, targetKind, opts, cb) {
     }
 
     return Q.ninvoke(rawTx, 'sign', opts.wallet, opts.seedHex, opts.signingOnly)
-  }).then(function () {
+  })
+  .then(function () {
     var allowIncomplete = (targetKind === 'partially-signed')
     return rawTx.toTransaction(allowIncomplete)
-  }).then(function (signedTx) {
+  })
+  .then(function (signedTx) {
     return Q.nfcall(transformTx, signedTx, targetKind, opts)
-  }).done(function (targetTx) { cb(null, targetTx) }, function (error) { cb(error) })
+  })
+  .then(function (targetTx) { cb(null, targetTx) },
+        function (error) { cb(error) })
 }
 
 /**
  * @callback transformTx~callback
  * @param {?Error} error
- * @param {(OpeationalTx|ComposedTx|RawTx|Transaction)} tx
+ * @param {(OpeationalTx|cclib.tx.Composed|RawTx|bitcore.Transaction)} tx
  */
 
 /**
@@ -184,7 +200,7 @@ function transformRawTx (rawTx, targetKind, opts, cb) {
  * AssetTx  -> OperationalTx -> ComposedTx -> RawTx -> Transaction
  * "simple" -> "operational" -> "composed" -> "raw" -> ("signed" or "partially-signed")
  *
- * @param {(AssetTx|OperationalTx|ComposedTx|RawTx|Transaction)} tx
+ * @param {(AssetTx|OperationalTx|cclib.tx.Composed|RawTx|bitcore.Transaction)} tx
  * @param {string} targetKind
  * @param {Object} [opts] Required if targetKind is signed
  * @param {string} [opts.seedHex]
@@ -227,7 +243,9 @@ function transformTx (tx, targetKind, opts, cb) {
     if (currentKind === 'raw') {
       return Q.nfcall(transformRawTx, tx, targetKind, opts)
     }
-  }).done(function (targetTx) { cb(null, targetTx) }, function (error) { cb(error) })
+  })
+  .then(function (targetTx) { cb(null, targetTx) },
+        function (error) { cb(error) })
 }
 
 module.exports = transformTx

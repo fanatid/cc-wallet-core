@@ -1,12 +1,17 @@
 sudo: false
+os: linux
 language: node_js
 node_js:
-  - 0.10
-  - 0.12
-  - 4
-  - 5
+  - "0.12"
+  - "4"
+  - "5"
 addons:
   firefox: latest
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - g++-4.8
 install:
   - npm install
   - npm install bitcore-lib coloredcoinjs-lib
@@ -14,13 +19,16 @@ before_script:
   - sh -e /etc/init.d/xvfb start
 env:
   global:
+    - CXX=g++-4.8
     - DISPLAY=:99.0
   matrix:
     - TEST_SUITE=test
 matrix:
   include:
-    - node_js: 4
+    - os: linux
+      node_js: "4"
       env: TEST_SUITE=coverage
-    - node_js: 4
+    - os: linux
+      node_js: "4"
       env: TEST_SUITE=lint
 script: npm run $TEST_SUITE

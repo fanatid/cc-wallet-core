@@ -1,45 +1,50 @@
 var _ = require('lodash')
 var Q = require('q')
-
-var bitcoin
-var cclib = require('../cclib')
-var createGetTxFn = require('../util/tx').createGetTxFn
+var bitcore = require('bitcore-lib')
+var cclib = require('coloredcoinjs-lib')
+var script2addresses = require('script2addresses')
 
 /**
  * @class RawTx
- * @param {external:coloredcoin-jslib.bitcoin.TransactionBuilder} [txb]
+ * @param {bitcore.Transaction} [tx]
  */
-function RawTx (txb) {
-  if (_.isUndefined(txb)) {
-    txb = new bitcoin.TransactionBuilder()
+function RawTx (tx) {
+  this.tx = tx
+  if (!this.tx) {
+    tx = new bitcore.Transaction()
   }
-
-  this.txb = txb
 }
 
 /**
- * @param {external:coloredcoinjs-lib.ComposedTx} composedTx
+ * @param {cclib.tx.Composed} composedTx
  * @return {RawTx}
  */
 RawTx.fromComposedTx = function (composedTx) {
-  var txb = new bitcoin.TransactionBuilder()
-  composedTx.getTxIns().forEach(function (txIn) {
-    txb.addInput(txIn.txId, txIn.outIndex, txIn.sequence)
+  var tx = new bitcore.Transaction()
+  composedTx.getInputs().forEach(function (input) {
+    tx.from({
+      txId: input.txId,
+      outputIndex: input.outIndex,
+      satoshis: input.value,
+      script: input.script
+    })
   })
-  composedTx.getTxOuts().forEach(function (txOut) {
-    txb.addOutput(bitcoin.Script.fromHex(txOut.script), txOut.value)
+  composedTx.getOutputs().forEach(function (output) {
+    tx.addOutput(new bitcore.Transaction.Output({
+      script: new bitcore.Script(output.script),
+      satoshis: output.value
+    }))
   })
 
-  return new RawTx(txb)
+  return new RawTx(tx)
 }
 
 /**
- * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
+ * @param {bitcore.Transaction} tx
  * @return {RawTx}
  */
 RawTx.fromTransaction = function (tx) {
-  var txb = bitcoin.TransactionBuilder.fromTransaction(tx)
-  return new RawTx(txb)
+  return new RawTx(new bitcore.Transaction(tx))
 }
 
 /**
@@ -47,22 +52,15 @@ RawTx.fromTransaction = function (tx) {
  * @return {RawTx}
  */
 RawTx.fromHex = function (hex) {
-  var tx = bitcoin.Transaction.fromHex(hex)
-  return RawTx.fromTransaction(tx)
+  return new RawTx(new bitcore.Transaction(hex))
 }
 
 /**
  * @param {boolean} [allowIncomplete=fallse]
- * @return {external:coloredcoinjs-lib.bitcoin.Transaction}
+ * @return {bitcore.Transaction}
  */
 RawTx.prototype.toTransaction = function (allowIncomplete) {
-  allowIncomplete = _.isUndefined(allowIncomplete) ? false : allowIncomplete
-
-  if (allowIncomplete) {
-    return this.txb.buildIncomplete()
-  }
-
-  return this.txb.build()
+  return new bitcore.Transaction(this.tx.toObject())
 }
 
 /**
@@ -70,7 +68,7 @@ RawTx.prototype.toTransaction = function (allowIncomplete) {
  * @return {string}
  */
 RawTx.prototype.toHex = function (allowIncomplete) {
-  return this.toTransaction(allowIncomplete).toHex()
+  return this.toString()
 }
 
 /**
@@ -93,51 +91,50 @@ RawTx.prototype.sign = function (wallet, seedHex, signingOnly, cb) {
   var self = this
   var addressManager = wallet.getAddressManager()
 
-  var promises = self.txb.tx.ins.map(function (input, index) {
-    if (!_.isUndefined(signingOnly) && signingOnly.indexOf(index) === -1) {
+  var promises = self.tx.inputs.map(function (input, index) {
+    if (input.isFullySigned() ||
+        (signingOnly && signingOnly.indexOf(index) === -1)) {
       return
     }
 
     return Q.fcall(function () {
-      if (!_.isUndefined(self.txb.prevOutScripts[index])) {
+      if (input.output.script.toHex() !== '') {
         return
       }
 
-      // mostly for multisig
-      var txId = bitcoin.util.hashEncode(input.hash)
+      var txId = input.prevTxId.toString('hex')
       return Q.fcall(function () {
-        return wallet.getStateManager().getTx(txId)
-      }).then(function (tx) {
-        if (tx !== null) {
-          return tx
+        var prevTx = wallet.getStateManager().getTx(txId)
+        if (prevTx !== null) {
+          return prevTx
         }
 
         return wallet.getBlockchain().getTx(txId)
-          .then(function (txHex) { return bitcoin.Transaction.fromHex(txHex) })
-      }).then(function (tx) {
-        self.txb.prevOutScripts[index] = tx.outs[input.index].script
-        self.txb.prevOutTypes[index] = bitcoin.scripts.classifyOutput(self.txb.prevOutScripts[index])
+          .then(function (txHex) { return bitcore.Transaction(txHex) })
       })
-    }).then(function () {
-      var scripts = self.txb.prevOutScripts[index]
+      .then(function (prevTx) {
+        input.output.setScript(prevTx.outputs[input.outputIndex].script)
+      })
+    })
+    .then(function () {
+      var script = input.output.script
       var network = wallet.getBitcoinNetwork()
-      var addresses = bitcoin.util.getAddressesFromScript(scripts, network)
-      addresses.forEach(function (address) {
+      script2addresses(script.toBuffer(), network).addresses.forEach(function (address) {
         var privKey = addressManager.getPrivKeyByAddress(address, seedHex)
         if (privKey !== null) {
-          self.txb.sign(index, privKey)
+          self.tx.sign(privKey)
         }
       })
     })
   })
 
-  Q.all(promises).done(function () { cb(null) }, function (error) { cb(error) })
+  Q.all(promises).then(function () { cb(null) }, function (error) { cb(error) })
 }
 
 /**
  * @callback RawTx~getColorTargetsCallback
  * @param {?Error} error
- * @param {Array.<external:coloredcoinjs-lib.bitcoin.ColorTarget>} colorTargets
+ * @param {Array.<cclib.ColorTarget>} colorTargets
  */
 
 /**
@@ -146,14 +143,14 @@ RawTx.prototype.sign = function (wallet, seedHex, signingOnly, cb) {
  */
 RawTx.prototype.getColorTargets = function (wallet, cb) {
   var tx = this.toTransaction(true)
-  Q.ninvoke(wallet.getStateManager(), 'getTxMainColorValues', tx).then(function (colorValues) {
-    return tx.outs.map(function (txOut, outIndex) {
-      return new cclib.ColorTarget(txOut.script.toHex(), colorValues[outIndex])
+  Q.ninvoke(wallet.getStateManager(), 'getTxMainColorValues', tx)
+    .then(function (colorValues) {
+      return tx.outputs.map(function (output, outputIndex) {
+        return new cclib.ColorTarget(output.script.toHex(), colorValues[outputIndex])
+      })
     })
-  }).done(
-    function (colorTargets) { cb(null, colorTargets) },
-    function (error) { cb(error) }
-  )
+    .then(function (colorTargets) { cb(null, colorTargets) },
+          function (error) { cb(error) })
 }
 
 /**
@@ -164,7 +161,7 @@ RawTx.prototype.getColorTargets = function (wallet, cb) {
 
 /**
  * @param {Wallet} wallet
- * @param {Array.<external:coloredcoinjs-lib.ColorTarget>} colorTargets
+ * @param {cclib.ColorTarget[]} colorTargets
  * @param {boolean} [allowExtra=false]
  * @param {RawTx~satisfiesTargetsCallback} cb
  */
@@ -173,25 +170,32 @@ RawTx.prototype.satisfiesTargets = function (wallet, colorTargets, allowExtra, c
     cb = allowExtra
     allowExtra = undefined
   }
-  allowExtra = _.isUndefined(allowExtra) ? false : allowExtra
+  allowExtra = allowExtra === undefined ? false : allowExtra
 
   var tx = this.toTransaction(true)
-  var outScripts = colorTargets.map(function (ct) { return ct.getScript() })
+  var outScripts = _.invoke(colorTargets, 'getScript')
 
   var lengthSatisfy = true
-
-  Q.all(tx.outs.map(function (txOut, outIndex) {
-    var script = txOut.script.toHex()
+  Q.all(tx.outputs.map(function (output, outputIndex) {
+    var script = output.script.toHex()
     if (_.contains(outScripts, script)) {
-      var coin = {txId: tx, outIndex: outIndex, value: txOut.value}
+      var coin = {tx: tx, outIndex: outputIndex, value: output.value}
       return Q.ninvoke(wallet.getStateManager(), 'getCoinMainColorValue', coin)
-        .then(function (cv) { return new cclib.ColorTarget(script, cv) })
+        .then(function (cv) {
+          return new cclib.ColorTarget(script, cv)
+        })
     } else {
-      if (!allowExtra) { lengthSatisfy = false }
+      if (!allowExtra) {
+        lengthSatisfy = false
+      }
+
       return null
     }
-  })).then(function (txColorTargets) {
-    if (!lengthSatisfy) return false
+  }))
+  .then(function (txColorTargets) {
+    if (!lengthSatisfy) {
+      return false
+    }
 
     // remove null color targets (ones we aren't interesting in)
     txColorTargets = _.filter(txColorTargets)
@@ -212,34 +216,30 @@ RawTx.prototype.satisfiesTargets = function (wallet, colorTargets, allowExtra, c
     txColorTargets = txColorTargets.map(transformFn)
 
     return _.difference(colorTargets, txColorTargets).length === 0
-  }).done(
-    function (isSatisfied) { cb(null, isSatisfied) },
-    function (error) { cb(error) }
-  )
+  })
+  .then(function (isSatisfied) { cb(null, isSatisfied) },
+        function (error) { cb(error) })
 }
 
 RawTx.prototype.getOutputIndexesForAddress = function (wallet, address) {
   var network = wallet.getBitcoinNetwork()
   var tx = this.toTransaction(true)
-  var indexes = []
-  tx.outs.forEach(function (out, index) {
-    var outaddrs = bitcoin.util.getAddressesFromScript(out.script, network)
-    if (outaddrs.indexOf(address) >= 0) {
-      indexes.push(index)
+  var indices = []
+  tx.outputs.forEach(function (output, outputIndex) {
+    var addresses = script2addresses(output.script.toBuffer(), network).addresses
+    if (addresses.indexOf(address) >= 0) {
+      indices.push(outputIndex)
     }
   })
-  return indexes
+  return indices
 }
 
 RawTx.prototype.getOutputAddresses = function (wallet) {
   var network = wallet.getBitcoinNetwork()
   var tx = this.toTransaction(true)
-  var addresses = []
-  tx.outs.forEach(function (txout) {
-    var outaddrs = bitcoin.util.getAddressesFromScript(txout.script, network)
-    addresses.push.apply(addresses, outaddrs)
-  })
-  return addresses
+  return _.flatten(tx.outputs.map(function (output) {
+    return script2addresses(output.script.toBuffer(), network).addresses
+  }))
 }
 
 /**
@@ -247,37 +247,33 @@ RawTx.prototype.getOutputAddresses = function (wallet) {
  * @param {RawTx~getColorValuesCallback} cb
  */
 RawTx.prototype.getSentColorValues = function (wallet, cb) {
-  var getTxFn = createGetTxFn(wallet.getBlockchain())
+  var blockchain = wallet.getBlockchain()
+  var getTxFn = blockchain.getTx.bind(blockchain)
   var tx = this.toTransaction(true)
   var network = wallet.getBitcoinNetwork()
   var walletAddresses = wallet.getAllAddresses()
   var wsm = wallet.getStateManager()
 
-  Q.ninvoke(tx, 'ensureInputValues', getTxFn).then(function (tx) {
-    var promises = _.chain(tx.ins)
-      .map(function (input) {
-        var script = input.prevTx.outs[input.index].script
-        var addresses = bitcoin.util.getAddressesFromScript(script, network)
+  var ftx = new cclib.tx.FilledInputs(tx, getTxFn)
+  Q.all(tx.inputs.map(function (input, inputIndex) {
+    return ftx.getInputTx(inputIndex)
+      .then(function (inputTx) {
+        var inputOutput = inputTx.outputs[input.outputIndex]
+        var addresses = script2addresses(inputOutput.script.toBuffer(), network).addresses
         if (_.intersection(addresses, walletAddresses).length === 0) {
           return
         }
 
         var rawCoin = {
-          txId: input.prevTx.getId(),
-          outIndex: input.index,
-          value: input.prevTx.outs[input.index].value
+          txId: input.prevTxId.toString('hex'),
+          outIndex: input.outputIndex,
+          value: inputOutput.satoshis
         }
         return Q.ninvoke(wsm, 'getCoinMainColorValue', rawCoin)
       })
-      .flatten()
-      .filter()
-      .value()
-
-    return Q.all(promises)
-  }).done(
-    function (colorValues) { cb(null, colorValues) },
-    function (error) { cb(error) }
-  )
+  }))
+  .then(function (colorValues) { cb(null, _.filter(colorValues)) },
+        function (error) { cb(error) })
 }
 
 /**
@@ -290,22 +286,21 @@ RawTx.prototype.getReceivedColorValues = function (wallet, cb) {
   var walletAddresses = wallet.getAllAddresses()
 
   Q.ninvoke(wallet.getStateManager(), 'getTxMainColorValues', tx)
-  .then(function (colorValues) {
-    return _.chain(tx.outs)
-      .map(function (txOut, outIndex) {
-        var addresses = bitcoin.util.getAddressesFromScript(txOut.script, network)
-        if (_.intersection(addresses, walletAddresses).length === 0) {
-          return
-        }
+    .then(function (colorValues) {
+      return _.chain(tx.outputs)
+        .map(function (output, outputIndex) {
+          var addresses = script2addresses(output.script.toBuffer(), network).addresses
+          if (_.intersection(addresses, walletAddresses).length === 0) {
+            return
+          }
 
-        return colorValues[outIndex]
-      })
-      .filter()
-      .value()
-  }).done(
-    function (colorValues) { cb(null, colorValues) },
-    function (error) { cb(error) }
-  )
+          return colorValues[outputIndex]
+        })
+        .filter()
+        .value()
+    })
+    .then(function (colorValues) { cb(null, colorValues) },
+          function (error) { cb(error) })
 }
 
 function _deltas2map (deltas) {
@@ -321,7 +316,7 @@ RawTx.prototype.satisfiesDeltas = function (wallet, deltas, allowExtra, cb) {
     cb = allowExtra
     allowExtra = undefined
   }
-  allowExtra = _.isUndefined(allowExtra) ? false : allowExtra
+  allowExtra = allowExtra === undefined ? false : allowExtra
   // FIXME add maxfee
 
   this.getDeltaColorValues(wallet, function (error, txDeltas) {
@@ -343,7 +338,10 @@ RawTx.prototype.satisfiesDeltas = function (wallet, deltas, allowExtra, cb) {
 
     // check values
     deltaIds.forEach(function (colorId) {
-      if (error) { return }
+      if (error) {
+        return
+      }
+
       var value = deltasMap[colorId].getValue()
       var txValue = txDeltasMap[colorId].getValue()
       if (allowExtra && (value > txValue)) {
@@ -352,7 +350,9 @@ RawTx.prototype.satisfiesDeltas = function (wallet, deltas, allowExtra, cb) {
         error = new Error('Deltas not satisfied!')
       }
     })
-    cb(error) // deltas satisfied
+
+    // deltas satisfied
+    cb(error)
   })
 }
 
@@ -366,21 +366,21 @@ RawTx.prototype.getDeltaColorValues = function (wallet, cb) {
     Q.ninvoke(this, 'getReceivedColorValues', wallet)
   ]
 
-  Q.all(promises).spread(function (sentColorValues, receivedColorValues) {
-    return _.chain(sentColorValues)
-      .invoke('neg')
-      .concat(receivedColorValues)
-      .groupBy(function (colorValue) {
-        return colorValue.getColorId()
-      })
-      .map(function (colorValues) {
-        return cclib.ColorValue.sum(colorValues)
-      })
-      .value()
-  }).done(
-    function (colorValues) { cb(null, colorValues) },
-    function (error) { cb(error) }
-  )
+  Q.all(promises)
+    .spread(function (sentColorValues, receivedColorValues) {
+      return _.chain(sentColorValues)
+        .invoke('neg')
+        .concat(receivedColorValues)
+        .groupBy(function (colorValue) {
+          return colorValue.getColorId()
+        })
+        .map(function (colorValues) {
+          return cclib.ColorValue.sum(colorValues)
+        })
+        .value()
+    })
+    .then(function (colorValues) { cb(null, colorValues) },
+          function (error) { cb(error) })
 }
 
 /**
@@ -391,37 +391,33 @@ RawTx.prototype.getDeltaColorValues = function (wallet, cb) {
 
 /**
  * @param {Wallet} wallet Wallet for blockchain access
- * @param {number[]} [indexes] Scan only given indexes
+ * @param {number[]} [indices] Scan only given indices
  * @param {RawTx~getInputAddressesCallback} cb
  */
-RawTx.prototype.getInputAddresses = function (wallet, indexes, cb) {
-  var tx = this.txb.buildIncomplete()
+RawTx.prototype.getInputAddresses = function (wallet, indices, cb) {
+  var tx = this.toTransaction(true)
 
-  if (_.isFunction(indexes) && _.isUndefined(cb)) {
-    cb = indexes
-    indexes = undefined
+  if (_.isFunction(indices) && _.isUndefined(cb)) {
+    cb = indices
+    indices = undefined
   }
-  if (_.isUndefined(indexes)) {
-    indexes = _.range(tx.ins.length)
+  if (_.isUndefined(indices)) {
+    indices = _.range(tx.inputs.length)
   }
 
-  var getTxFn = util.createGetTxFn(wallet.getBlockchain())
-  Q.ninvoke(tx, 'ensureInputValues', getTxFn).then(function (tx) {
-    var bitcoinNetwork = wallet.getBitcoinNetwork()
-    return _.chain(tx.ins)
-      .filter(function (val, idx) {
-        return indexes.indexOf(idx) !== -1
+  var bitcoinNetwork = wallet.getBitcoinNetwork()
+  var blockchain = wallet.getBlockchain()
+  var getTxFn = blockchain.getTx.bind(blockchain)
+  var ftx = new cclib.tx.FilledInputs(tx, getTxFn)
+  Q.all(indices.map(function (inputIndex) {
+    return ftx.getInputTx(inputIndex)
+      .then(function (inputTx) {
+        var script = inputTx.outputs[tx.inputs[inputIndex].outputIndex].script
+        return script2addresses(script.toBuffer(), bitcoinNetwork).addresses
       })
-      .map(function (input) {
-        var script = input.prevTx.outs[input.index].script
-        return bitcoin.util.getAddressesFromScript(script, bitcoinNetwork)
-      })
-      .flatten()
-      .value()
-  }).done(
-    function (addresses) { cb(null, addresses) },
-    function (error) { cb(error) }
-  )
+  }))
+  .then(function (inputAddresses) { cb(null, _.flatten(inputAddresses)) },
+        function (error) { cb(error) })
 }
 
 module.exports = RawTx

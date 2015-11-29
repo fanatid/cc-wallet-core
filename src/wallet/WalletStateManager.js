@@ -1,15 +1,12 @@
-var timers = require('timers')
 var events = require('events')
 var inherits = require('util').inherits
 var SyncMixin = require('sync-mixin')
-
 var _ = require('lodash')
 var Q = require('q')
+var bitcore = require('bitcore-lib')
+var cclib = require('coloredcoinjs-lib')
 
 var WalletState = require('./WalletState')
-var bitcoin
-var cclib = require('../cclib')
-var getUncolored = cclib.definitions.Manager.getUncolored
 var errors = require('../errors')
 var TX_STATUS = require('../util/const').TX_STATUS
 var OrderedMap = require('../util/ordered-map')
@@ -123,13 +120,16 @@ WalletStateManager.prototype._attemptSendTx = function (txId, attempt) {
 
       return Q.fcall(function () {
         return walletState.getTxManager().updateTx(tx, {status: status})
-      }).then(function () {
+      })
+      .then(function () {
         var coinManager = walletState.getCoinManager()
         return coinManager[methodName](tx)
-      }).then(function () {
+      })
+      .then(function () {
         var historyManager = walletState.getHistoryManager()
         return historyManager[methodName](tx)
-      }).then(function () {
+      })
+      .then(function () {
         return {commit: true}
       })
     })
@@ -180,19 +180,14 @@ WalletStateManager.prototype._createGetTxFn = function (walletState) {
   walletState = this._resolveWalletState(walletState)
 
   var blockchain = this._wallet.getBlockchain()
-  function getTxFn (txId, cb) {
+  return function (txId) {
     var tx = walletState.getTxManager().getTx(txId)
     if (tx !== null) {
-      return timers.setImmediate(cb, null, tx)
+      return Q.resolve(tx)
     }
 
-    function onFulfilled (txHex) { cb(null, bitcoin.Transaction.fromHex(txHex)) }
-    function onRejected (error) { cb(error) }
-
-    blockchain.getTx(txId).then(onFulfilled, onRejected)
+    return blockchain.getTx(txId)
   }
-
-  return getTxFn
 }
 
 /**
@@ -221,16 +216,16 @@ WalletStateManager.prototype.execute = function (fn) {
       events.add('error' + Date.now(), ['error', err])
     })
     walletState.getTxManager().on('addTx', function (tx) {
-      events.add('addTx' + tx.getId(), ['addTx', tx])
+      events.add('addTx' + tx.id, ['addTx', tx])
     })
     walletState.getTxManager().on('updateTx', function (tx) {
-      events.add('updateTx' + tx.getId(), ['updateTx', tx])
+      events.add('updateTx' + tx.id, ['updateTx', tx])
     })
     walletState.getTxManager().on('revertTx', function (tx) {
-      events.add('revertTx' + tx.getId(), ['revertTx', tx])
+      events.add('revertTx' + tx.id, ['revertTx', tx])
     })
     walletState.getTxManager().on('sendTx', function (tx) {
-      events.add('sendTx' + tx.getId(), ['sendTx', tx])
+      events.add('sendTx' + tx.id, ['sendTx', tx])
     })
     walletState.getCoinManager().on('touchAddress', function (address) {
       events.add('touchAddress' + address, ['touchAddress', address])
@@ -239,20 +234,25 @@ WalletStateManager.prototype.execute = function (fn) {
       events.add('newColor' + colorDesc, ['newColor', colorDesc])
     })
     walletState.getCoinManager().on('touchAsset', function (assetdef) {
-      events.add('touchAsset' + assetdef.getId(), ['touchAsset', assetdef])
+      events.add('touchAsset' + assetdef.id, ['touchAsset', assetdef])
     })
     walletState.getHistoryManager().on('update', function () {
       events.add('update', ['historyUpdate'])
     })
 
-    return fn(walletState).finally(function () {
+    return Q.try(function () {
+      return fn(walletState)
+    })
+    .finally(function () {
       walletState.getTxManager().removeAllListeners()
       walletState.getCoinManager().removeAllListeners()
       walletState.getHistoryManager().removeAllListeners()
-    }).catch(function (error) {
-      self.emit('error', error)
-      throw error
-    }).then(function (result) {
+    })
+    .catch(function (err) {
+      self.emit('error', err)
+      throw err
+    })
+    .then(function (result) {
       if (!_.isObject(result) || result.commit !== true) {
         return
       }
@@ -260,11 +260,12 @@ WalletStateManager.prototype.execute = function (fn) {
       walletState.save({saveNow: result.saveNow || false})
       self._currentState = walletState
 
-      events.getVals().forEach(function (args) {
+      events.getValues().forEach(function (args) {
         self.emit.apply(self, args)
       })
     })
-  }).finally(function () {
+  })
+  .finally(function () {
     self._executeQueue.shift()
     if (self._executeQueue.length > 0) {
       return self._executeQueue[0].resolve()
@@ -290,7 +291,7 @@ WalletStateManager.prototype.sendTx = function (tx) {
   // })
 
   var self = this
-  return self._wallet.getBlockchain().sendTx(tx.toHex())
+  return self._wallet.getBlockchain().sendTx(tx.toString())
     .then(function () {
       return self.execute(function (walletState) {
         return Q.resolve()
@@ -319,25 +320,25 @@ WalletStateManager.prototype.sync = function (addresses) {
     var txManager = walletState.getTxManager()
     return walletState.getTxStateSet().autoSync(
       blockchain, addresses, txManager.getAllTxIds())
-      .then(function (newTxSS) {
-        var changes = newTxSS.getChanges()
-        console.log('applying ' + changes.length + 'changes')
-        if (changes.length === 0) {
-          return {commit: false}
-        }
+        .then(function (newTxSS) {
+          var changes = newTxSS.getChanges()
+          console.log('applying ' + changes.length + ' changes')
+          if (changes.length === 0) {
+            return {commit: false}
+          }
 
-        var coinManager = walletState.getCoinManager()
-        var historyManager = walletState.getHistoryManager()
-        return Q.all(changes.map(function (txr) {
-          return txManager.processTxRecord(txr, coinManager, historyManager)
-        }))
-        .then(function () {
-          historyManager.emit('update')
-          console.log('commiting changes')
-          walletState.setTxStateSet(newTxSS)
-          return {commit: true}
+          var coinManager = walletState.getCoinManager()
+          var historyManager = walletState.getHistoryManager()
+          return Q.all(changes.map(function (txr) {
+            return txManager.processTxRecord(txr, coinManager, historyManager)
+          }))
+          .then(function () {
+            historyManager.emit('update')
+            console.log('commiting changes')
+            walletState.setTxStateSet(newTxSS)
+            return {commit: true}
+          })
         })
-      })
   })
 }
 
@@ -358,10 +359,9 @@ WalletStateManager.prototype.freezeCoins = function (coins, opts, cb) {
   this.execute(function (walletState) {
     walletState.getCoinManager().freezeCoins(coins, opts)
     return Q.resolve({commit: true})
-  }).done(
-    function () { cb(null) },
-    function (error) { cb(error) }
-  )
+  })
+  .then(function () { cb(null) },
+        function (error) { cb(error) })
 }
 
 /**
@@ -372,10 +372,9 @@ WalletStateManager.prototype.unfreezeCoins = function (coins, cb) {
   this.execute(function (walletState) {
     walletState.getCoinManager().unfreezeCoins(coins)
     return Q.resolve({commit: true})
-  }).done(
-    function () { cb(null) },
-    function (error) { cb(error) }
-  )
+  })
+  .then(function () { cb(null) },
+        function (error) { cb(error) })
 }
 
 /**
@@ -389,53 +388,17 @@ WalletStateManager.prototype.getTx = function (txId, walletState) {
 }
 
 /**
- * @callback WalletStateManager~getTxColorValuesCallback
+ * @callback WalletStateManager~getTxMainColorValuesCallback
  * @param {?Error} error
- * @param {external:coloredcoinjs-lib.ColorValue[]} colorValues
+ * @param {cclib.ColorValue[]} colorValues
  */
-
-/**
- * Get ColorValues for given tx and color definition
- *
- * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx Tx for processing
- * @param {external:coloredcoinjs-lib.ColorDefinition} colordef
- * @param {WalletState} [walletState] Custom WalletState
- * @param {WalletStateManager~getTxColorValuesCallback} cb
- */
-WalletStateManager.prototype.getTxColorValues = function (tx, colordef, walletState, cb) {
-  // tx, colordef, function, undefined -> tx, colordef, undefined, function
-  if (_.isFunction(walletState) && _.isUndefined(cb)) {
-    cb = walletState
-    walletState = undefined
-  }
-
-  walletState = this._resolveWalletState(walletState)
-
-  var colorData = this._wallet.getColorData()
-  var getTxFn = this._createGetTxFn(walletState)
-
-  return Q.fcall(function () {
-    return Q.ninvoke(colorData(), 'getTxColorValues', tx, colordef, getTxFn)
-  }).then(function (colorValues) {
-    return colorValues.map(function (colorValue, index) {
-      if (colorValue === null) {
-        colorValue = new cclib.ColorValue(getUncolored(), tx.outs[index].value)
-      }
-
-      return colorValue
-    })
-  }).done(
-    function (colorValues) { cb(null, colorValues) },
-    function (error) { cb(error) }
-  )
-}
 
 /**
  * Get ColorValues for given tx
  *
- * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx Tx for processing
+ * @param {bitcore.Transaction} tx Tx for processing
  * @param {WalletState} [walletState] Custom WalletState
- * @param {WalletStateManager~getTxColorValuesCallback} cb
+ * @param {WalletStateManager~getTxMainColorValuesCallback} cb
  */
 WalletStateManager.prototype.getTxMainColorValues = function (tx, walletState, cb) {
   // tx, function, undefined -> tx, undefined, function
@@ -445,36 +408,36 @@ WalletStateManager.prototype.getTxMainColorValues = function (tx, walletState, c
   }
 
   walletState = this._resolveWalletState(walletState)
-
-  var wallet = this._wallet
   var getTxFn = this._createGetTxFn(walletState)
-  var colordefs = wallet.getColorDefinitionManager().getAllColorDefinitions()
 
-  Q.all(colordefs.map(function (colordef) {
-    return Q.ninvoke(wallet.getColorData(), 'getTxColorValues', tx, colordef, getTxFn)
-  })).then(function (colorValuess) {
-    var colorValues = colorValuess.reduce(function (pColorValues, colorValues) {
-      return pColorValues.map(function (colorValue, index) {
-        if (colorValue !== null && colorValues[index] !== null) {
-          var msg = tx.getId() + ':' + index + ' have more than one ColorValue'
-          throw new errors.CoinColorValueError(msg)
+  return this._wallet.getColorData().getOutColorValues(tx, null, cclib.definitions.EPOBC, getTxFn)
+    .then(function (colorValues) {
+      var values = new Array(tx.outputs.length)
+
+      for (var iter = colorValues.values(), data = iter.next(); !data.done; data = iter.next()) {
+        for (var outputIndex = 0; outputIndex < values.length; ++outputIndex) {
+          if (data.value[outputIndex] !== null) {
+            if (values[outputIndex] !== undefined) {
+              var msg = tx.id + ':' + outputIndex + ' have more than one ColorValue'
+              throw new errors.CoinColorValueError(msg)
+            }
+
+            values[outputIndex] = data.value[outputIndex]
+          }
         }
-
-        return colorValue === null ? colorValues[index] : colorValue
-      })
-    }, _.range(tx.outs.length).map(function () { return null }))
-
-    return colorValues.map(function (cv, index) {
-      if (cv !== null) {
-        return cv
       }
 
-      return new cclib.ColorValue(getUncolored(), tx.outs[index].value)
+      for (var index = 0; index < values.length; ++index) {
+        if (values[index] === undefined) {
+          var uncolored = cclib.definitions.Manager.getUncolored()
+          values[index] = new cclib.ColorValue(uncolored, tx.outputs[index].satoshis)
+        }
+      }
+
+      return values
     })
-  }).done(
-    function (colorValues) { cb(null, colorValues) },
-    function (error) { cb(error) }
-  )
+    .then(function (colorValues) { cb(null, colorValues) },
+          function (error) { cb(error) })
 }
 
 /**
@@ -531,39 +494,17 @@ WalletStateManager.prototype.isCoinFrozen = function (coin, walletState) {
 }
 
 /**
- * @callback WalletStateManager~getCoinColorValueCallback
+ * @callback WalletStateManager~getCoinMainColorValueCallback
  * @param {?Error} error
  * @param {ColorValue} colorValue
  */
-
-/**
- * Get ColorValue for given txId:outIndex and color definition
- *
- * @param {{txId: string, outIndex: number}} coin
- * @param {external:coloredcoinjs-lib.ColorDefinition} colordef
- * @param {WalletState} [walletState]
- * @param {WalletStateManager~getCoinColorValueCallback} cb
- */
-WalletStateManager.prototype.getCoinColorValue = function (coin, colordef, walletState, cb) {
-  // coin, colordef, function, undefined -> coin, colordef, undefined, function
-  if (_.isFunction(walletState) && _.isUndefined(cb)) {
-    cb = walletState
-    walletState = undefined
-  }
-
-  walletState = this._resolveWalletState(walletState)
-
-  var getTxFn = this._createGetTxFn(walletState)
-
-  this._wallet.getColorData().getCoinColorValue(coin, colordef, getTxFn, cb)
-}
 
 /**
  * Get main ColorValue for given txId:outIndex
  *
  * @param {{txId: string, outIndex: number, value: number}} coin
  * @param {WalletState} [walletState]
- * @param {WalletStateManager~getCoinColorValueCallback} cb
+ * @param {WalletStateManager~getCoinMainColorValueCallback} cb
  */
 WalletStateManager.prototype.getCoinMainColorValue = function (coin, walletState, cb) {
   // coin, function, undefined -> coin, undefined, function
@@ -573,28 +514,49 @@ WalletStateManager.prototype.getCoinMainColorValue = function (coin, walletState
   }
 
   walletState = this._resolveWalletState(walletState)
-
-  var wallet = this._wallet
   var getTxFn = this._createGetTxFn(walletState)
+  var wallet = this._wallet
 
-  var colordefs = wallet.getColorDefinitionManager().getAllColorDefinitions()
-  Q.all(colordefs.map(function (colordef) {
-    return Q.ninvoke(wallet.getColorData(), 'getCoinColorValue', coin, colordef, getTxFn)
-  })).then(function (colorValues) {
-    var colorValue = colorValues.reduce(function (prevColorValue, colorValue) {
-      if (prevColorValue === null || colorValue === null) {
-        return prevColorValue || colorValue
+  Q.fcall(function () {
+    if (coin.txId !== undefined) {
+      return Q.all([getTxFn(coin.txId, {save: true})])
+    }
+
+    coin.txId = coin.tx.id
+    return Q.all([coin.tx, {save: false}])
+  })
+  .spread(function (rawTx, opts) {
+    var tx = new bitcore.Transaction(rawTx)
+    return Q.all([
+      Q.resolve(tx),
+      wallet.getColorData().getOutColorValues(tx, [coin.outIndex], cclib.definitions.EPOBC, getTxFn, opts)
+    ])
+  })
+  .then(function (result) {
+    var tx = result[0]
+    var colorValues = result[1]
+
+    var value = null
+    for (var iter = colorValues.values(), data = iter.next(); !data.done; data = iter.next()) {
+      if (data.value[coin.outIndex] !== null) {
+        if (value !== null) {
+          var msg = coin.txId + ':' + coin.outIndex + ' have more than one ColorValue'
+          throw new errors.CoinColorValueError(msg)
+        }
+
+        value = data.value[coin.outIndex]
       }
+    }
 
-      var msg = coin.txId + ':' + coin.outIndex + ' have more than one ColorValue'
-      throw new errors.CoinColorValueError(msg)
-    }, null)
+    if (value === null) {
+      var uncolored = cclib.definitions.Manager.getUncolored()
+      value = new cclib.ColorValue(uncolored, tx.outputs[coin.outIndex].satoshis)
+    }
 
-    return colorValue || new cclib.ColorValue(getUncolored(), coin.value)
-  }).done(
-    function (colorValue) { cb(null, colorValue) },
-    function (error) { cb(error) }
-  )
+    return value
+  })
+  .then(function (colorValue) { cb(null, colorValue) },
+        function (error) { cb(error) })
 }
 
 /**

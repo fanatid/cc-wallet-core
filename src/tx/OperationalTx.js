@@ -1,19 +1,17 @@
 var util = require('util')
-
 var Q = require('q')
+var cclib = require('coloredcoinjs-lib')
 
-var cclib = require('../cclib')
 var errors = require('../errors')
-var getUncolored = cclib.definitions.Manager.getUncolored
 
 /**
  * @class OperationalTx
- * @extends external:coloredcoinjs-lib.OperationalTx
+ * @extends cclib.tx.Operational
  *
  * @param {Wallet} wallet
  */
 function OperationalTx (wallet) {
-  cclib.OperationalTx.call(this)
+  cclib.tx.Operational.call(this)
 
   this.wallet = wallet
   this.targets = []
@@ -24,7 +22,7 @@ util.inherits(OperationalTx, cclib.tx.Operational)
 /**
  * Add ColorTarget to current tx
  *
- * @param {external:coloredcoinjs-lib.ColorTarget} target
+ * @param {cclib.ColorTarget} target
  */
 OperationalTx.prototype.addTarget = function (target) {
   this.targets.push(target)
@@ -33,7 +31,7 @@ OperationalTx.prototype.addTarget = function (target) {
 /**
  * Vectorized version of addTarget
  *
- * @param {external:coloredcoinjs-lib.ColorTarget[]} targets
+ * @param {cclib.ColorTarget[]} targets
  */
 OperationalTx.prototype.addTargets = function (targets) {
   targets.forEach(this.addTarget.bind(this))
@@ -42,7 +40,7 @@ OperationalTx.prototype.addTargets = function (targets) {
 /**
  * Return ColorTargets of current transaction
  *
- * @return {external:coloredcoinjs-lib.ColorTarget[]}
+ * @return {cclib.ColorTarget[]}
  */
 OperationalTx.prototype.getTargets = function () {
   return this.targets
@@ -67,21 +65,21 @@ OperationalTx.prototype.isMonoColor = function () {
 
 /**
  * @param {number} txSize
- * @return {external:coloredcoinjs-lib.ColorValue}
+ * @return {cclib.ColorValue}
  */
 OperationalTx.prototype.getRequiredFee = function (txSize) {
-  var feePerKb = this.wallet.getBitcoinNetwork().feePerKb
+  var feePerKb = this.wallet.getFeePerKb()
   var feeValue = Math.ceil(feePerKb * txSize / 1000)
 
-  return new cclib.ColorValue(getUncolored(), feeValue)
+  return new cclib.ColorValue(cclib.definitions.Manager.getUncolored(), feeValue)
 }
 
 /**
- * @return {external:coloredcoinjs-lib.ColorValue}
+ * @return {cclib.ColorValue}
  */
 OperationalTx.prototype.getDustThreshold = function () {
-  var dustValue = this.wallet.getBitcoinNetwork().dustThreshold
-  return new cclib.ColorValue(getUncolored(), dustValue)
+  var dustValue = this.wallet.getDustThreshold()
+  return new cclib.ColorValue(cclib.definitions.Manager.getUncolored(), dustValue)
 }
 
 OperationalTx.prototype._getCoinsForColor = function (colordef) {
@@ -95,22 +93,53 @@ OperationalTx.prototype._getCoinsForColor = function (colordef) {
 }
 
 /**
- * @callback OperationalTx~selectCoinsCallback
- * @param {?Error}
- * @param {Coin[]} utxo
- * @param {external:coloredcoinjs-lib.ColorValue} utxoColorValue
+ * @callback OperationalTx~FeeEstimatorEstimateRequiredFee
+ * @param {Object} extra
+ * @param {number} [extra.inputs]
+ * @param {number} [extra.outputs]
+ * @param {number} [extra.bytes]
+ * @return {number}
  */
 
 /**
- * @param {external:coloredcoinjs-lib.ColorValue} colorValue
- * @param {?Object} feeEstimator
- * @param {OperationalTx~selectCoinsCallback} cb
+ * @typedef {Object} OperationalTx~FeeEstimator
+ * @property {OperationalTx~FeeEstimatorEstimateRequiredFee} estimateRequiredFee
  */
-OperationalTx.prototype.selectCoins = function (colorValue, feeEstimator, cb) {
+
+/**
+ * @typedef {Object} OperationalTx~AbstractRawCoin
+ * @property {string} txId
+ * @property {number} outIndex
+ * @property {number} value
+ * @property {string} script
+ */
+
+/**
+ * @callback OperationalTx~AbstractCoinToRawCoin
+ * @return {OperationalTx~AbstractRawCoin}
+ */
+
+/**
+ * @typedef {Object} OperationalTx~AbstractCoin
+ * @property {OperationalTx~AbstractCoinToRawCoin} toRawCoin
+ */
+
+/**
+ * @typedef OperationalTx~selectCoinsResult
+ * @property {OperationalTx~AbstractCoin[]} coins
+ * @property {ColorValue} total
+ */
+
+/**
+ * @param {cclib.ColorValue} colorValue
+ * @param {OperationalTx~FeeEstimator} [feeEstimator]
+ * @return {Promise<OperationalTx~selectCoinsResult>}
+ */
+OperationalTx.prototype.selectCoins = function (colorValue, feeEstimator) {
   var self = this
 
   var colordef
-  Q.fcall(function () {
+  return Q.fcall(function () {
     colordef = colorValue.getColorDefinition()
 
     if (!colorValue.isUncolored() && feeEstimator !== null) {
@@ -118,7 +147,8 @@ OperationalTx.prototype.selectCoins = function (colorValue, feeEstimator, cb) {
     }
 
     return self._getCoinsForColor(colordef)
-  }).then(function (coinList) {
+  })
+  .then(function (coinList) {
     var coins = coinList.getCoins()
 
     var selectedCoinsColorValue = new cclib.ColorValue(colordef, 0)
@@ -126,10 +156,9 @@ OperationalTx.prototype.selectCoins = function (colorValue, feeEstimator, cb) {
 
     var requiredSum = colorValue.clone()
     if (feeEstimator !== null) {
-      requiredSum = requiredSum.plus(feeEstimator.estimateRequiredFee({extraTxIns: coins.length}))
+      requiredSum = requiredSum.plus(feeEstimator.estimateRequiredFee({inputs: coins.length}))
     }
 
-    /** @todo Better coins selection algorithm */
     var promise = Q.resolve()
     coins.forEach(function (coin) {
       promise = promise.then(function () {
@@ -144,20 +173,21 @@ OperationalTx.prototype.selectCoins = function (colorValue, feeEstimator, cb) {
       })
     })
 
-    return promise.then(function () {
-      if (selectedCoinsColorValue.getValue() >= requiredSum.getValue()) {
-        return {coins: selectedCoins, value: selectedCoinsColorValue}
-      }
+    return promise
+      .then(function () {
+        if (selectedCoinsColorValue.getValue() >= requiredSum.getValue()) {
+          return {coins: selectedCoins, total: selectedCoinsColorValue}
+        }
 
-      var required = requiredSum.getValue()
-      var selected = selectedCoinsColorValue.getValue()
-      throw new errors.InsufficientFundsError(required + ' requested, ' + selected + ' found')
-    })
-  }).done(function (data) { cb(null, data.coins, data.value) }, function (error) { cb(error) })
+        var required = requiredSum.getValue()
+        var selected = selectedCoinsColorValue.getValue()
+        throw new errors.InsufficientFundsError(required + ' requested, ' + selected + ' found')
+      })
+  })
 }
 
 /**
- * @param {external:coloredcoinjs-lib.ColorDefinition} colordef
+ * @param {cclib.ColorDefinition} colordef
  * @return {string}
  */
 OperationalTx.prototype.getChangeAddress = function (colordef) {

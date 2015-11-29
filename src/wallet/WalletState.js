@@ -1,7 +1,8 @@
+var TxStateSet = require('blockchainjs').TxStateSet
+
 var TxManager = require('../tx').TxManager
 var CoinManager = require('../coin').CoinManager
 var HistoryManager = require('../history').HistoryManager
-var TxStateSet = require('blockchainjs').TxStateSet
 
 /**
  * @class WalletState

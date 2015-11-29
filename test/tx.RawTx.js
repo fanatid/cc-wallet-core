@@ -1,9 +1,10 @@
 var expect = require('chai').expect
 
+var Q = require('q')
 var BIP39 = require('bip39')
-var cccore = require('../')
-var ColorTarget// = cccore.cclib.ColorTarget
-var ColorValue// = cccore.cclib.ColorValue
+var cclib = require('coloredcoinjs-lib')
+
+var cccore = require('../src')
 var Wallet = cccore.Wallet
 var RawTx = cccore.tx.RawTx
 
@@ -12,7 +13,7 @@ var btcHexTx = fixtures.tx.uncolored2.raw // mainnet, 2 uncolored outputs
 var mnemonic = fixtures.wallet.alice.mnemonic
 var password = fixtures.wallet.alice.password
 
-describe.skip('tx.RawTx', function () {
+describe('tx.RawTx', function () {
   this.timeout(240 * 1000)
 
   var rawTx
@@ -38,102 +39,92 @@ describe.skip('tx.RawTx', function () {
   })
 
   it('toTransaction', function () {
-    expect(rawTx.toTransaction().toHex()).to.equal(btcHexTx)
+    expect(rawTx.toTransaction().toString()).to.equal(btcHexTx)
   })
 
-  it('getSentColorValues uncolored', function (done) {
-    rawTx.getSentColorValues(wallet, function (error, sentColorValues) {
-      expect(error).to.be.null
-      expect(sentColorValues).to.be.an('array').with.to.have.length(2)
+  it('getSentColorValues uncolored', function () {
+    return Q.ninvoke(rawTx, 'getSentColorValues', wallet)
+      .then(function (sentColorValues) {
+        expect(sentColorValues).to.be.an('array').with.to.have.length(2)
 
-      expect(sentColorValues[0]).to.be.instanceof(ColorValue)
-      expect(sentColorValues[0].isUncolored()).to.true
-      expect(sentColorValues[0].getValue()).to.equal(50000)
+        expect(sentColorValues[0]).to.be.instanceof(cclib.ColorValue)
+        expect(sentColorValues[0].isUncolored()).to.true
+        expect(sentColorValues[0].getValue()).to.equal(50000)
 
-      expect(sentColorValues[1]).to.be.instanceof(ColorValue)
-      expect(sentColorValues[1].isUncolored()).to.true
-      expect(sentColorValues[1].getValue()).to.equal(38610)
-
-      done()
-    })
+        expect(sentColorValues[1]).to.be.instanceof(cclib.ColorValue)
+        expect(sentColorValues[1].isUncolored()).to.true
+        expect(sentColorValues[1].getValue()).to.equal(38610)
+      })
   })
 
-  it('getReceivedColorValues uncolored', function (done) {
-    rawTx.getReceivedColorValues(wallet, function (error, receivedColorValues) {
-      expect(error).to.be.null
-      expect(receivedColorValues).to.be.an('array').with.to.have.length(1)
+  it('getReceivedColorValues uncolored', function () {
+    return Q.ninvoke(rawTx, 'getReceivedColorValues', wallet)
+      .then(function (receivedColorValues) {
+        expect(receivedColorValues).to.be.an('array').with.to.have.length(1)
 
-      expect(receivedColorValues[0]).to.be.instanceof(ColorValue)
-      expect(receivedColorValues[0].isUncolored()).to.true
-      expect(receivedColorValues[0].getValue()).to.equal(34210)
-
-      done()
-    })
+        expect(receivedColorValues[0]).to.be.instanceof(cclib.ColorValue)
+        expect(receivedColorValues[0].isUncolored()).to.true
+        expect(receivedColorValues[0].getValue()).to.equal(34210)
+      })
   })
 
-  it('getDeltaColorValues uncolored', function (done) {
-    rawTx.getDeltaColorValues(wallet, function (error, colorValues) {
-      expect(error).to.be.null
-      expect(colorValues).to.be.an('array').with.to.have.length(1)
+  it('getDeltaColorValues uncolored', function () {
+    return Q.ninvoke(rawTx, 'getDeltaColorValues', wallet)
+      .then(function (colorValues) {
+        expect(colorValues).to.be.an('array').with.to.have.length(1)
 
-      expect(colorValues[0]).to.be.instanceof(ColorValue)
-      expect(colorValues[0].isUncolored()).to.true
-      expect(colorValues[0].getValue()).to.equal(-54400)
-
-      done()
-    })
+        expect(colorValues[0]).to.be.instanceof(cclib.ColorValue)
+        expect(colorValues[0].isUncolored()).to.true
+        expect(colorValues[0].getValue()).to.equal(-54400)
+      })
   })
 
   describe('getColorTargets uncolored', function () {
-    it('gets uncolored targets', function (done) {
-      rawTx.getColorTargets(wallet, function (error, colorTargets) {
-        expect(error).to.be.null
-        expect(colorTargets).to.be.an('array').with.to.have.length(2)
-        colorTargets.forEach(function (colorTarget) {
-          expect(colorTarget).to.be.instanceof(ColorTarget)
-          expect(colorTarget.isUncolored()).to.be.true
+    it('gets uncolored targets', function () {
+      return Q.ninvoke(rawTx, 'getColorTargets', wallet)
+        .then(function (colorTargets) {
+          expect(colorTargets).to.be.an('array').with.to.have.length(2)
+          colorTargets.forEach(function (colorTarget) {
+            expect(colorTarget).to.be.instanceof(cclib.ColorTarget)
+            expect(colorTarget.isUncolored()).to.be.true
+          })
         })
-        done()
-      })
     })
   })
 
   describe('satisfiesTargets', function () {
-    it('satisfies itself', function (done) {
-      rawTx.getColorTargets(wallet, function (error, cts) {
-        expect(error).to.be.null
-        rawTx.satisfiesTargets(wallet, cts, false, function (error, satisfied) {
-          expect(error).to.be.null
-          expect(satisfied).to.be.true
-          done()
+    it('satisfies itself', function () {
+      return Q.ninvoke(rawTx, 'getColorTargets', wallet)
+        .then(function (cts) {
+          return Q.ninvoke(rawTx, 'satisfiesTargets', wallet, cts, false)
         })
-      })
+        .then(function (satisfied) {
+          expect(satisfied).to.be.true
+        })
     })
 
-    it('respects allowExtra false', function (done) {
-      rawTx.getColorTargets(wallet, function (error, cts) {
-        expect(error).to.be.null
-        expect(cts).to.be.an('array')
-        cts.pop()
-        rawTx.satisfiesTargets(wallet, cts, false, function (error, satisfied) {
-          expect(error).to.be.null
+    it('respects allowExtra false', function () {
+      return Q.ninvoke(rawTx, 'getColorTargets', wallet)
+        .then(function (cts) {
+          expect(cts).to.be.an('array')
+          cts.pop()
+          return Q.ninvoke(rawTx, 'satisfiesTargets', wallet, cts, false)
+        })
+        .then(function (satisfied) {
           expect(satisfied).to.be.false
-          done()
         })
-      })
     })
 
-    it('respects allowExtra true', function (done) {
-      rawTx.getColorTargets(wallet, function (error, cts) {
-        expect(error).to.be.null
-        expect(cts).to.be.an('array')
-        cts.pop()
-        rawTx.satisfiesTargets(wallet, cts, true, function (error, satisfied) {
-          expect(error).to.be.null
-          expect(satisfied).to.be.true
-          done()
+    it('respects allowExtra true', function () {
+      return Q.ninvoke(rawTx, 'getColorTargets', wallet)
+        .then(function (cts) {
+          expect(cts).to.be.an('array')
+          cts.pop()
+          return Q.ninvoke(rawTx, 'satisfiesTargets', wallet, cts, true)
         })
-      })
+        .then(function (satisfied) {
+          expect(satisfied).to.be.true
+        })
     })
   })
 })

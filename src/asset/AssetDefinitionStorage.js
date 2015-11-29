@@ -18,7 +18,7 @@ var errors = require('../errors')
  * @extends SyncStorage
  */
 function AssetDefinitionStorage () {
-  SyncStorage.apply(this, Array.prototype.slice.call(arguments))
+  SyncStorage.apply(this, arguments)
 
   this.assetsDbKey = this.globalPrefix + 'AssetDefinitions'
   this.assetRecords = this.store.get(this.assetsDbKey) || []

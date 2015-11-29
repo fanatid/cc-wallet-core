@@ -1,10 +1,10 @@
 var _ = require('lodash')
-var errors = require('./cclib').errors
+var errors = require('coloredcoinjs-lib').errors
 var createError = errors.createError || require('errno').create
 
 /**
  * Error
- *  +-- ColoredCoinError
+ *  +-- ColoredCoin
  *       +-- AlreadyExistsError
  *       +-- CoinColorValueError
  *       +-- IncompatibilityError
@@ -32,10 +32,6 @@ var createError = errors.createError || require('errno').create
  *       +-- TxTransformError
  *       |    +-- TxKindIsNotRecognizedError
  *       |    +-- TargetKindIsNotReachableError
- *       +-- VerifyTypeError
- *       |    +-- VerifyColorDefinitionTypeError
- *       |    +-- VerifyPowerError
- *       |    +-- VerifySeedHexError
  *       +-- WalletAlreadyInitializedError
  *       +-- WalletNotInitializedError
  */
@@ -47,17 +43,13 @@ var createError = errors.createError || require('errno').create
 /**
  * @member {function} external:coloredcoinjs-lib.errors.ColoredCoinError
  */
-var ColoredCoinError = errors.ColoredCoinError
+var ColoredCoinError = errors.ColoredCoin
 
 /**
- * @member {function} external:coloredcoinjs-lib.errors.IncompatibilityError
+ * @class IncompatibilityError
+ * @extends {external:coloredcoinjs-lib.errors.ColoredCoinError}
  */
-var IncompatibilityError = errors.IncompatibilityError
-
-/**
- * @member {function} external:coloredcoinjs-lib.errors.VerifyTypeError
- */
-var VerifyTypeError = errors.VerifyTypeError
+var IncompatibilityError = createError('IncompatibilityError', ColoredCoinError)
 
 /**
  * @class AlreadyExistsError
@@ -217,24 +209,6 @@ var TxKindIsNotRecognizedError = createError('TxKindIsNotRecognizedError', TxTra
 var TargetKindIsNotReachableError = createError('TargetKindIsNotReachableError', TxTransformError)
 
 /**
- * @class VerifyColorDefinitionTypeError
- * @extends {external:coloredcoinjs-lib.errors.VerifyTypeError}
- */
-var VerifyColorDefinitionTypeError = createError('VerifyColorDefinitionTypeError', VerifyTypeError)
-
-/**
- * @class VerifyPowerError
- * @extends {external:coloredcoinjs-lib.errors.VerifyTypeError}
- */
-var VerifyPowerError = createError('VerifyPowerError', VerifyTypeError)
-
-/**
- * @class VerifySeedHexError
- * @extends {external:coloredcoinjs-lib.errors.VerifyTypeError}
- */
-var VerifySeedHexError = createError('VerifySeedHexError', VerifyTypeError)
-
-/**
  * @class WalletAlreadyInitializedError
  * @extends {external:coloredcoinjs-lib.errors.ColoredCoinError}
  */
@@ -273,9 +247,6 @@ module.exports = _.extend(errors, {
   TxTransformError: TxTransformError,
   TxKindIsNotRecognizedError: TxKindIsNotRecognizedError,
   TargetKindIsNotReachableError: TargetKindIsNotReachableError,
-  VerifyColorDefinitionTypeError: VerifyColorDefinitionTypeError,
-  VerifyPowerError: VerifyPowerError,
-  VerifySeedHexError: VerifySeedHexError,
   WalletAlreadyInitializedError: WalletAlreadyInitializedError,
   WalletNotInitializedError: WalletNotInitializedError
 })

@@ -1,26 +1,19 @@
-var base58 = require('bs58')
-var bufferEqual = require('buffer-equal')
 var _ = require('lodash')
-
-var bitcoin
+var bitcore = require('bitcore-lib')
 
 /**
  * @class Address
  *
  * @param {AddressManager} addressManager
  * @param {AddressStorageRecord} record
- * @param {Object} network Network description from bitcoinjs-lib.networks
- * @param {number} network.pubKeyHash
+ * @param {Object} network
  * @param {AssetDefinition} [assetDefinition]
  */
 function Address (addressManager, record, network, assetDefinition) {
   this.addressManager = addressManager
 
-  this.pubKey = bitcoin.ECPubKey.fromHex(record.pubKey)
-  this.hash = bitcoin.crypto.hash160(this.pubKey.toBuffer())
-
+  this.publicKey = bitcore.PublicKey(record.pubKey)
   this.network = network
-
   this.assetDefinition = assetDefinition || null
 }
 
@@ -37,14 +30,12 @@ Address.getBitcoinAddress = function (address) {
  * @return {boolean}
  */
 Address.checkAddress = function (address) {
-  var buffer = new Buffer(base58.decode(address))
-  // 1 byte version, 20 hash, 4 checksum
-  if (buffer.length !== 25) {
+  try {
+    bitcore.encoding.Base58Check.decode(address)
+    return true
+  } catch (err) {
     return false
   }
-
-  var checksum = bitcoin.crypto.hash256(buffer.slice(0, -4)).slice(0, 4)
-  return bufferEqual(checksum, buffer.slice(-4))
 }
 
 /**
@@ -53,8 +44,8 @@ Address.checkAddress = function (address) {
  * @return {boolean}
  */
 Address.checkColorAddress = function (assetdef, address) {
-  var colordefs = assetdef.getColorDefinitions()
-  var isBitcoinAsset = colordefs.length === 1 && colordefs[0].getColorType() === 'uncolored'
+  var descs = assetdef.getColorSet().getColorDescs()
+  var isBitcoinAsset = descs.length === 1 && descs[0] === ''
   if (!isBitcoinAsset || address.split('@').length > 1) {
     if (assetdef.getId() !== address.split('@')[0]) {
       return false
@@ -67,15 +58,15 @@ Address.checkColorAddress = function (assetdef, address) {
 }
 
 /**
- * @return {external:coloredcoinjs-lib.bitcoin.ECPubKey}
+ * @return {bitcore.PublicKey}
  */
 Address.prototype.getPubKey = function () {
-  return this.pubKey
+  return this.publicKey
 }
 
 /**
  * @param {string} seedHex
- * @return {external:coloredcoinjs-lib.bitcoin.ECKey}
+ * @return {bitcore.PrivateKey}
  */
 Address.prototype.getPrivKey = function (seedHex) {
   return this.addressManager.getPrivKeyByAddress(this.getAddress(), seedHex)
@@ -92,13 +83,7 @@ Address.prototype.getAssetDefinition = function () {
  * @return {string}
  */
 Address.prototype.getAddress = function () {
-  var payload = new Buffer(21)
-  payload.writeUInt8(this.network.pubKeyHash, 0)
-  this.hash.copy(payload, 1)
-
-  var checksum = bitcoin.crypto.hash256(payload).slice(0, 4)
-
-  return base58.encode(Buffer.concat([payload, checksum]))
+  return this.publicKey.toAddress(this.network).toString()
 }
 
 /**

@@ -1,17 +1,16 @@
-var bitcoin = require('../cclib').bitcoin
+var script2addresses = require('script2addresses')
 
 /**
  * @class HistoryTarget
  *
  * @param {AssetValue} assetValue
  * @param {string} script
- * @param {Object} network One of coloredcoinjs-lib.bitcoin.networks
+ * @param {Object} network
  */
 function HistoryTarget (assetValue, script, network) {
   this.assetValue = assetValue
   this.script = script
-  script = bitcoin.Script.fromHex(script)
-  this.addresses = bitcoin.util.getAddressesFromScript(script, network)
+  this.addresses = script2addresses(script, network).addresses
 }
 
 /**

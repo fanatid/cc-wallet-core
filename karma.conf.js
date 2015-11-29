@@ -1,8 +1,8 @@
 module.exports = function (config) {
   config.set({
+    browserNoActivityTimeout: 200000,
     frameworks: ['browserify', 'detectBrowsers', 'mocha'],
     files: [
-      'node_modules/babel-core/browser-polyfill.js',
       'test/*.js'
     ],
     preprocessors: {

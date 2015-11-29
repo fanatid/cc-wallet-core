@@ -1,10 +1,9 @@
 var events = require('events')
 var inherits = require('util').inherits
-
 var _ = require('lodash')
 var Q = require('q')
+var bitcore = require('bitcore-lib')
 
-var Transaction
 var errors = require('../errors')
 var TX_STATUS = require('../util/const').TX_STATUS
 
@@ -18,27 +17,27 @@ function getCurrentTimestamp () {
 
 /**
  * @event TxManager#addTx
- * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
+ * @param {bitcore.Transaction} tx
  */
 
 /**
  * @event TxManager#updateTx
- * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
+ * @param {bitcore.Transaction} tx
  */
 
 /**
  * @event TxManager#revertTx
- * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
+ * @param {bitcore.Transaction} tx
  */
 
 /**
  * @event TxManager#sendTx
- * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
+ * @param {bitcore.Transaction} tx
  */
 
 /**
  * @class TxManager
- * @extends external:events.EventEmitter
+ * @extends events.EventEmitter
  * @param {Wallet} wallet
  * @param {WalletState} walletState
  * @param {Object} rawStorage
@@ -95,35 +94,35 @@ TxManager.prototype.processTxRecord = function (txr, coinManager, historyManager
   } else {
     tx = null
     return self._wallet.getBlockchain().getTx(txr.txid)
-    .then(function (txhex) {
-      tx = Transaction.fromHex(txhex)
-      return self.addTx(tx, data)
-    })
-    .then(function () {
-      return Q.all([coinManager.addTx(tx), historyManager.addTx(tx)])
-    })
+      .then(function (txHex) {
+        tx = new bitcore.Transaction(txHex)
+        return self.addTx(tx, data)
+      })
+      .then(function () {
+        return Q.all([coinManager.addTx(tx), historyManager.addTx(tx)])
+      })
   }
 }
 
 /**
- * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
+ * @param {bitcore.Transaction} tx
  * @param {Object} data
  * @param {number} [data.status=TX_STATUS.unknown]
  * @param {number} data.height
- * @return {external:Q.Promise}
+ * @return {Promise}
  */
 TxManager.prototype.addTx = function (tx, data) {
   if (_.isUndefined(data.status)) { data.status = TX_STATUS.unknown }
 
   var self = this
 
-  var txId = tx.getId()
+  var txId = tx.id
   if (!_.isUndefined(self._txRecords[txId])) {
     return Q.reject(new errors.AlreadyExistsError('TxId: ' + txId))
   }
 
   var record = {
-    rawTx: tx.toHex(),
+    rawTx: tx.toString(),
     status: data.status,
     height: data.height
   }
@@ -148,16 +147,16 @@ TxManager.prototype.addTx = function (tx, data) {
 }
 
 /**
- * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
+ * @param {bitcore.Transaction} tx
  * @param {Object} data
  * @param {number} [data.status]
  * @param {number} [data.height]
- * @return {external:Q.Promise}
+ * @return {Promise}
  */
 TxManager.prototype.updateTx = function (tx, data) {
-  var record = this._txRecords[tx.getId()]
+  var record = this._txRecords[tx.id]
   if (_.isUndefined(record)) {
-    return Q.reject(new errors.TxNotFoundError('TxId: ' + tx.getId()))
+    return Q.reject(new errors.TxNotFoundError('TxId: ' + tx.id))
   }
 
   var savedRecord = _.cloneDeep(record)
@@ -175,24 +174,24 @@ TxManager.prototype.updateTx = function (tx, data) {
   }
 
   if (!_.isEqual(savedRecord, record)) {
-    this.emit('updateTx', Transaction.fromHex(record.rawTx))
+    this.emit('updateTx', bitcore.Transaction(record.rawTx))
   }
 
   return Q.resolve()
 }
 
 /**
- * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
- * @return {external:Q.Promise}
+ * @param {bitcore.Transaction} tx
+ * @return {Promise}
  */
 TxManager.prototype.sendTx = function (tx) {
-  var txId = tx.getId()
+  var txId = tx.id
   if (!_.isUndefined(this._txRecords[txId])) {
     return Q.reject(new errors.AlreadyExistsError('TxId: ' + txId))
   }
 
   this._txRecords[txId] = {
-    rawTx: tx.toHex(),
+    rawTx: tx.toString(),
     status: TX_STATUS.dispatch,
     height: 0,
     timestamp: getCurrentTimestamp(),
@@ -217,11 +216,11 @@ TxManager.prototype.getAllTxIds = function (addresses) {
 
 /**
  * @param {string} txId
- * @return {?external:coloredcoinjs-lib.bitcoin.Transaction}
+ * @return {?bitcore.Transaction}
  */
 TxManager.prototype.getTx = function (txId) {
   var record = this._txRecords[txId]
-  return _.isUndefined(record) ? null : Transaction.fromHex(record.rawTx)
+  return _.isUndefined(record) ? null : new bitcore.Transaction(record.rawTx)
 }
 
 /**

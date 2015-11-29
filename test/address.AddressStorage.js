@@ -1,11 +1,9 @@
 var expect = require('chai').expect
 
 var ccWallet = require('../')
-var errors = ccWallet.errors
-var SyncStorage = ccWallet.SyncStorage
 var AddressStorage = ccWallet.address.AddressStorage
 
-describe.skip('address.AddressStorage', function () {
+describe('address.AddressStorage', function () {
   var storage
   // master key:
   // xprv9s21ZrQH143K2JF8RafpqtKiTbsbaxEeUaMnNHsm5o6wCW3z8ySyH4UxFVSfZ8n7ESu7fgir8imbZKLYVBxFPND1pniTZ81vKfd45EHKX73
@@ -20,21 +18,18 @@ describe.skip('address.AddressStorage', function () {
     storage.clear()
   })
 
-  it('inherits SyncStorage', function () {
-    expect(storage).to.be.instanceof(SyncStorage)
-    expect(storage).to.be.instanceof(AddressStorage)
-  })
-
   it('add throw UniqueConstraint for account, chain and index', function () {
     storage.add({chain: 0, index: 0, pubKey: pubKeyHex1})
-    var fn = function () { storage.add({chain: 0, index: 0, pubKey: pubKeyHex2}) }
-    expect(fn).to.throw(errors.AlreadyExistsError)
+    expect(function () {
+      storage.add({chain: 0, index: 0, pubKey: pubKeyHex2})
+    }).to.throw(ccWallet.errors.AlreadyExistsError)
   })
 
   it('add throw UniqueConstraint for pubKey', function () {
     storage.add({chain: 0, index: 0, pubKey: pubKeyHex1})
-    var fn = function () { storage.add({chain: 0, index: 1, pubKey: pubKeyHex1}) }
-    expect(fn).to.throw(errors.AlreadyExistsError)
+    expect(function () {
+      storage.add({chain: 0, index: 1, pubKey: pubKeyHex1})
+    }).to.throw(ccWallet.errors.AlreadyExistsError)
   })
 
   it('getAll', function () {

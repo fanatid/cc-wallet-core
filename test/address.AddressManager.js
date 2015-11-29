@@ -1,11 +1,11 @@
 var expect = require('chai').expect
+var bitcore = require('bitcore-lib')
+var cclib = require('coloredcoinjs-lib')
 
-var ccWallet = require('../')
+var ccWallet = require('../src')
 var address = ccWallet.address
-var cclib = ccWallet.cclib
-var networks = {} // cclib.bitcoin.networks
 
-describe.skip('address.AddressManager', function () {
+describe('address.AddressManager', function () {
   var uncolored
   var am
   var amStorage
@@ -16,9 +16,9 @@ describe.skip('address.AddressManager', function () {
   var address0 = '18KMigSHDPVFzsgWe1mcaPPA5wSY3Ur5wS'
 
   beforeEach(function () {
-    uncolored = cclib.ColorDefinitionManager.getUncolored()
+    uncolored = cclib.definitions.Manager.getUncolored()
     amStorage = new address.AddressStorage()
-    am = new address.AddressManager(amStorage, networks.bitcoin)
+    am = new address.AddressManager(amStorage, bitcore.Networks.livenet)
   })
 
   afterEach(function () {
@@ -32,14 +32,16 @@ describe.skip('address.AddressManager', function () {
 
   it('getAllAddresses', function () {
     am.getNewAddress(uncolored, seedHex)
-    var addresses = am.getAllAddresses(uncolored).map(function (address) { return address.getAddress() })
+    var addresses = am.getAllAddresses(uncolored).map(function (address) {
+      return address.getAddress()
+    })
     expect(addresses).to.deep.equal([address0])
   })
 
   it('getPubKeyByAddress', function () {
     am.getNewAddress(uncolored, seedHex)
     var pubKey = am.getPubKeyByAddress(address0)
-    expect(pubKey.toHex()).to.equal(pubKey0)
+    expect(pubKey.toString()).to.equal(pubKey0)
   })
 
   it('getPubKeyByAddress return null', function () {

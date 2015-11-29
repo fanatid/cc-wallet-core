@@ -2,7 +2,7 @@ var expect = require('chai').expect
 var _ = require('lodash')
 var Q = require('q')
 
-var cccore = require('../')
+var cccore = require('../src')
 var Wallet = cccore.Wallet
 
 describe.skip('util', function () {
@@ -33,7 +33,8 @@ describe.skip('util', function () {
       var deferred = Q.defer()
       wallet.once('syncStop', deferred.resolve)
       return deferred.promise
-    }).then(function () {
+    })
+    .then(function () {
       var opts = {
         assetdef: assetdef,
         count: 3,
@@ -41,12 +42,14 @@ describe.skip('util', function () {
         seed: seed
       }
       return Q.nfcall(cccore.util.createCoins, wallet, opts)
-    }).then(function () {
+    })
+    .then(function () {
       var coinQuery = wallet.getCoinQuery()
       coinQuery = coinQuery.includeUnconfirmed()
       coinQuery = coinQuery.onlyColoredAs(assetdef.getColorDefinitions())
       return Q.ninvoke(coinQuery, 'getCoins')
-    }).then(function (coinList) {
+    })
+    .then(function (coinList) {
       var matched = _.chain(coinList.getCoins())
         .invoke('toRawCoin')
         .pluck('value')
@@ -55,10 +58,12 @@ describe.skip('util', function () {
         .value()
 
       expect(matched).to.be.equal(3)
-    }).finally(function () {
+    })
+    .finally(function () {
       wallet.getConnector().disconnect()
       wallet.removeListeners()
       wallet.clearStorage()
-    }).done(done, done)
+    })
+    .then(done, done)
   })
 })

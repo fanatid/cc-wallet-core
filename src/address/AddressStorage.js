@@ -18,7 +18,7 @@ var errors = require('../errors')
  * @extends SyncStorage
  */
 function AddressStorage () {
-  SyncStorage.apply(this, Array.prototype.slice.call(arguments))
+  SyncStorage.apply(this, arguments)
 
   this.addressesDbKey = this.globalPrefix + 'pubKeys'
   this.addressesRecords = this.store.get(this.addressesDbKey) || []

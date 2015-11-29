@@ -1,10 +1,11 @@
 var events = require('events')
 var inherits = require('util').inherits
 var timers = require('timers')
-
 var _ = require('lodash')
 var Q = require('q')
 var blockchainjs = require('blockchainjs')
+var bitcore = require('bitcore-lib')
+var cclib = require('coloredcoinjs-lib')
 var SyncMixin = require('sync-mixin')
 
 var address = require('../address')
@@ -16,8 +17,6 @@ var WalletEventNotifier = require('./WalletEventNotifier')
 var WalletStateStorage = require('./WalletStateStorage')
 var WalletStateManager = require('./WalletStateManager')
 
-var cclib = require('../cclib')
-var bitcoin
 var errors = require('../errors')
 
 /**
@@ -149,8 +148,10 @@ function Wallet (opts) {
   self._allAddressesCache = undefined
   self.on('newAddress', function () { self._allAddressesCache = undefined })
 
-  self.bitcoinNetwork = opts.testnet ? bitcoin.networks.testnet : bitcoin.networks.bitcoin
+  self.bitcoinNetwork = opts.testnet ? bitcore.Networks.testnet : bitcore.Networks.bitcoin
   self._spendUnconfirmedCoins = opts.spendUnconfirmedCoins
+  self._feePerKb = 10000
+  self._dustThreshold = 546
 
   self.config = new ConfigStorage(storeOpts)
 
@@ -163,11 +164,13 @@ function Wallet (opts) {
   var blockchainOpts = _.merge({storage: self.blockchainStorage}, opts.blockchain.opts)
   self.blockchain = new BlockchainCls(self.connector, blockchainOpts)
 
-  self.cdStorage = new cclib.ColorDefinitionStorage(storeOpts)
-  self.cdManager = new cclib.ColorDefinitionManager(self.cdStorage)
+  StorageCls = process.browser ? cclib.storage.definitions.LocalStorage : cclib.storage.definitions.Memory
+  self.cdStorage = new StorageCls(storeOpts)
+  StorageCls = process.browser ? cclib.storage.data.LocalStorage : cclib.storage.data.Memory
+  self.cDataStorage = new StorageCls(storeOpts)
 
-  self.cDataStorage = new cclib.ColorDataStorage(storeOpts)
-  self.cData = new cclib.ColorData(self.cDataStorage)
+  self.cdManager = new cclib.definitions.Manager(self.cdStorage, self.cDataStorage)
+  self.cData = new cclib.ColorData(self.cDataStorage, self.cdManager)
 
   self.aStorage = new address.AddressStorage(storeOpts)
   self.aManager = new address.AddressManager(self.aStorage, self.bitcoinNetwork)
@@ -185,9 +188,9 @@ function Wallet (opts) {
   self.walletStateManager = new WalletStateManager(self, self.walletStateStorage)
 
   function forwardSyncAndErrors (obj) {
-    obj.on('error', function (error) {
-      console.log('Wallet Error! ')
-      self.emit('error', error)
+    obj.on('error', function (err) {
+      console.log('Wallet Error!')
+      self.emit('error', err)
     })
     obj.on('syncStart', function () { self._syncEnter() })
     obj.on('syncStop', function () { self._syncExit() })
@@ -222,6 +225,8 @@ inherits(Wallet, events.EventEmitter)
 _.assign(Wallet.prototype, SyncMixin)
 
 Wallet.prototype.getBitcoinNetwork = function () { return this.bitcoinNetwork }
+Wallet.prototype.getFeePerKb = function () { return this._feePerKb }
+Wallet.prototype.getDustThreshold = function () { return this._dustThreshold }
 Wallet.prototype.canSpendUnconfirmedCoins = function () { return this._spendUnconfirmedCoins }
 Wallet.prototype.getConnector = function () { return this.connector }
 Wallet.prototype.getBlockchain = function () { return this.blockchain }
@@ -369,7 +374,7 @@ Wallet.prototype.getAllAddresses = function (assetdef, asColorAddress) {
 
   var addresses = self._allAddressesCache
   if (!_.isUndefined(assetdef)) {
-    if (assetdef instanceof cclib.ColorDefinition) {
+    if (assetdef instanceof cclib.definitions.Interface) {
       assetdef = self.getAssetDefinitionManager().getByDesc(assetdef.getDesc())
     }
 
@@ -440,16 +445,21 @@ Wallet.prototype.getBalance = function (assetdef, cb) {
   self.isInitializedCheck()
 
   Q.fcall(function () {
+    return assetdef.getColorDefinitions()
+  })
+  .then(function (colordefs) {
     var coinQuery = self.getCoinQuery()
     coinQuery = coinQuery.includeUnconfirmed()
     coinQuery = coinQuery.includeFrozen()
-    coinQuery = coinQuery.onlyColoredAs(assetdef.getColorDefinitions())
+    coinQuery = coinQuery.onlyColoredAs(colordefs)
     coinQuery = coinQuery.onlyAddresses(self.getAllAddresses(assetdef))
 
     return Q.ninvoke(coinQuery, 'getCoins')
-  }).then(function (coinList) {
+  })
+  .then(function (coinList) {
     return Q.ninvoke(coinList, 'getValues')
-  }).then(function (values) {
+  })
+  .then(function (values) {
     return _.chain(['total', 'available', 'unconfirmed'])
       .map(function (name) {
         var value = values[name].length === 1 ? values[name][0].getValue() : 0
@@ -457,7 +467,9 @@ Wallet.prototype.getBalance = function (assetdef, cb) {
       })
       .zipObject()
       .value()
-  }).done(function (result) { cb(null, result) }, function (error) { cb(error) })
+  })
+  .then(function (result) { cb(null, result) },
+        function (error) { cb(error) })
 }
 
 /**
@@ -473,7 +485,8 @@ Wallet.prototype.getBalance = function (assetdef, cb) {
  */
 Wallet.prototype.getTotalBalance = function (assetdef, cb) {
   Q.ninvoke(this, 'getBalance', assetdef)
-    .done(function (balance) { cb(null, balance.total) }, function (error) { cb(error) })
+    .then(function (balance) { cb(null, balance.total) },
+          function (err) { cb(err) })
 }
 
 /**
@@ -483,7 +496,8 @@ Wallet.prototype.getTotalBalance = function (assetdef, cb) {
  */
 Wallet.prototype.getAvailableBalance = function (assetdef, cb) {
   Q.ninvoke(this, 'getBalance', assetdef)
-    .done(function (balance) { cb(null, balance.available) }, function (error) { cb(error) })
+    .then(function (balance) { cb(null, balance.available) },
+          function (err) { cb(err) })
 }
 
 /**
@@ -493,7 +507,8 @@ Wallet.prototype.getAvailableBalance = function (assetdef, cb) {
  */
 Wallet.prototype.getUnconfirmedBalance = function (assetdef, cb) {
   Q.ninvoke(this, 'getBalance', assetdef)
-    .done(function (balance) { cb(null, balance.unconfirmed) }, function (error) { cb(error) })
+    .then(function (balance) { cb(null, balance.unconfirmed) },
+          function (err) { cb(err) })
 }
 
 /**
@@ -527,16 +542,15 @@ Wallet.prototype.createTx = function (assetdef, rawTargets, cb) {
 
   var assetTargets = rawTargets.map(function (rawTarget) {
     /** @todo Add multisig support */
-    var script = bitcoin.Address.fromBase58Check(rawTarget.address).toOutputScript()
+    var script = new bitcore.Script(new bitcore.Address(rawTarget.address))
     var assetValue = new asset.AssetValue(assetdef, rawTarget.value)
     return new asset.AssetTarget(script.toHex(), assetValue)
   })
 
   var assetTx = new tx.AssetTx(self, assetTargets)
-  Q.nfcall(tx.transformTx, assetTx, 'composed').done(
-    function (composedTx) { cb(null, composedTx) },
-    function (error) { cb(error) }
-  )
+  Q.nfcall(tx.transformTx, assetTx, 'composed')
+    .then(function (composedTx) { cb(null, composedTx) },
+          function (error) { cb(error) })
 }
 
 /**
@@ -560,32 +574,34 @@ Wallet.prototype.createIssuanceTx = function (moniker, pck, units, atoms, seedHe
   var self = this
 
   Q.fcall(function () {
-    var colorDefinitionCls = cclib.ColorDefinitionManager.getColorDefenitionClsForType(pck)
-    if (colorDefinitionCls === null) {
+    var cdefCls = cclib.definitions.Manager.getColorDefinitionClass(pck)
+    if (cdefCls === null) {
       throw new errors.VerifyColorDefinitionTypeError('Type: ' + pck)
     }
 
-    var addresses = self.getAddressManager().getAllAddresses(colorDefinitionCls)
+    var addresses = self.getAddressManager().getAllAddresses(cdefCls)
     if (addresses.length === 0) {
-      addresses.push(self.getAddressManager().getNewAddress(colorDefinitionCls, seedHex))
+      addresses.push(self.getAddressManager().getNewAddress(cdefCls, seedHex))
     }
 
     var targetAddress = addresses[0].getAddress()
-    var targetScript = bitcoin.Address.fromBase58Check(targetAddress).toOutputScript()
-    var colorValue = new cclib.ColorValue(cclib.ColorDefinitionManager.getGenesis(), units * atoms)
+    var targetScript = new bitcore.Script(new bitcore.Address(targetAddress))
+    var colorValue = new cclib.ColorValue(cclib.definitions.Manager.getGenesis(), units * atoms)
     var colorTarget = new cclib.ColorTarget(targetScript.toHex(), colorValue)
 
     var operationalTx = new tx.OperationalTx(self)
     operationalTx.addTarget(colorTarget)
 
-    return Q.nfcall(colorDefinitionCls.composeGenesisTx, operationalTx)
-  }).done(function (composedTx) { cb(null, composedTx) }, function (error) { cb(error) })
+    return cdefCls.composeGenesisTx(operationalTx)
+  })
+  .then(function (composedTx) { cb(null, composedTx) },
+        function (error) { cb(error) })
 }
 
 /**
  * @callback Wallet~transformTx
  * @param {?Error} error
- * @param {(RawTx|bitcoinjs-lib.Transaction)} tx
+ * @param {(RawTx|bitcore.Transaction)} tx
  */
 
 /**
@@ -609,10 +625,9 @@ Wallet.prototype.transformTx = function (currentTx, targetKind, opts, cb) {
   }
 
   opts = _.extend(opts, {wallet: this})
-  Q.nfcall(tx.transformTx, currentTx, targetKind, opts).done(
-    function (newTx) { cb(null, newTx) },
-    function (error) { cb(error) }
-  )
+  Q.nfcall(tx.transformTx, currentTx, targetKind, opts)
+    .then(function (newTx) { cb(null, newTx) },
+          function (error) { cb(error) })
 }
 
 /**
@@ -642,16 +657,15 @@ function createCoins (wallet, opts, cb) {
     return {value: opts.coinValue, address: address}
   })
 
-  Q.ninvoke(wallet, 'createTx', opts.assetdef, targets).then(function (tx) {
-    return Q.ninvoke(wallet, 'transformTx', tx, 'signed', {seedHex: opts.seed})
-
-  }).then(function (tx) {
-    return Q.ninvoke(wallet, 'sendTx', tx)
-
-  }).done(
-    function () { cb(null) },
-    function (error) { cb(error) }
-  )
+  Q.ninvoke(wallet, 'createTx', opts.assetdef, targets)
+    .then(function (tx) {
+      return Q.ninvoke(wallet, 'transformTx', tx, 'signed', {seedHex: opts.seed})
+    })
+    .then(function (tx) {
+      return Q.ninvoke(wallet, 'sendTx', tx)
+    })
+    .then(function () { cb(null) },
+          function (error) { cb(error) })
 }
 */
 
@@ -661,11 +675,13 @@ function createCoins (wallet, opts, cb) {
  */
 
 /**
- * @param {bitcoinjs-lib.Transaction} tx
+ * @param {bitcore.Transaction} tx
  * @param {Wallet~sendTx} cb
  */
 Wallet.prototype.sendTx = function (tx, cb) {
-  this.getStateManager().sendTx(tx).done(function () { cb(null) }, function (error) { cb(error) })
+  this.getStateManager().sendTx(tx)
+    .then(function () { cb(null) },
+          function (error) { cb(error) })
 }
 
 Wallet.prototype.connect = function () {

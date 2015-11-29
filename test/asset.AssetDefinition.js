@@ -1,25 +1,27 @@
 var expect = require('chai').expect
 var _ = require('lodash')
+var cclib = require('coloredcoinjs-lib')
 
-var ccWallet = require('../')
-var cclib = ccWallet.cclib
-var errors = ccWallet.errors
+var ccWallet = require('../src')
 var AssetDefinition = ccWallet.asset.AssetDefinition
 
-describe.skip('asset.AssetDefinition', function () {
-  var cdStorage
-  var cdManager
+describe('asset.AssetDefinition', function () {
+  var cdefStorage
+  var cdataStorage
+  var cdefManager
   var assetdef
 
   beforeEach(function () {
-    cdStorage = new cclib.ColorDefinitionStorage()
-    cdManager = new cclib.ColorDefinitionManager(cdStorage)
-    assetdef = new AssetDefinition(cdManager, {
+    cdefStorage = new cclib.storage.definitions.Memory()
+    cdataStorage = new cclib.storage.data.Memory()
+
+    cdefManager = new cclib.definitions.Manager(cdefStorage, cdataStorage)
+
+    assetdef = new AssetDefinition(cdefManager, {
       monikers: ['bitcoin'],
       colorDescs: [''],
       unit: 100000000
     })
-    cdStorage.clear()
   })
 
   it('constructor throw error', function () {
@@ -28,8 +30,11 @@ describe.skip('asset.AssetDefinition', function () {
       colorDescs: [''],
       unit: 2
     }
-    var fn = function () { data = new AssetDefinition(cdManager, data) }
-    expect(fn).to.throw(errors.VerifyPowerError)
+    expect(function () {
+      /* eslint-disable */
+      new AssetDefinition(cdefManager, data)
+      /* eslint-enable */
+    }).to.throw(ccWallet.errors.VerifyPowerError)
   })
 
   it('getId', function () {

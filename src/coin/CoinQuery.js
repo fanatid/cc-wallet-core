@@ -8,7 +8,7 @@ var CoinList = require('./CoinList')
  *
  * @param {Wallet} wallet
  * @param {Object} [query]
- * @param {external:coloredcoinjs-lib.ColorDefinition[]} [query.onlyColoredAs=null]
+ * @param {cclib.ColorDefinition[]} [query.onlyColoredAs=null]
  * @param {string[]} [query.onlyAddresses=null]
  * @param {boolean} [query.includeSpent=false]
  * @param {boolean} [query.onlySpent=false]
@@ -44,7 +44,7 @@ CoinQuery.prototype.clone = function () {
 }
 
 /**
- * @param {(external:coloredcoinjs-lib.ColorDefinition|external:coloredcoinjs-lib.ColorDefinition[])} colors
+ * @param {(cclib.definitions.Interface|cclib.definitions.Interface[])} colors
  * @return {CoinQuery}
  */
 CoinQuery.prototype.onlyColoredAs = function (colors) {
@@ -173,15 +173,18 @@ CoinQuery.prototype.getCoins = function (cb) {
         return coin
       }
 
-      return Q.ninvoke(coin, 'getMainColorValue').then(function (colorValue) {
-        if (self.query.onlyColoredAs.indexOf(colorValue.getColorId()) !== -1) {
-          return coin
-        }
-      })
+      return Q.ninvoke(coin, 'getMainColorValue')
+        .then(function (colorValue) {
+          if (self.query.onlyColoredAs.indexOf(colorValue.getColorId()) !== -1) {
+            return coin
+          }
+        })
     })
 
     return Q.all(promises).then(function (result) { return _.filter(result) })
-  }).done(function (coins) { cb(null, new CoinList(coins)) }, function (error) { cb(error) })
+  })
+  .then(function (coins) { cb(null, new CoinList(coins)) },
+        function (err) { cb(err) })
 }
 
 module.exports = CoinQuery

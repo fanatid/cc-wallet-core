@@ -1,10 +1,9 @@
 var events = require('events')
 var inherits = require('util').inherits
-
+var cclib = require('coloredcoinjs-lib')
 var _ = require('lodash')
 
 var AssetDefinition = require('./AssetDefinition')
-var cclib = require('../cclib')
 
 /**
  * @event AssetDefinitionManager#newAsset
@@ -13,8 +12,8 @@ var cclib = require('../cclib')
 
 /**
  * @class AssetDefinitionManager
- * @extends external:events.EventEmitter
- * @param {external:coloredcoinjs-lib.ColorDefinitionManager} cdManager
+ * @extends events.EventEmitter
+ * @param {cclib.definitions.Manager} cdManager
  * @param {AssetDefinitionStorage} storage
  */
 function AssetDefinitionManager (cdManager, storage) {
@@ -25,7 +24,7 @@ function AssetDefinitionManager (cdManager, storage) {
 
   this.resolveAssetDefinition({
     monikers: ['bitcoin'],
-    colorDescs: [cclib.ColorDefinitionManager.getUncolored().getDesc()],
+    colorDescs: [cclib.definitions.Manager.getUncolored().getDesc()],
     unit: 100000000
   })
 }

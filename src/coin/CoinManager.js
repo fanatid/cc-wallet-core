@@ -1,11 +1,10 @@
 var events = require('events')
 var inherits = require('util').inherits
-
 var _ = require('lodash')
 var Q = require('q')
+var script2addresses = require('script2addresses')
 
 var TX_STATUS = require('../util/const').TX_STATUS
-var bitcoin
 var errors = require('../errors')
 var Coin = require('./Coin')
 
@@ -26,7 +25,7 @@ var Coin = require('./Coin')
 
 /**
  * @class CoinManager
- * @extends external:events.EventEmitter
+ * @extends events.EventEmitter
  * @param {Wallet} wallet
  * @param {WalletState} walletState
  * @param {Object} rawStorage
@@ -45,30 +44,30 @@ function CoinManager (wallet, walletState, rawStorage) {
 inherits(CoinManager, events.EventEmitter)
 
 /**
- * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
- * @return {external:Q.Promise}
+ * @param {bitcore.Transaction} tx
+ * @return {Promise}
  */
 CoinManager.prototype.addTx = function (tx) {
   var self = this
-  var txId = tx.getId()
+  var txId = tx.id
 
-  tx.ins.forEach(function (input) {
-    var txId = bitcoin.util.hashEncode(input.hash)
-    self._spend[txId] = _.union(self._spend[txId], [input.index]).sort()
+  tx.inputs.forEach(function (input) {
+    var txId = input.prevTxId.toString('hex')
+    self._spend[txId] = _.union(self._spend[txId], [input.outputIndex]).sort()
   })
 
   var network = self._wallet.getBitcoinNetwork()
   var walletAddresses = self._wallet.getAllAddresses()
 
-  _.chain(tx.outs)
+  _.chain(tx.outputs)
     .map(function (output, index) {
-      var outputAddresses = bitcoin.util.getAddressesFromScript(output.script, network)
+      var outputAddresses = script2addresses(output.script.toBuffer(), network).addresses
       var touchedAddresses = _.intersection(outputAddresses, walletAddresses)
       if (touchedAddresses.length > 0) {
         self._coins.push({
           txId: txId,
           outIndex: index,
-          value: output.value,
+          value: output.satoshis,
           script: output.script.toHex(),
           addresses: touchedAddresses,
           lockTime: 0
@@ -83,6 +82,7 @@ CoinManager.prototype.addTx = function (tx) {
     .forEach(function (address) {
       self.emit('touchAddress', address)
     })
+    .value()
 
   var assetDefinitionManager = self._wallet.getAssetDefinitionManager()
   var wsm = self._wallet.getStateManager()
@@ -103,32 +103,33 @@ CoinManager.prototype.addTx = function (tx) {
       .forEach(function (assetdef) {
         self.emit('touchAsset', assetdef)
       })
+      .value()
   })
 }
 
 /**
- * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
- * @return {external:Q.Promise}
+ * @param {bitcore.Transaction} tx
+ * @return {Promise}
  */
 CoinManager.prototype.updateTx = function () { return Q.resolve() }
 
 /**
- * @param {external:coloredcoinjs-lib.bitcoin.Transaction} tx
- * @return {external:Q.Promise}
+ * @param {bitcore.Transaction} tx
+ * @return {Promise}
  */
 CoinManager.prototype.revertTx = function (tx) {
   var self = this
-  var txId = tx.getId()
+  var txId = tx.id
 
-  tx.ins.forEach(function (input) {
-    var txId = bitcoin.util.hashEncode(input.hash)
-    self._spend[txId] = _.without(self._spend[txId], input.index)
+  tx.inputs.forEach(function (input) {
+    var txId = input.prevTxId.toString('hex')
+    self._spend[txId] = _.without(self._spend[txId], input.outputIndex)
     if (self._spend[txId].length === 0) {
       delete self._spend[txId]
     }
   })
 
-  var rawCoins = _.filter(_.range(tx.outs.length).map(function (index) {
+  var rawCoins = _.filter(_.range(tx.outputs.length).map(function (index) {
     return _.find(self._coins, {txId: txId, outIndex: index})
   }))
   self._coins = _.difference(self._coins, rawCoins)
@@ -141,6 +142,7 @@ CoinManager.prototype.revertTx = function (tx) {
     .forEach(function (address) {
       self.emit('touchAddress', address)
     })
+    .value()
 
   var assetDefinitionManager = self._wallet.getAssetDefinitionManager()
   var wsm = self._wallet.getStateManager()
@@ -154,6 +156,7 @@ CoinManager.prototype.revertTx = function (tx) {
       .forEach(function (assetdef) {
         self.emit('touchAsset', assetdef)
       })
+      .value()
   })
 }
 

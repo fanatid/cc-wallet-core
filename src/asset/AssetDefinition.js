@@ -1,6 +1,8 @@
+var createHash = require('crypto').createHash
+var base58 = require('bs58')
 var _ = require('lodash')
+var cclib = require('coloredcoinjs-lib')
 
-var cclib = require('../cclib')
 var errors = require('../errors')
 
 /**
@@ -12,11 +14,11 @@ var errors = require('../errors')
 
 /**
  * @class AssetDefinition
- * @param {external:coloredcoinjs-lib.ColorDefinitionManager} colorDefinitionManager
+ * @param {cclib.definitions.Manager} cdManager
  * @param {AssetDefinition~Desc} data
  * @throws {VerifyPowerError} If data.unit not power of 10
  */
-function AssetDefinition (colorDefinitionManager, data) {
+function AssetDefinition (cdManager, data) {
   if (!data.colorDescs) {
     data.colorDescs = data.colorSchemes // upgrade from old version
   }
@@ -25,13 +27,22 @@ function AssetDefinition (colorDefinitionManager, data) {
     throw errors.MultiColorNotSupportedError('AssetDefinition.constructor')
   }
 
-  data.unit = _.isUndefined(data.unit) ? 1 : data.unit
+  data.unit = data.unit === undefined ? 1 : data.unit
   if (Math.log(data.unit) / Math.LN10 % 1 !== 0) {
     throw new errors.VerifyPowerError('data.unit must be power of 10 and greater than 0')
   }
 
+  var cdescs = _.sortBy(data.colorDescs)
+  var cdata = JSON.stringify(cdescs).replace(', ', ',')
+  var chash = createHash('sha256').update(cdata).digest().slice(0, 10)
+  this._id = base58.encode(chash)
+
+  var zeroCDescs = data.colorDescs.map(function (cdesc) {
+    return cdesc.replace(/:\d{1,}$/, ':0')
+  })
+
   this.monikers = data.monikers
-  this.colorSet = new cclib.ColorSet(colorDefinitionManager, data.colorDescs)
+  this.colorSet = new cclib.ColorSet(cdManager, zeroCDescs)
   this.unit = data.unit
 }
 
@@ -54,7 +65,7 @@ AssetDefinition.prototype.getMonikers = function () {
 }
 
 /**
- * @return {external:coloredcoinjs-lib.ColorSet}
+ * @return {cclib.ColorSet}
  */
 AssetDefinition.prototype.getColorSet = function () {
   return this.colorSet
@@ -64,11 +75,11 @@ AssetDefinition.prototype.getColorSet = function () {
  * @return {string}
  */
 AssetDefinition.prototype.getId = function () {
-  return this.getColorSet().getColorHash()
+  return this._id
 }
 
 /**
- * @return {external:coloredcoinjs-lib.ColorDefinition[]}
+ * @return {Promise.<cclib.ColorDefinition[]>}
  */
 AssetDefinition.prototype.getColorDefinitions = function () {
   return this.getColorSet().getColorDefinitions()

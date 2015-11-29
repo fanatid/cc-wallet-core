@@ -1,7 +1,7 @@
 var _ = require('lodash')
 var Q = require('q')
+var cclib = require('coloredcoinjs-lib')
 
-var cclib = require('../cclib')
 var errors = require('../errors')
 
 function isWalletState (walletState) {
@@ -27,8 +27,7 @@ function isWalletState (walletState) {
  * @property {(boolean|WalletStateManager#isValid)} [isValid]
  * @property {(boolean|WalletStateManager#isAvailable)} [isAvailable]
  * @property {(boolean|WalletStateManager#isFrozen)} [isFrozen]
- * @property {(external:coloredcoinjs-lib.ColorValue|WalletStateManager#getCoinColorValue)} [getColorValue]
- * @property {(external:coloredcoinjs-lib.ColorValue|WalletStateManager#getCoinMainColorValue)} [getMainColorValue]
+ * @property {(cclib.ColorValue|WalletStateManager#getCoinMainColorValue)} [getMainColorValue]
  */
 
 function booleanPropTest (obj, fName) {
@@ -64,7 +63,6 @@ function Coin (rawCoin, methodsManager) {
   booleanPropTest(methodsManager, 'isValid')
   booleanPropTest(methodsManager, 'isAvailable')
   booleanPropTest(methodsManager, 'isFrozen')
-  colorValuePropTest(methodsManager, 'getCoinColorValue')
   colorValuePropTest(methodsManager, 'getCoinMainColorValue')
 
   // init coin
@@ -206,19 +204,13 @@ Coin.prototype.isFrozen = function (walletState, opts) {
 }
 
 /**
- * @callback Coin~getColorValueCallback
- * @param {?Error} error
- * @param {external:coloredcoinjs-lib.ColorValue} colorValue
- */
-
-/**
  * @private
  * @param {string} methodName
- * @param {?external:coloredcoinjs-lib.ColorDefinition} colordef
+ * @param {?cclib.ColorDefinition} colordef
  * @param {WalletState} [walletState]
  * @param {Object} [opts]
  * @param {boolean} [opts.cache=true]
- * @param {Coin~getColorValueCallback} cb
+ * @return {cclib.ColorValue}
  */
 Coin.prototype._colorValuePropMethod = function (methodName, colordef, walletState, opts, cb) {
   // ..., function, undefined, undefined    -> ..., undefined, undefined, function
@@ -242,50 +234,33 @@ Coin.prototype._colorValuePropMethod = function (methodName, colordef, walletSta
   opts = _.extend({cache: true}, opts)
 
   if (opts.cache === false || _.isUndefined(this._cachedProps[methodName])) {
-    var error = null
     if (_.isUndefined(this._methodsManager[methodName])) {
-      error = this._createNotImplementedError('methodsManager.' + methodName)
-    }
-
-    var args = [this._methodsManager, methodName, this.toRawCoin(), colordef, walletState]
-    if (colordef === null) {
-      args.splice(3, 1)
-    }
-
-    this._cachedProps[methodName] = Q.fcall(function () {
-      if (error !== null) {
-        throw error
+      this._cachedProps[methodName] = Promise.reject(this._createNotImplementedError('methodsManager.' + methodName))
+    } else {
+      var args = [this.toRawCoin(), colordef, walletState]
+      if (colordef === null) {
+        args.splice(1, 1)
       }
 
-      return Q.ninvoke.apply(null, args)
-    })
+      var manager = this._methodsManager
+      this._cachedProps[methodName] = Q.npost(manager, methodName, args)
+    }
   }
 
-  this._cachedProps[methodName].done(
-    function (colorValue) { cb(null, colorValue) },
-    function (error) { cb(error) }
+  this._cachedProps[methodName]
+    .then(function (colorValue) { cb(null, colorValue) },
+          function (error) { cb(error) }
   )
 }
 
 /**
- * @param {external:coloredcoinjs-lib.ColorDefinition} colordef
  * @param {WalletState} [walletState]
  * @param {Object} [opts]
  * @param {boolean} [opts.cache=true]
- * @param {Coin~getColorValueCallback} cb
- */
-Coin.prototype.getColorValue = function (colordef, walletState, opts, cb) {
-  this._colorValuePropMethod('getCoinColorValue', colordef, walletState, opts, cb)
-}
-
-/**
- * @param {WalletState} [walletState]
- * @param {Object} [opts]
- * @param {boolean} [opts.cache=true]
- * @param {Coin~getColorValueCallback} cb
+ * @return {cclib.ColorValue} cb
  */
 Coin.prototype.getMainColorValue = function (walletState, opts, cb) {
-  this._colorValuePropMethod('getCoinMainColorValue', null, walletState, opts, cb)
+  return this._colorValuePropMethod('getCoinMainColorValue', null, walletState, opts, cb)
 }
 
 module.exports = Coin

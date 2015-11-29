@@ -1,14 +1,15 @@
 var expect = require('chai').expect
+var bitcore = require('bitcore-lib')
+var cclib = require('coloredcoinjs-lib')
 
-var ccWallet = require('../')
+var ccWallet = require('../src')
 var address = ccWallet.address
 var asset = ccWallet.asset
-var cclib = ccWallet.cclib
-var networks = {} // bitcoin.networks
 
-describe.skip('address.Address', function () {
-  var cdStorage
-  var cdManager
+describe('address.Address', function () {
+  var cdefStorage
+  var cdataStorage
+  var cdefManager
   var adStorage
   var adManager
   var am
@@ -21,13 +22,15 @@ describe.skip('address.Address', function () {
   var seedHex = '00000000000000000000000000000000'
 
   beforeEach(function () {
-    cdStorage = new cclib.ColorDefinitionStorage()
-    cdManager = new cclib.ColorDefinitionManager(cdStorage)
+    cdefStorage = new cclib.storage.definitions.Memory()
+    cdataStorage = new cclib.storage.data.Memory()
+    cdefManager = new cclib.definitions.Manager(cdefStorage, cdataStorage)
+
     adStorage = new asset.AssetDefinitionStorage()
-    adManager = new asset.AssetDefinitionManager(cdManager, adStorage)
+    adManager = new asset.AssetDefinitionManager(cdefManager, adStorage)
 
     amStorage = new address.AddressStorage()
-    am = new address.AddressManager(amStorage, networks.bitcoin)
+    am = new address.AddressManager(amStorage, bitcore.Networks.livenet)
 
     uncolored = adManager.resolveAssetDefinition({
       monikers: ['bitcoin'],
@@ -44,7 +47,6 @@ describe.skip('address.Address', function () {
   })
 
   afterEach(function () {
-    cdStorage.clear()
     adStorage.clear()
     amStorage.clear()
   })
@@ -71,7 +73,7 @@ describe.skip('address.Address', function () {
 
   it('getPubKey', function () {
     var pubKey = uncoloredAddress.getPubKey()
-    expect(pubKey.toHex()).to.equal('021c10af30f8380f1ff05a02e10a69bd323a7305c43dc461f79c2b27c13532a12c')
+    expect(pubKey.toString()).to.equal('021c10af30f8380f1ff05a02e10a69bd323a7305c43dc461f79c2b27c13532a12c')
   })
 
   it('getPrivKey', function () {
@@ -80,7 +82,7 @@ describe.skip('address.Address', function () {
   })
 
   it('getAssetDefinition return null', function () {
-    uncolored = cclib.ColorDefinitionManager.getUncolored()
+    uncolored = cclib.definitions.Manager.getUncolored()
     uncoloredAddress = am.getNewAddress(uncolored, seedHex)
     expect(uncoloredAddress.getAssetDefinition()).to.be.null
   })

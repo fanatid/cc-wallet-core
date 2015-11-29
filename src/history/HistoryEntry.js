@@ -6,7 +6,7 @@ var HISTORY_ENTRY_TYPE = require('../util/const').HISTORY_ENTRY_TYPE
  * @class HistoryEntry
  *
  * @param {Object} data
- * @param {external:coloredcoinjs-lib.bitcoin.Transaction} data.tx
+ * @param {bitcore.Transaction} data.tx
  * @param {Object} data.txData
  * @param {number} data.txData.status
  * @param {number} data.txData.height
@@ -19,7 +19,7 @@ var HISTORY_ENTRY_TYPE = require('../util/const').HISTORY_ENTRY_TYPE
 function HistoryEntry (data) {
   // Make clone deep? Colud damage values, targets
   this._data = data
-  this._data.txId = this._data.tx.getId()
+  this._data.txId = this._data.tx.id
 }
 
 /**

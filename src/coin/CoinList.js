@@ -27,9 +27,9 @@ CoinList.prototype.getCoins = function () {
  * @callback CoinList~getValuesCallback
  * @param {?Error} error
  * @param {Object} values
- * @param {external:coloredcoinjs-lib.ColorValue[]} values.total
- * @param {external:coloredcoinjs-lib.ColorValue[]} values.available
- * @param {external:coloredcoinjs-lib.ColorValue[]} values.unconfirmed
+ * @param {cclib.ColorValue[]} values.total
+ * @param {cclib.ColorValue[]} values.available
+ * @param {cclib.ColorValue[]} values.unconfirmed
  */
 
 /**
@@ -45,45 +45,48 @@ CoinList.prototype.getValues = function (cb) {
     var values = {total: {}, available: {}, unconfirmed: {}}
 
     var promises = self.coins.map(function (coin) {
-      return Q.ninvoke(coin, 'getMainColorValue').then(function (colorValue) {
-        var colorId = colorValue.getColorId()
+      return Q.ninvoke(coin, 'getMainColorValue')
+        .then(function (colorValue) {
+          var colorId = colorValue.getColorId()
 
-        if (_.isUndefined(values.total[colorId])) {
-          var zeroColorValue = colorValue.minus(colorValue)
-          values.total[colorId] = zeroColorValue
-          values.available[colorId] = zeroColorValue
-          values.unconfirmed[colorId] = zeroColorValue
-        }
+          if (_.isUndefined(values.total[colorId])) {
+            var zeroColorValue = colorValue.minus(colorValue)
+            values.total[colorId] = zeroColorValue
+            values.available[colorId] = zeroColorValue
+            values.unconfirmed[colorId] = zeroColorValue
+          }
 
-        values.total[colorId] = values.total[colorId].plus(colorValue)
+          values.total[colorId] = values.total[colorId].plus(colorValue)
 
-        if (coin.isAvailable()) {
-          values.available[colorId] = values.available[colorId].plus(colorValue)
-        } else {
-          values.unconfirmed[colorId] = values.unconfirmed[colorId].plus(colorValue)
-        }
-      })
+          if (coin.isAvailable()) {
+            values.available[colorId] = values.available[colorId].plus(colorValue)
+          } else {
+            values.unconfirmed[colorId] = values.unconfirmed[colorId].plus(colorValue)
+          }
+        })
     })
 
-    self._getValuesPromise = Q.all(promises).then(function () {
-      self._getValuesCache = {
-        total: _.values(values.total),
-        available: _.values(values.available),
-        unconfirmed: _.values(values.unconfirmed)
-      }
+    self._getValuesPromise = Q.all(promises)
+      .then(function () {
+        self._getValuesCache = {
+          total: _.values(values.total),
+          available: _.values(values.available),
+          unconfirmed: _.values(values.unconfirmed)
+        }
 
-      return self._getValuesCache
-    }).finally(function () { self._getValuesPromise = null })
+        return self._getValuesCache
+      })
+      .finally(function () { self._getValuesPromise = null })
   }
 
   self._getValuesPromise
-    .done(function (values) { cb(null, values) }, function (error) { cb(error) })
+    .then(function (values) { cb(null, values) }, function (error) { cb(error) })
 }
 
 /**
  * @callback CoinList~getTotalValueCallback
  * @param {?Error} error
- * @param {external:coloredcoinjs-lib.ColorValue[]} colorValues
+ * @param {cclib.ColorValue[]} colorValues
  */
 
 /**
@@ -91,7 +94,7 @@ CoinList.prototype.getValues = function (cb) {
  */
 CoinList.prototype.getTotalValue = function (cb) {
   Q.ninvoke(this, 'getValues')
-    .done(function (values) { cb(null, values.total) }, function (error) { cb(error) })
+    .then(function (values) { cb(null, values.total) }, function (error) { cb(error) })
 }
 
 module.exports = CoinList

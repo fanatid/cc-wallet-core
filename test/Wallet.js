@@ -1,13 +1,13 @@
 var expect = require('chai').expect
-
 var Q = require('q')
+var bitcore = require('bitcore-lib')
 
-var cccore = require('../')
+var cccore = require('../src')
 var errors = cccore.errors
 var AssetDefinition = cccore.asset.AssetDefinition
 var Wallet = cccore.Wallet
 
-describe.skip('Wallet', function () {
+describe('Wallet', function () {
   this.timeout(240 * 1000)
 
   var wallet
@@ -15,6 +15,11 @@ describe.skip('Wallet', function () {
   var goldAsset = {
     monikers: ['gold'],
     colorDescs: ['epobc:b95323a763fa507110a89ab857af8e949810cf1e67e91104cd64222a04ccd0bb:0:180679'],
+    unit: 10
+  }
+  var goldAssetZero = {
+    monikers: ['gold'],
+    colorDescs: ['epobc:b95323a763fa507110a89ab857af8e949810cf1e67e91104cd64222a04ccd0bb:0:0'],
     unit: 10
   }
 
@@ -25,7 +30,7 @@ describe.skip('Wallet', function () {
       spendUnconfirmedCoins: true
     })
     wallet.getConnector().once('connect', done)
-    wallet.on('error', function (e) { console.error(e) })
+    wallet.on('error', function (err) { console.error(err.stack) })
   }
 
   function cleanup () {
@@ -79,7 +84,7 @@ describe.skip('Wallet', function () {
         wallet.initialize(seed)
         var assetdef = wallet.addAssetDefinition(seed, goldAsset)
         expect(assetdef).to.be.instanceof(AssetDefinition)
-        expect(assetdef.getData()).to.deep.equal(goldAsset)
+        expect(assetdef.getData()).to.deep.equal(goldAssetZero)
       })
 
       it('getAssetDefinitionByMoniker need initialization', function () {
@@ -109,7 +114,7 @@ describe.skip('Wallet', function () {
     })
 
     describe('address methods', function () {
-      var bitcoin
+      var adef
 
       it('getNewAddress need initialization', function () {
         expect(wallet.getNewAddress.bind(wallet)).to.throw(errors.WalletNotInitializedError)
@@ -117,18 +122,18 @@ describe.skip('Wallet', function () {
 
       it('getNewAddress', function () {
         wallet.initialize(seed)
-        bitcoin = wallet.getAssetDefinitionByMoniker('bitcoin')
-        expect(wallet.getNewAddress(seed, bitcoin)).to.equal('mmFYK2Mofiwtm68ZTYK7etjiGyf3SeLkgo')
+        adef = wallet.getAssetDefinitionByMoniker('bitcoin')
+        expect(wallet.getNewAddress(seed, adef)).to.equal('mmFYK2Mofiwtm68ZTYK7etjiGyf3SeLkgo')
       })
 
       it('getAllAddresses need initialization', function () {
-        var fn = function () { wallet.getAllAddresses(bitcoin) }
+        var fn = function () { wallet.getAllAddresses(adef) }
         expect(fn).to.throw(errors.WalletNotInitializedError)
       })
 
       it('getAllAddresses', function () {
         wallet.initialize(seed)
-        expect(wallet.getAllAddresses(bitcoin)).to.deep.equal(['mmHBqwp1fDwWXaXqo5ZrEE4qAoXH5xkUvd'])
+        expect(wallet.getAllAddresses(adef)).to.deep.equal(['mmHBqwp1fDwWXaXqo5ZrEE4qAoXH5xkUvd'])
       })
 
       it('getSomeAddress need initialization', function () {
@@ -138,14 +143,14 @@ describe.skip('Wallet', function () {
 
       it('getSomeAddress', function () {
         wallet.initialize(seed)
-        bitcoin = wallet.getAssetDefinitionByMoniker('bitcoin')
-        expect(wallet.getSomeAddress(bitcoin)).to.equal('mmHBqwp1fDwWXaXqo5ZrEE4qAoXH5xkUvd')
+        adef = wallet.getAssetDefinitionByMoniker('bitcoin')
+        expect(wallet.getSomeAddress(adef)).to.equal('mmHBqwp1fDwWXaXqo5ZrEE4qAoXH5xkUvd')
       })
 
       it('checkAddress bitcoin', function () {
         wallet.initialize(seed)
-        bitcoin = wallet.getAssetDefinitionByMoniker('bitcoin')
-        var isValid = wallet.checkAddress(bitcoin, 'mgFmR51KZRKb2jcmJb276KQK9enC9cmG9v')
+        adef = wallet.getAssetDefinitionByMoniker('bitcoin')
+        var isValid = wallet.checkAddress(adef, 'mgFmR51KZRKb2jcmJb276KQK9enC9cmG9v')
         expect(isValid).to.be.true
       })
 
@@ -179,15 +184,13 @@ describe.skip('Wallet', function () {
     ]
 
     fixtures.forEach(function (fixture) {
-      it(fixture.method + ' for ' + fixture.moniker, function (done) {
+      it(fixture.method + ' for ' + fixture.moniker, function () {
         var assetdef = wallet.getAssetDefinitionByMoniker(fixture.moniker)
 
-        wallet[fixture.method](assetdef, function (error, balance) {
-          if (error) { throw error }
-          expect(error).to.be.null
-          expect(balance).to.equal(fixture.balance)
-          done()
-        })
+        return Q.ninvoke(wallet, fixture.method, assetdef)
+          .then(function (balance) {
+            expect(balance).to.equal(fixture.balance)
+          })
       })
     })
   })
@@ -196,62 +199,66 @@ describe.skip('Wallet', function () {
     beforeEach(setup)
     afterEach(cleanup)
 
-    it('sendCoins', function (done) {
-      var deferred = Q.defer()
-      deferred.promise.done(done, done)
-
-      var seed = '421fc385fdae724b246b80e0212f77bb'
+    it('sendCoins', function () {
+      var seed = '421fc385fdae724b246b80e0212f77bc'
       wallet.initialize(seed)
-      wallet.addAssetDefinition(seed, goldAsset)
-      wallet.once('syncStop', function () {
+
+      return new Q.Promise(function (resolve) {
+        wallet.once('syncStop', resolve)
+      })
+      .then(function () {
         var bitcoin = wallet.getAssetDefinitionByMoniker('bitcoin')
-        var targets = [{address: 'mkwmtrHX99ozTegy77wTgPZwodm4E2VbBr', value: 10000}]
-
-        wallet.createTx(bitcoin, targets, function (error, tx) {
-          expect(error).to.be.null
-
-          wallet.transformTx(tx, 'signed', {seedHex: seed}, function (error, tx) {
-            expect(error).to.be.null
-
-            wallet.on('updateTx', function (newTx) {
-              if (newTx.getId() === tx.getId()) { deferred.resolve() }
-            })
-
-            wallet.sendTx(tx, function (error) {
-              expect(error).to.be.null
-            })
+        var randomAddress = bitcore.PrivateKey.fromRandom(bitcore.Networks.testnet).toAddress().toString()
+        var targets = [{address: randomAddress, value: 10000}]
+        return Q.ninvoke(wallet, 'createTx', bitcoin, targets)
+      })
+      .then(function (tx) {
+        return Q.ninvoke(wallet, 'transformTx', tx, 'signed', {seedHex: seed})
+      })
+      .then(function (tx) {
+        return new Q.Promise(function (resolve, reject) {
+          wallet.on('updateTx', function (newTx) {
+            if (newTx.id === tx.id) {
+              resolve()
+            }
           })
+
+          Q.ninvoke(wallet, 'sendTx', tx).catch(reject)
         })
       })
     })
 
     it('history', function (done) {
       wallet.initialize(seed)
+      wallet.addAssetDefinition(seed, goldAsset)
 
       wallet.on('syncStop', function () {
-        var entries = wallet.getHistory()
-        expect(entries).to.be.instanceof(Array)
-        done()
+        try {
+          var entries = wallet.getHistory()
+          expect(entries).to.be.instanceof(Array)
+          done()
+        } catch (err) {
+          done(err)
+        }
       })
     })
 
-    it('issueCoins epobc', function (done) {
-      var seed = '421ac385fdaed1121321222eddad0daf'
+    it('issueCoins epobc', function () {
+      var seed = '421ac385fdaed1121321222eddad0dbf'
       wallet.initialize(seed)
       wallet.addAssetDefinition(seed, goldAsset)
-      wallet.once('syncStop', function () {
-        wallet.createIssuanceTx('newEPOBC', 'epobc', 2, 10000, seed, function (error, tx) {
-          expect(error).to.be.null
 
-          wallet.transformTx(tx, 'signed', {seedHex: seed}, function (error, tx) {
-            expect(error).to.be.null
-
-            wallet.sendTx(tx, function (error) {
-              expect(error).to.be.null
-              done()
-            })
-          })
-        })
+      return new Q.Promise(function (resolve) {
+        wallet.once('syncStop', resolve)
+      })
+      .then(function () {
+        return Q.ninvoke(wallet, 'createIssuanceTx', 'newEPOBC', 'epobc', 2, 10000, seed)
+      })
+      .then(function (tx) {
+        return Q.ninvoke(wallet, 'transformTx', tx, 'signed', {seedHex: seed})
+      })
+      .then(function (tx) {
+        return Q.ninvoke(wallet, 'sendTx', tx)
       })
     })
   })

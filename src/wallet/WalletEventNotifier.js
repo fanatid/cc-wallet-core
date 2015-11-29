@@ -38,7 +38,7 @@ WalletEventNotifier.prototype._notifyNeedsSync = function () {
   function scheduleSync () {
     if (self._canSync()) {
       self._syncEnter()
-      self._scheduleSync(this._syncRetryTimeoutIncrement)
+      self._scheduleSync(self._syncRetryTimeoutIncrement)
     }
   }
 
@@ -73,17 +73,16 @@ WalletEventNotifier.prototype._syncWSM = function (interval) {
   var self = this
   var addresses = self._wallet.getAllAddresses()
   self._wallet.getStateManager().sync(addresses)
-  .done(
-    function () { self._syncExit() },
-    function (err) {
-      if (!self._pendingSync && self._connected) {
-        self._scheduleSync(interval + self._syncRetryTimeoutIncrement)
-      } else {
-        self._syncExit()
-      }
-      self.emit('error', err)
-    }
-  )
+    .then(
+      function () { self._syncExit() },
+      function (err) {
+        if (!self._pendingSync && self._connected) {
+          self._scheduleSync(interval + self._syncRetryTimeoutIncrement)
+        } else {
+          self._syncExit()
+        }
+        self.emit('error', err)
+      })
 }
 
 WalletEventNotifier.prototype._cancelPendingSync = function () {
@@ -98,9 +97,9 @@ WalletEventNotifier.prototype._cancelPendingSync = function () {
 
 WalletEventNotifier.prototype._scheduleSync = function (interval) {
   var self = this
-  this._cancelPendingSync()
-  var pendingSync = { canceled: false }
-  this._pendingSync = pendingSync
+  self._cancelPendingSync()
+  var pendingSync = {canceled: false}
+  self._pendingSync = pendingSync
   pendingSync.timeout = setTimeout(function () {
     if (pendingSync.canceled) {
       return
